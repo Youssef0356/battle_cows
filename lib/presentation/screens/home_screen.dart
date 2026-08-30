@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/colors.dart';
+import '../../core/theme/game_button_styles.dart';
 import '../../game/models/player.dart';
 import '../router/app_router.dart';
 
@@ -10,15 +12,29 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   int _playerCount = 2;
   List<Player> _players = [];
-  int _boardSize = 7;
+  late AnimationController _animController;
+  late Animation<double> _titleScale;
 
   @override
   void initState() {
     super.initState();
     _updatePlayers();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    )..forward();
+    _titleScale = Tween<double>(begin: 0.5, end: 1.0).animate(
+      CurvedAnimation(parent: _animController, curve: Curves.elasticOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
   }
 
   void _updatePlayers() {
@@ -34,30 +50,15 @@ class _HomeScreenState extends State<HomeScreen> {
         isAi: i > 0,
       ));
     }
-
-    _boardSize = _getBoardSize(_playerCount);
-  }
-
-  int _getBoardSize(int playerCount) {
-    switch (playerCount) {
-      case 2:
-        return 7;
-      case 3:
-        return 9;
-      case 4:
-        return 10;
-      default:
-        return 7;
-    }
   }
 
   void _startGame() {
     Navigator.pushNamed(
       context,
-      AppRouter.game,
+      AppRouter.tilePlacement,
       arguments: {
         'players': _players,
-        'boardSize': _boardSize,
+        'tilesPerPlayer': 5,
       },
     );
   }
@@ -79,7 +80,16 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           Positioned.fill(
             child: Container(
-              color: Colors.black.withValues(alpha: 0.3),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.5),
+                    Colors.black.withValues(alpha: 0.7),
+                  ],
+                ),
+              ),
             ),
           ),
           SafeArea(
@@ -89,26 +99,25 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
-                      '🐄',
-                      style: TextStyle(fontSize: 80),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'BATTLE COWS',
-                      style: TextStyle(
-                        fontSize: 40,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.lightText,
-                        letterSpacing: 4,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Claim the pasture, outsmart your rivals!',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: AppColors.lightText.withValues(alpha: 0.8),
+                    ScaleTransition(
+                      scale: _titleScale,
+                      child: Column(
+                        children: [
+                          Image.asset(
+                            'assets/images/Background/Title Text.png',
+                            width: 280,
+                            fit: BoxFit.contain,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Claim the pasture, outsmart your rivals!',
+                            style: GoogleFonts.bangers(
+                              fontSize: 18,
+                              color: Colors.white.withValues(alpha: 0.9),
+                              letterSpacing: 1.5,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 48),
@@ -116,36 +125,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 24),
                     _buildPlayerList(),
                     const SizedBox(height: 32),
-                    SizedBox(
+                    GameButtonStyles.primaryButton(
+                      text: 'START GAME',
+                      onPressed: _startGame,
                       width: double.infinity,
-                      height: 56,
-                      child: ElevatedButton(
-                        onPressed: _startGame,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryAction,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        child: const Text(
-                          'START GAME',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
+                      height: 60,
                     ),
                     const SizedBox(height: 16),
-                    TextButton(
+                    GameButtonStyles.secondaryButton(
+                      text: 'HOW TO PLAY',
                       onPressed: _showTutorial,
-                      child: const Text(
-                        'How to Play',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: AppColors.lightText,
-                        ),
-                      ),
+                      width: 200,
+                      height: 48,
                     ),
                   ],
                 ),
@@ -159,22 +150,37 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildPlayerCountSelector() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [
+            AppColors.cardBackground.withValues(alpha: 0.95),
+            AppColors.cardBackground.withValues(alpha: 0.85),
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         children: [
-          const Text(
-            'Number of Players',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+          Text(
+            'PLAYERS',
+            style: GoogleFonts.bangers(
+              fontSize: 22,
               color: AppColors.darkText,
+              letterSpacing: 2,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [2, 3, 4].map((count) {
@@ -188,30 +194,45 @@ class _HomeScreenState extends State<HomeScreen> {
                       _updatePlayers();
                     });
                   },
-                  child: Container(
-                    width: 60,
-                    height: 60,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 70,
+                    height: 70,
                     decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppColors.primaryAction
-                          : AppColors.secondaryAction.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(12),
+                      gradient: isSelected
+                          ? const LinearGradient(
+                              colors: [Color(0xFF66BB6A), Color(0xFF2E7D32)],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                            )
+                          : LinearGradient(
+                              colors: [
+                                AppColors.secondaryAction.withValues(alpha: 0.3),
+                                AppColors.secondaryAction.withValues(alpha: 0.1),
+                              ],
+                            ),
+                      borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: isSelected
-                            ? AppColors.primaryAction
-                            : AppColors.secondaryAction,
-                        width: 2,
+                        color: isSelected ? Colors.white : AppColors.secondaryAction,
+                        width: 3,
                       ),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: AppColors.primaryAction.withValues(alpha: 0.4),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ]
+                          : [],
                     ),
                     child: Center(
                       child: Text(
                         '$count',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: isSelected
-                              ? AppColors.lightText
-                              : AppColors.darkText,
+                        style: GoogleFonts.bangers(
+                          fontSize: 32,
+                          color: isSelected ? Colors.white : AppColors.darkText,
+                          letterSpacing: 1,
                         ),
                       ),
                     ),
@@ -220,14 +241,6 @@ class _HomeScreenState extends State<HomeScreen> {
               );
             }).toList(),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Board: $_boardSize hexes per side',
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppColors.darkText,
-            ),
-          ),
         ],
       ),
     );
@@ -235,78 +248,123 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildPlayerList() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.cardBackground,
-        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: [
+            AppColors.cardBackground.withValues(alpha: 0.95),
+            AppColors.cardBackground.withValues(alpha: 0.85),
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         children: [
-          const Text(
-            'Players',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+          Text(
+            'ROSTER',
+            style: GoogleFonts.bangers(
+              fontSize: 22,
               color: AppColors.darkText,
+              letterSpacing: 2,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           ..._players.asMap().entries.map((entry) {
             final index = entry.key;
             final player = entry.value;
             return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(
-                children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: AppColors.getPlayerPrimary(player.color),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                    ),
-                    child: Center(
-                      child: Text(
-                        '${index + 1}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.getPlayerPrimary(player.color).withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.getPlayerPrimary(player.color).withValues(alpha: 0.4),
+                    width: 2,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            AppColors.getPlayerPrimary(player.color),
+                            AppColors.getPlayerDark(player.color),
+                          ],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.getPlayerPrimary(player.color).withValues(alpha: 0.5),
+                            blurRadius: 6,
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${index + 1}',
+                          style: GoogleFonts.bangers(
+                            color: Colors.white,
+                            fontSize: 18,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      player.name,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.darkText,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        player.name,
+                        style: GoogleFonts.bangers(
+                          fontSize: 18,
+                          color: AppColors.darkText,
+                          letterSpacing: 1,
+                        ),
                       ),
                     ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: player.isAi
-                          ? AppColors.secondaryAction.withValues(alpha: 0.2)
-                          : AppColors.primaryAction.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      player.isAi ? 'AI' : 'Human',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
                         color: player.isAi
-                            ? AppColors.secondaryAction
-                            : AppColors.primaryAction,
+                            ? AppColors.secondaryAction.withValues(alpha: 0.3)
+                            : AppColors.primaryAction.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: player.isAi
+                              ? AppColors.secondaryAction
+                              : AppColors.primaryAction,
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        player.isAi ? 'CPU' : 'YOU',
+                        style: GoogleFonts.bangers(
+                          fontSize: 14,
+                          color: player.isAi
+                              ? AppColors.secondaryAction
+                              : AppColors.primaryAction,
+                          letterSpacing: 1,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             );
           }),

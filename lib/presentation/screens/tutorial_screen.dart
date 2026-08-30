@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/colors.dart';
 
 class TutorialScreen extends StatefulWidget {
@@ -14,37 +15,32 @@ class _TutorialScreenState extends State<TutorialScreen> {
 
   final List<TutorialPage> _pages = [
     TutorialPage(
-      title: 'Cows Move in 6 Directions',
+      title: 'COWS MOVE IN 6 DIRECTIONS',
       description: 'Unlike square grids, hex grids have 6 straight-line directions. Your cows always move in one of these 6 directions.',
-      icon: Icons.hexagon,
       color: AppColors.blue,
       visual: _buildHexDirectionVisual(),
     ),
     TutorialPage(
-      title: 'Split Your Stack',
+      title: 'SPLIT YOUR STACK',
       description: 'On your turn, choose a stack and split it. Some cows stay, others move in a straight line until blocked.',
-      icon: Icons.call_split,
       color: AppColors.red,
       visual: _buildSplitVisual(),
     ),
     TutorialPage(
-      title: 'Block Opponents',
+      title: 'BLOCK OPPONENTS',
       description: 'Place your cows to block opponent paths. Control key tiles to limit their expansion options.',
-      icon: Icons.block,
       color: AppColors.yellow,
       visual: _buildBlockingVisual(),
     ),
     TutorialPage(
-      title: 'Trap Enemy Stacks',
+      title: 'TRAP ENEMY STACKS',
       description: 'Surround enemy stacks completely to trap them forever. Trapped stacks can never move again!',
-      icon: Icons.lock,
       color: AppColors.purple,
       visual: _buildTrapVisual(),
     ),
     TutorialPage(
-      title: 'Most Territory Wins!',
+      title: 'MOST TERRITORY WINS!',
       description: 'Game ends when no player has legal moves. Count tiles occupied - most tiles wins! Tiebreaker: most cows remaining.',
-      icon: Icons.emoji_events,
       color: AppColors.primaryAction,
       visual: _buildWinVisual(),
     ),
@@ -59,7 +55,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
   void _nextPage() {
     if (_currentPage < _pages.length - 1) {
       _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
+        duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOut,
       );
     } else {
@@ -70,7 +66,7 @@ class _TutorialScreenState extends State<TutorialScreen> {
   void _previousPage() {
     if (_currentPage > 0) {
       _pageController.previousPage(
-        duration: const Duration(milliseconds: 300),
+        duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOut,
       );
     }
@@ -79,75 +75,170 @@ class _TutorialScreenState extends State<TutorialScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.grassDark,
-      body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  if (_currentPage > 0)
-                    TextButton(
-                      onPressed: _previousPage,
-                      child: const Text('Back'),
-                    )
-                  else
-                    const SizedBox(width: 60),
-                  Text(
-                    '${_currentPage + 1} / ${_pages.length}',
-                    style: const TextStyle(
-                      color: AppColors.lightText,
-                      fontSize: 16,
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Skip'),
-                  ),
-                ],
-              ),
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/Background/Background.jpg',
+              fit: BoxFit.cover,
             ),
-            Expanded(
-              child: PageView.builder(
-                controller: _pageController,
-                itemCount: _pages.length,
-                onPageChanged: (index) {
-                  setState(() {
-                    _currentPage = index;
-                  });
-                },
-                itemBuilder: (context, index) {
-                  return _buildPage(_pages[index]);
-                },
-              ),
+          ),
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withValues(alpha: 0.6),
             ),
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _nextPage,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _pages[_currentPage].color,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: Text(
-                    _currentPage == _pages.length - 1 ? 'Got it!' : 'Next',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+          ),
+          SafeArea(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      if (_currentPage > 0)
+                        TextButton(
+                          onPressed: _previousPage,
+                          child: Text(
+                            '< BACK',
+                            style: GoogleFonts.bangers(
+                              color: Colors.white,
+                              fontSize: 16,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                        )
+                      else
+                        const SizedBox(width: 80),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                        ),
+                        child: Text(
+                          '${_currentPage + 1} / ${_pages.length}',
+                          style: GoogleFonts.bangers(
+                            color: Colors.white,
+                            fontSize: 18,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text(
+                          'SKIP',
+                          style: GoogleFonts.bangers(
+                            color: Colors.white.withValues(alpha: 0.7),
+                            fontSize: 16,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
+                Expanded(
+                  child: PageView.builder(
+                    controller: _pageController,
+                    itemCount: _pages.length,
+                    onPageChanged: (index) {
+                      setState(() {
+                        _currentPage = index;
+                      });
+                    },
+                    itemBuilder: (context, index) {
+                      return _buildPage(_pages[index]);
+                    },
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(_pages.length, (index) {
+                          final isActive = index == _currentPage;
+                          return AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            width: isActive ? 32 : 12,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              color: isActive
+                                  ? _pages[_currentPage].color
+                                  : Colors.white.withValues(alpha: 0.3),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: isActive ? Colors.white : Colors.transparent,
+                                width: 1,
+                              ),
+                            ),
+                          );
+                        }),
+                      ),
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 60,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                _pages[_currentPage].color,
+                                _pages[_currentPage].color.withValues(alpha: 0.7),
+                              ],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.white, width: 3),
+                            boxShadow: [
+                              BoxShadow(
+                                color: _pages[_currentPage].color.withValues(alpha: 0.5),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: ElevatedButton(
+                            onPressed: _nextPage,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              padding: EdgeInsets.zero,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(13),
+                              ),
+                            ),
+                            child: Text(
+                              _currentPage == _pages.length - 1 ? 'GOT IT!' : 'NEXT',
+                              style: GoogleFonts.bangers(
+                                fontSize: 22,
+                                color: Colors.white,
+                                letterSpacing: 3,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black.withValues(alpha: 0.5),
+                                    offset: const Offset(2, 2),
+                                    blurRadius: 3,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -159,37 +250,51 @@ class _TutorialScreenState extends State<TutorialScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: 120,
-            height: 120,
+            width: 160,
+            height: 160,
             decoration: BoxDecoration(
-              color: page.color.withValues(alpha: 0.2),
-              shape: BoxShape.circle,
-              border: Border.all(color: page.color, width: 3),
-            ),
-            child: Center(
-              child: page.visual ?? Icon(
-                page.icon,
-                size: 60,
-                color: page.color,
+              gradient: RadialGradient(
+                colors: [
+                  page.color.withValues(alpha: 0.4),
+                  page.color.withValues(alpha: 0.1),
+                ],
               ),
+              shape: BoxShape.circle,
+              border: Border.all(color: page.color, width: 4),
+              boxShadow: [
+                BoxShadow(
+                  color: page.color.withValues(alpha: 0.4),
+                  blurRadius: 30,
+                  spreadRadius: 5,
+                ),
+              ],
             ),
+            child: Center(child: page.visual),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 40),
           Text(
             page.title,
-            style: const TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: AppColors.lightText,
+            style: GoogleFonts.bangers(
+              fontSize: 32,
+              color: Colors.white,
+              letterSpacing: 2,
+              shadows: [
+                Shadow(
+                  color: Colors.black.withValues(alpha: 0.8),
+                  offset: const Offset(2, 2),
+                  blurRadius: 6,
+                ),
+              ],
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Text(
             page.description,
-            style: TextStyle(
-              fontSize: 16,
-              color: AppColors.lightText.withValues(alpha: 0.8),
+            style: GoogleFonts.bangers(
+              fontSize: 18,
+              color: Colors.white.withValues(alpha: 0.9),
+              letterSpacing: 1,
               height: 1.5,
             ),
             textAlign: TextAlign.center,
@@ -200,33 +305,51 @@ class _TutorialScreenState extends State<TutorialScreen> {
   }
 
   static Widget _buildHexDirectionVisual() {
-    return const Text(
-      '↖ ↗\n ⬡ \n↙ ↘',
-      style: TextStyle(
-        fontSize: 24,
-        fontWeight: FontWeight.bold,
-        color: AppColors.lightText,
-      ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          '\u2196 \u2197',
+          style: GoogleFonts.bangers(
+            fontSize: 28,
+            color: Colors.white,
+          ),
+        ),
+        Text(
+          '\u2B21',
+          style: GoogleFonts.bangers(
+            fontSize: 40,
+            color: Colors.white,
+          ),
+        ),
+        Text(
+          '\u2199 \u2198',
+          style: GoogleFonts.bangers(
+            fontSize: 28,
+            color: Colors.white,
+          ),
+        ),
+      ],
     );
   }
 
   static Widget _buildSplitVisual() {
-    return const Column(
+    return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          '5 → 2 + 3',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: AppColors.lightText,
+          '5 \u2192 2 + 3',
+          style: GoogleFonts.bangers(
+            fontSize: 28,
+            color: Colors.white,
           ),
         ),
+        const SizedBox(height: 4),
         Text(
-          'Stay + Move',
-          style: TextStyle(
-            fontSize: 12,
-            color: AppColors.lightText,
+          'STAY + MOVE',
+          style: GoogleFonts.bangers(
+            fontSize: 14,
+            color: Colors.white.withValues(alpha: 0.8),
           ),
         ),
       ],
@@ -237,39 +360,49 @@ class _TutorialScreenState extends State<TutorialScreen> {
     return const Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.circle, color: AppColors.blue, size: 20),
-        Icon(Icons.block, color: AppColors.red, size: 30),
-        Icon(Icons.circle, color: AppColors.blue, size: 20),
+        Icon(Icons.circle, color: AppColors.blue, size: 24),
+        SizedBox(width: 4),
+        Icon(Icons.block, color: AppColors.red, size: 36),
+        SizedBox(width: 4),
+        Icon(Icons.circle, color: AppColors.blue, size: 24),
       ],
     );
   }
 
   static Widget _buildTrapVisual() {
-    return const Column(
+    return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Row(
+        const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.circle, color: AppColors.red, size: 16),
-            Icon(Icons.circle, color: AppColors.red, size: 16),
-            Icon(Icons.circle, color: AppColors.red, size: 16),
+            Icon(Icons.circle, color: AppColors.red, size: 18),
+            SizedBox(width: 2),
+            Icon(Icons.circle, color: AppColors.red, size: 18),
+            SizedBox(width: 2),
+            Icon(Icons.circle, color: AppColors.red, size: 18),
           ],
         ),
-        Row(
+        const SizedBox(height: 2),
+        const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.circle, color: AppColors.red, size: 16),
-            Icon(Icons.lock, color: AppColors.blue, size: 20),
-            Icon(Icons.circle, color: AppColors.red, size: 16),
+            Icon(Icons.circle, color: AppColors.red, size: 18),
+            SizedBox(width: 2),
+            Icon(Icons.lock, color: AppColors.blue, size: 24),
+            SizedBox(width: 2),
+            Icon(Icons.circle, color: AppColors.red, size: 18),
           ],
         ),
-        Row(
+        const SizedBox(height: 2),
+        const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.circle, color: AppColors.red, size: 16),
-            Icon(Icons.circle, color: AppColors.red, size: 16),
-            Icon(Icons.circle, color: AppColors.red, size: 16),
+            Icon(Icons.circle, color: AppColors.red, size: 18),
+            SizedBox(width: 2),
+            Icon(Icons.circle, color: AppColors.red, size: 18),
+            SizedBox(width: 2),
+            Icon(Icons.circle, color: AppColors.red, size: 18),
           ],
         ),
       ],
@@ -277,16 +410,18 @@ class _TutorialScreenState extends State<TutorialScreen> {
   }
 
   static Widget _buildWinVisual() {
-    return const Column(
+    return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.emoji_events, color: AppColors.yellow, size: 40),
+        const Text(
+          '\ud83c\udfc6',
+          style: TextStyle(fontSize: 48),
+        ),
         Text(
           '12 > 8',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: AppColors.lightText,
+          style: GoogleFonts.bangers(
+            fontSize: 24,
+            color: Colors.white,
           ),
         ),
       ],
@@ -297,14 +432,12 @@ class _TutorialScreenState extends State<TutorialScreen> {
 class TutorialPage {
   final String title;
   final String description;
-  final IconData icon;
   final Color color;
   final Widget? visual;
 
   const TutorialPage({
     required this.title,
     required this.description,
-    required this.icon,
     required this.color,
     this.visual,
   });

@@ -2,19 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:battle_cows/presentation/widgets/hex_board_widget.dart';
 import 'package:battle_cows/game/board/board_generator.dart';
+import 'package:battle_cows/game/models/hex_position.dart';
+import 'package:battle_cows/game/models/pasture_tile.dart';
 import 'package:battle_cows/game/models/player.dart';
+import 'package:battle_cows/game/models/game_board.dart';
 import 'package:battle_cows/core/constants/colors.dart';
 
 void main() {
   group('HexBoardWidget', () {
-    late var board;
+    late GameBoard board;
 
     setUp(() {
       final players = const [
         Player(id: 0, name: 'Blue', color: PlayerColor.blue),
         Player(id: 1, name: 'Red', color: PlayerColor.red),
       ];
-      board = BoardGenerator.generate(3, players, 12);
+      final tiles = [
+        PastureTile.diamond(0, const HexPosition(0, 0)),
+        PastureTile.diamond(1, const HexPosition(2, -1)),
+        PastureTile.diamond(2, const HexPosition(-2, 1)),
+      ];
+      board = BoardGenerator.generateFromTiles(tiles, players, 16);
     });
 
     testWidgets('renders board with hex cells', (WidgetTester tester) async {

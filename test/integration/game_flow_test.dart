@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:battle_cows/game/board/board_generator.dart';
 import 'package:battle_cows/game/logic/game_engine.dart';
 import 'package:battle_cows/game/ai/ai_player.dart';
+import 'package:battle_cows/game/models/hex_position.dart';
+import 'package:battle_cows/game/models/pasture_tile.dart';
 import 'package:battle_cows/game/models/player.dart';
 import 'package:battle_cows/core/constants/colors.dart';
 
@@ -13,7 +15,13 @@ void main() {
         Player(id: 1, name: 'Red', color: PlayerColor.red, isAi: true),
       ];
 
-      final board = BoardGenerator.generate(5, players, 12);
+      final tiles = [
+        PastureTile.diamond(0, const HexPosition(0, 0)),
+        PastureTile.diamond(1, const HexPosition(2, -1)),
+        PastureTile.diamond(2, const HexPosition(-2, 1)),
+      ];
+
+      final board = BoardGenerator.generateFromTiles(tiles, players, 16);
       final engine = GameEngine();
       engine.initializeGame(board, players);
 
@@ -22,7 +30,6 @@ void main() {
 
       final ai = AiPlayer(difficulty: Difficulty.easy);
 
-      // Play 10 turns
       for (var i = 0; i < 10; i++) {
         if (engine.gameOver) break;
 
@@ -44,7 +51,13 @@ void main() {
         Player(id: 1, name: 'Red', color: PlayerColor.red),
       ];
 
-      final board = BoardGenerator.generate(5, players, 12);
+      final tiles = [
+        PastureTile.diamond(0, const HexPosition(0, 0)),
+        PastureTile.diamond(1, const HexPosition(2, -1)),
+        PastureTile.diamond(2, const HexPosition(-2, 1)),
+      ];
+
+      final board = BoardGenerator.generateFromTiles(tiles, players, 16);
       final engine = GameEngine();
       engine.initializeGame(board, players);
 
@@ -52,7 +65,6 @@ void main() {
       expect(initialCounts[PlayerColor.blue], 1);
       expect(initialCounts[PlayerColor.red], 1);
 
-      // Make a move for blue
       final moves = engine.getValidMoves(PlayerColor.blue);
       if (moves.isNotEmpty) {
         engine.executeMove(moves.first);
@@ -68,14 +80,17 @@ void main() {
         Player(id: 1, name: 'Red', color: PlayerColor.red),
       ];
 
-      // Small board, small herd - game should end quickly
-      final board = BoardGenerator.generate(3, players, 2);
+      final tiles = [
+        PastureTile.diamond(0, const HexPosition(0, 0)),
+        PastureTile.diamond(1, const HexPosition(2, -1)),
+      ];
+
+      final board = BoardGenerator.generateFromTiles(tiles, players, 2);
       final engine = GameEngine();
       engine.initializeGame(board, players);
 
       final ai = AiPlayer(difficulty: Difficulty.hard);
 
-      // Play until game over or max turns
       var maxTurns = 50;
       while (!engine.gameOver && maxTurns > 0) {
         final move = ai.calculateMove(engine, engine.currentPlayer.color);
@@ -87,7 +102,6 @@ void main() {
         maxTurns--;
       }
 
-      // Game should eventually end or be close to ending
       expect(engine.turnCount, greaterThan(0));
     });
 
@@ -97,13 +111,17 @@ void main() {
         Player(id: 1, name: 'Red', color: PlayerColor.red),
       ];
 
-      final board = BoardGenerator.generate(3, players, 2);
+      final tiles = [
+        PastureTile.diamond(0, const HexPosition(0, 0)),
+        PastureTile.diamond(1, const HexPosition(2, -1)),
+      ];
+
+      final board = BoardGenerator.generateFromTiles(tiles, players, 2);
       final engine = GameEngine();
       engine.initializeGame(board, players);
 
       final ai = AiPlayer(difficulty: Difficulty.hard);
 
-      // Play until game over
       var maxTurns = 50;
       while (!engine.gameOver && maxTurns > 0) {
         final move = ai.calculateMove(engine, engine.currentPlayer.color);

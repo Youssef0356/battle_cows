@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../constants/colors.dart';
 
 class AppTheme {
@@ -15,10 +16,15 @@ class AppTheme {
         onSecondary: AppColors.lightText,
         onSurface: AppColors.darkText,
       ),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.secondaryAction,
+      appBarTheme: AppBarTheme(
+        backgroundColor: Colors.transparent,
         foregroundColor: AppColors.lightText,
         elevation: 0,
+        titleTextStyle: GoogleFonts.bangers(
+          fontSize: 24,
+          color: AppColors.lightText,
+          letterSpacing: 2,
+        ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -28,9 +34,9 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: const TextStyle(
+          textStyle: GoogleFonts.bangers(
             fontSize: 18,
-            fontWeight: FontWeight.bold,
+            letterSpacing: 1.5,
           ),
         ),
       ),
@@ -41,29 +47,31 @@ class AppTheme {
         ),
         elevation: 4,
       ),
-      textTheme: const TextTheme(
-        headlineLarge: TextStyle(
+      textTheme: GoogleFonts.bangersTextTheme().copyWith(
+        headlineLarge: GoogleFonts.bangers(
           fontSize: 32,
-          fontWeight: FontWeight.bold,
           color: AppColors.lightText,
+          letterSpacing: 2,
         ),
-        headlineMedium: TextStyle(
+        headlineMedium: GoogleFonts.bangers(
           fontSize: 24,
-          fontWeight: FontWeight.bold,
           color: AppColors.lightText,
+          letterSpacing: 1.5,
         ),
-        titleLarge: TextStyle(
+        titleLarge: GoogleFonts.bangers(
           fontSize: 20,
-          fontWeight: FontWeight.w600,
           color: AppColors.lightText,
+          letterSpacing: 1,
         ),
-        bodyLarge: TextStyle(
+        bodyLarge: GoogleFonts.bangers(
           fontSize: 16,
           color: AppColors.lightText,
+          letterSpacing: 1,
         ),
-        bodyMedium: TextStyle(
+        bodyMedium: GoogleFonts.bangers(
           fontSize: 14,
           color: AppColors.lightText,
+          letterSpacing: 0.5,
         ),
       ),
     );

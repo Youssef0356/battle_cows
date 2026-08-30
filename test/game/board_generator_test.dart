@@ -1,113 +1,93 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:battle_cows/game/board/board_generator.dart';
-import 'package:battle_cows/game/models/player.dart';
-import 'package:battle_cows/core/constants/colors.dart';
+import 'package:battle_cows/game/models/hex_position.dart';
+import 'package:battle_cows/game/models/pasture_tile.dart';
+import 'package:battle_cows/game/board/board_builder.dart';
 
 void main() {
-  group('BoardGenerator', () {
-    test('generates board with correct size for 2 players', () {
-      final players = _twoPlayers();
-      final board = BoardGenerator.generate(7, players, 12);
+  group('BoardBuilder', () {
+    late BoardBuilder builder;
 
-      expect(board.size, 7);
-      expect(board.cells, isNotEmpty);
+    setUp(() {
+      builder = BoardBuilder();
     });
 
-    test('board cells form hexagonal shape', () {
-      final players = _twoPlayers();
-      final board = BoardGenerator.generate(3, players, 12);
-
-      // All cells should have valid hex coordinates (|q|, |r|, |s| <= size)
-      for (final entry in board.cells.entries) {
-        final pos = entry.key;
-        expect(pos.q.abs() + pos.r.abs() + pos.s.abs(), lessThanOrEqualTo(3 * 2));
-      }
+    test('starts empty', () {
+      expect(builder.placedHexes, isEmpty);
+      expect(builder.placedTiles, isEmpty);
     });
 
-    test('places starting herds for all players', () {
-      final players = _twoPlayers();
-      final board = BoardGenerator.generate(5, players, 12);
-
-      final blueHerds = board.herds.where((h) => h.owner == PlayerColor.blue).toList();
-      final redHerds = board.herds.where((h) => h.owner == PlayerColor.red).toList();
-
-      expect(blueHerds.length, 1);
-      expect(redHerds.length, 1);
+    test('can place first tile anywhere', () {
+      final tile = PastureTile.diamond(0, const HexPosition(0, 0));
+      expect(builder.canPlace(tile), true);
     });
 
-    test('starting herds have correct size', () {
-      final players = _twoPlayers();
-      final board = BoardGenerator.generate(5, players, 12);
-
-      for (final herd in board.herds) {
-        expect(herd.size, 12);
-      }
+    test('places tile correctly', () {
+      final tile = PastureTile.diamond(0, const HexPosition(0, 0));
+      builder.placeTile(tile);
+      expect(builder.placedTiles.length, 1);
+      expect(builder.placedHexes.length, 4);
     });
 
-    test('starting positions are on opposite sides', () {
-      final players = _twoPlayers();
-      final board = BoardGenerator.generate(7, players, 12);
-
-      final blueHerd = board.herds.firstWhere((h) => h.owner == PlayerColor.blue);
-      final redHerd = board.herds.firstWhere((h) => h.owner == PlayerColor.red);
-
-      // Blue starts at negative q, Red at positive q
-      expect(blueHerd.position.q, lessThan(0));
-      expect(redHerd.position.q, greaterThan(0));
+    test('cannot place overlapping tile', () {
+      final tile1 = PastureTile.diamond(0, const HexPosition(0, 0));
+      final tile2 = PastureTile.diamond(1, const HexPosition(0, 0));
+      builder.placeTile(tile1);
+      expect(builder.canPlace(tile2), false);
     });
 
-    test('generates board with obstacles', () {
-      final players = _twoPlayers();
-      final board = BoardGenerator.generate(7, players, 12);
-
-      final obstacles = board.cells.values.where((c) => c.isObstacle).toList();
-      expect(obstacles, isNotEmpty);
+    test('can place adjacent tile', () {
+      final tile1 = PastureTile.diamond(0, const HexPosition(0, 0));
+      final tile2 = PastureTile.diamond(1, const HexPosition(2, 0));
+      builder.placeTile(tile1);
+      expect(builder.canPlace(tile2), true);
     });
 
-    test('generates 3-player board with 3 starting herds', () {
-      final players = _threePlayers();
-      final board = BoardGenerator.generate(9, players, 12);
-
-      expect(board.herds.length, 3);
+    test('cannot place disconnected tile', () {
+      final tile1 = PastureTile.diamond(0, const HexPosition(0, 0));
+      final tile2 = PastureTile.diamond(1, const HexPosition(10, 10));
+      builder.placeTile(tile1);
+      expect(builder.canPlace(tile2), false);
     });
 
-    test('generates 4-player board with 4 starting herds', () {
-      final players = _fourPlayers();
-      final board = BoardGenerator.generate(10, players, 12);
-
-      expect(board.herds.length, 4);
+    test('getOuterHexes returns perimeter hexes', () {
+      final tile = PastureTile.diamond(0, const HexPosition(0, 0));
+      builder.placeTile(tile);
+      final outer = builder.getOuterHexes();
+      expect(outer, isNotEmpty);
+      expect(outer.length, greaterThan(0));
     });
 
-    test('larger board has more cells than smaller board', () {
-      final players = _twoPlayers();
-      final smallBoard = BoardGenerator.generate(5, players, 12);
-      final largeBoard = BoardGenerator.generate(10, players, 12);
-
-      expect(largeBoard.cells.length, greaterThan(smallBoard.cells.length));
+    test('reset clears everything', () {
+      final tile = PastureTile.diamond(0, const HexPosition(0, 0));
+      builder.placeTile(tile);
+      builder.reset();
+      expect(builder.placedHexes, isEmpty);
+      expect(builder.placedTiles, isEmpty);
     });
   });
-}
 
-List<Player> _twoPlayers() {
-  return const [
-    Player(id: 0, name: 'Blue', color: PlayerColor.blue),
-    Player(id: 1, name: 'Red', color: PlayerColor.red),
-  ];
-}
+  group('PastureTile', () {
+    test('diamond creates 4 hexes', () {
+      final tile = PastureTile.diamond(0, const HexPosition(0, 0));
+      expect(tile.hexes.length, 4);
+    });
 
-List<Player> _threePlayers() {
-  return const [
-    Player(id: 0, name: 'Blue', color: PlayerColor.blue),
-    Player(id: 1, name: 'Red', color: PlayerColor.red),
-    Player(id: 2, name: 'Yellow', color: PlayerColor.yellow),
-  ];
-}
+    test('translate moves all hexes', () {
+      final tile = PastureTile.diamond(0, const HexPosition(0, 0));
+      final translated = tile.translate(const HexPosition(2, 3));
+      expect(translated.hexes.first, const HexPosition(2, 3));
+    });
 
-List<Player> _fourPlayers() {
-  return const [
-    Player(id: 0, name: 'Blue', color: PlayerColor.blue),
-    Player(id: 1, name: 'Red', color: PlayerColor.red),
-    Player(id: 2, name: 'Yellow', color: PlayerColor.yellow),
-    Player(id: 3, name: 'Purple', color: PlayerColor.purple),
-  ];
+    test('sharesEdgeWith detects adjacency', () {
+      final tile1 = PastureTile.diamond(0, const HexPosition(0, 0));
+      final tile2 = PastureTile.diamond(1, const HexPosition(2, 0));
+      expect(tile2.sharesEdgeWith(tile1.hexes), true);
+    });
+
+    test('overlaps detects collision', () {
+      final tile1 = PastureTile.diamond(0, const HexPosition(0, 0));
+      final tile2 = PastureTile.diamond(1, const HexPosition(0, 0));
+      expect(tile2.overlaps(tile1.hexes), true);
+    });
+  });
 }
