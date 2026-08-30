@@ -87,67 +87,68 @@ class _HomeScreenState extends State<HomeScreen> {
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
                 child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    '🐄',
-                    style: TextStyle(fontSize: 80),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'BATTLE COWS',
-                    style: TextStyle(
-                      fontSize: 40,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.lightText,
-                      letterSpacing: 4,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      '🐄',
+                      style: TextStyle(fontSize: 80),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Claim the pasture, outsmart your rivals!',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: AppColors.lightText.withValues(alpha: 0.8),
-                    ),
-                  ),
-                  const SizedBox(height: 48),
-                  _buildPlayerCountSelector(),
-                  const SizedBox(height: 24),
-                  _buildPlayerList(),
-                  const SizedBox(height: 32),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: _startGame,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryAction,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      child: const Text(
-                        'START GAME',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'BATTLE COWS',
+                      style: TextStyle(
+                        fontSize: 40,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.lightText,
+                        letterSpacing: 4,
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextButton(
-                    onPressed: _showTutorial,
-                    child: const Text(
-                      'How to Play',
+                    const SizedBox(height: 8),
+                    Text(
+                      'Claim the pasture, outsmart your rivals!',
                       style: TextStyle(
                         fontSize: 16,
-                        color: AppColors.lightText,
+                        color: AppColors.lightText.withValues(alpha: 0.8),
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 48),
+                    _buildPlayerCountSelector(),
+                    const SizedBox(height: 24),
+                    _buildPlayerList(),
+                    const SizedBox(height: 32),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: _startGame,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryAction,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: const Text(
+                          'START GAME',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextButton(
+                      onPressed: _showTutorial,
+                      child: const Text(
+                        'How to Play',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: AppColors.lightText,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
