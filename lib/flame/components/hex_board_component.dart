@@ -30,7 +30,7 @@ class HexBoardComponent extends PositionComponent {
       final cell = entry.value;
       final herd = board.getHerdAt(pos);
 
-      final pixelPos = _hexToPixel(pos, hexSize);
+      final pixelPos = hexToPixel(pos, hexSize);
       final cellComponent = HexCellComponent(
         cell: cell,
         herd: herd,
@@ -76,7 +76,7 @@ class HexBoardComponent extends PositionComponent {
     }
   }
 
-  Vector2 _hexToPixel(HexPosition hex, double size) {
+  Vector2 hexToPixel(HexPosition hex, double size) {
     final x = size * (sqrt(3) * hex.q + sqrt(3) / 2 * hex.r);
     final y = size * (3.0 / 2 * hex.r);
     return Vector2(x + size * 12, y + size * 12);

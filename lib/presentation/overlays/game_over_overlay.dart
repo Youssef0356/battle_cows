@@ -5,6 +5,7 @@ import '../../flame/battle_cows_game.dart';
 import '../../game/models/player.dart';
 import '../../game/models/player_color.dart';
 import '../../core/constants/colors.dart';
+import '../../ads/ad_manager.dart';
 
 class GameOverOverlay extends StatefulWidget {
   final BattleCowsGame game;
@@ -146,6 +147,8 @@ class _GameOverOverlayState extends State<GameOverOverlay>
                     ),
                   ),
                   const SizedBox(height: 20),
+                  _buildSecondChanceButton(),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(
@@ -153,8 +156,12 @@ class _GameOverOverlayState extends State<GameOverOverlay>
                           label: 'MENU',
                           color: AppColors.secondaryAction,
                           onPressed: () {
-                            widget.game.overlays.remove('GameOver');
-                            Navigator.of(context).pop();
+                            AdManager().showInterstitialAd(
+                              onAdDismissed: () {
+                                widget.game.overlays.remove('GameOver');
+                                Navigator.of(context).pop();
+                              },
+                            );
                           },
                         ),
                       ),
@@ -164,8 +171,12 @@ class _GameOverOverlayState extends State<GameOverOverlay>
                           label: 'REMATCH',
                           color: AppColors.primaryAction,
                           onPressed: () {
-                            widget.game.overlays.remove('GameOver');
-                            widget.game.rematch();
+                            AdManager().showInterstitialAd(
+                              onAdDismissed: () {
+                                widget.game.overlays.remove('GameOver');
+                                widget.game.rematch();
+                              },
+                            );
                           },
                         ),
                       ),
@@ -218,6 +229,59 @@ class _GameOverOverlayState extends State<GameOverOverlay>
             color: Colors.white,
             letterSpacing: 2,
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSecondChanceButton() {
+    return Container(
+      width: double.infinity,
+      height: 44,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.yellow,
+            AppColors.yellow.withValues(alpha: 0.7),
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white, width: 2),
+      ),
+      child: ElevatedButton(
+        onPressed: () {
+          AdManager().showRewardedAd(
+            onUserEarnedReward: (reward) {
+              Navigator.of(context).pop();
+              widget.game.overlays.remove('GameOver');
+              widget.game.rematch();
+            },
+          );
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          padding: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.play_arrow, color: Colors.black, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              'WATCH AD FOR SECOND CHANCE',
+              style: GoogleFonts.bangers(
+                fontSize: 14,
+                color: Colors.black,
+                letterSpacing: 1.5,
+              ),
+            ),
+          ],
         ),
       ),
     );

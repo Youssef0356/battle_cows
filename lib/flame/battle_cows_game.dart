@@ -1,6 +1,7 @@
 import 'dart:async' as async;
 import 'dart:math';
 import 'package:flame/game.dart';
+import 'package:flutter/painting.dart';
 import '../game/models/hex_position.dart';
 import '../game/models/move.dart';
 import '../game/models/player.dart';
@@ -10,8 +11,10 @@ import '../game/models/player_color.dart';
 import '../game/logic/game_engine.dart';
 import '../game/board/board_generator.dart';
 import '../game/ai/ai_player.dart';
+import '../core/constants/colors.dart';
 import 'components/hex_board_component.dart';
 import 'components/background_component.dart';
+import 'components/move_animation_component.dart';
 import 'audio_manager.dart';
 
 class BattleCowsGame extends FlameGame {
@@ -26,11 +29,10 @@ class BattleCowsGame extends FlameGame {
 
   HexPosition? selectedPosition;
   List<HexPosition> validMoves = [];
-  Move? selectedMove;
-  int splitCount = 1;
   int timeRemaining = 30;
   bool _timerRunning = false;
   async.Timer? _gameTimer;
+  bool _isAnimating = false;
 
   PlayerColor? winner;
   Map<PlayerColor, int> territoryCounts = {};
@@ -39,6 +41,7 @@ class BattleCowsGame extends FlameGame {
 
   final void Function()? onStateChanged;
   final void Function(PlayerColor? winner, Map<PlayerColor, int> scores)? onGameOver;
+  final void Function()? onTimeUp;
 
   BattleCowsGame({
     required this.players,
@@ -47,9 +50,11 @@ class BattleCowsGame extends FlameGame {
     this.boardSize = 7,
     this.onStateChanged,
     this.onGameOver,
+    this.onTimeUp,
   });
 
   GameEngine get engine => _engine;
+  bool get isAnimating => _isAnimating;
 
   @override
   Future<void> onLoad() async {
@@ -71,8 +76,7 @@ class BattleCowsGame extends FlameGame {
     winner = null;
     selectedPosition = null;
     validMoves = [];
-    selectedMove = null;
-    splitCount = 1;
+    _isAnimating = false;
 
     if (tiles != null && tiles!.isNotEmpty) {
       final board = BoardGenerator.generateFromTiles(tiles!, players, herdSize);
@@ -175,9 +179,18 @@ class BattleCowsGame extends FlameGame {
 
     if (_engine.currentPlayer.isAi) return;
 
+    onTimeUp?.call();
+  }
+
+  void addExtraTime(int seconds) {
+    timeRemaining += seconds;
+    _startTimer();
+  }
+
+  void autoPlayMove() {
     final moves = _engine.getValidMoves(_engine.currentPlayer.color);
     if (moves.isNotEmpty) {
-      executeMove(moves.first);
+      _executeWithAnimation(moves.first);
     } else {
       nextTurn();
     }
@@ -189,8 +202,6 @@ class BattleCowsGame extends FlameGame {
     timeRemaining = 30;
     selectedPosition = null;
     validMoves = [];
-    selectedMove = null;
-    splitCount = 1;
 
     _boardComponent?.updateSelection(null, []);
 
@@ -213,7 +224,7 @@ class BattleCowsGame extends FlameGame {
       if (isGameOver) return;
       final move = _aiPlayer.calculateMove(_engine, _engine.currentPlayer.color);
       if (move != null) {
-        executeMove(move);
+        _executeWithAnimation(move);
       } else {
         nextTurn();
       }
@@ -221,7 +232,7 @@ class BattleCowsGame extends FlameGame {
   }
 
   void onCellTapped(HexPosition position) {
-    if (_engine.currentPlayer.isAi || isGameOver) return;
+    if (_engine.currentPlayer.isAi || isGameOver || _isAnimating) return;
 
     final herd = _engine.board?.getHerdAt(position);
 
@@ -231,71 +242,67 @@ class BattleCowsGame extends FlameGame {
         validMoves = _engine.board!.getReachablePositions(position, herd.size)
             .where((p) => _engine.board!.isEmpty(p))
             .toList();
+        AudioManager().playSelect();
       }
     } else {
       if (validMoves.contains(position)) {
         final h = _engine.board!.getHerdAt(selectedPosition!);
         if (h != null) {
-          selectedMove = Move(
+          final move = Move(
             from: selectedPosition!,
             to: position,
             splitCount: 1,
             stayCount: h.size - 1,
             player: _engine.currentPlayer.color,
           );
-          splitCount = 1;
-          AudioManager().playSelect();
+          _executeWithAnimation(move);
+          return;
         }
-      } else {
-        selectedPosition = null;
-        validMoves = [];
-        selectedMove = null;
       }
+      selectedPosition = null;
+      validMoves = [];
     }
 
     _boardComponent?.updateSelection(selectedPosition, validMoves);
     onStateChanged?.call();
   }
 
-  void onSplitChanged(int value) {
-    splitCount = value;
-    if (selectedMove != null && selectedPosition != null) {
-      final herd = _engine.board!.getHerdAt(selectedPosition!);
-      if (herd != null) {
-        selectedMove = Move(
-          from: selectedMove!.from,
-          to: selectedMove!.to,
-          splitCount: value,
-          stayCount: herd.size - value,
-          player: _engine.currentPlayer.color,
-        );
-      }
-    }
+  void _executeWithAnimation(Move move) {
+    _isAnimating = true;
+    _timerRunning = false;
+    _gameTimer?.cancel();
     onStateChanged?.call();
-  }
 
-  void confirmMove() {
-    if (selectedMove == null || selectedPosition == null) return;
+    final fromPos = move.from;
+    final toPos = move.to;
+    final herd = _engine.board?.getHerdAt(fromPos);
+    if (herd == null) {
+      _isAnimating = false;
+      executeMove(move);
+      return;
+    }
 
-    final herd = _engine.board!.getHerdAt(selectedPosition!);
-    if (herd == null) return;
+    final hexSize = _boardComponent!.size.x / 20;
+    final fromPixel = _boardComponent!.hexToPixel(fromPos, hexSize) + _boardComponent!.position;
+    final toPixel = _boardComponent!.hexToPixel(toPos, hexSize) + _boardComponent!.position;
 
-    final move = Move(
-      from: selectedMove!.from,
-      to: selectedMove!.to,
-      splitCount: splitCount,
-      stayCount: herd.size - splitCount,
-      player: _engine.currentPlayer.color,
+    final animComponent = MoveAnimationComponent(
+      from: fromPixel,
+      to: toPixel,
+      count: move.splitCount,
+      color: AppColors.getPlayerPrimary(herd.owner),
+      onComplete: () {
+        _isAnimating = false;
+        executeMove(move);
+      },
     );
-
-    executeMove(move);
+    add(animComponent);
   }
 
   void executeMove(Move move) {
     _engine.executeMove(move);
     selectedPosition = null;
     validMoves = [];
-    selectedMove = null;
     _updateCounts();
     _boardComponent?.updateBoard(_engine.board!);
     AudioManager().playMove();
@@ -305,7 +312,6 @@ class BattleCowsGame extends FlameGame {
   void cancelMove() {
     selectedPosition = null;
     validMoves = [];
-    selectedMove = null;
     _boardComponent?.updateSelection(null, []);
     onStateChanged?.call();
   }

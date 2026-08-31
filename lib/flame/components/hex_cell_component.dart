@@ -51,7 +51,7 @@ class HexCellComponent extends PositionComponent with TapCallbacks {
     }
 
     if (herd != null && herd!.size > 0) {
-      _drawCoinStack(canvas, center, hexRadius);
+      _drawCowStack(canvas, center, hexRadius);
     }
   }
 
@@ -188,27 +188,65 @@ class HexCellComponent extends PositionComponent with TapCallbacks {
     canvas.drawPath(path, movePaint);
   }
 
-  void _drawCoinStack(Canvas canvas, Vector2 center, double radius) {
+  void _drawCowStack(Canvas canvas, Vector2 center, double radius) {
     final herdSize = herd!.size;
     final playerColor = AppColors.getPlayerPrimary(herd!.owner);
     final playerDark = AppColors.getPlayerDark(herd!.owner);
 
-    final coinRadius = radius * 0.38;
-    final coinSpacing = radius * 0.22;
-    final totalHeight = coinRadius + (herdSize - 1) * coinSpacing;
+    final displayCount = min(herdSize, 5);
+    final coinRadius = radius * 0.35;
+    final coinSpacing = radius * 0.2;
+    final totalHeight = coinRadius * 2 + (displayCount - 1) * coinSpacing;
     final startY = center.y + totalHeight / 2 - coinRadius;
 
-    for (int i = herdSize - 1; i >= 0; i--) {
+    for (int i = displayCount - 1; i >= 0; i--) {
       final coinCenter = Offset(
         center.x,
         startY - i * coinSpacing,
       );
-      _drawSingleCoin(canvas, coinCenter, coinRadius, playerColor, playerDark);
+      _drawSingleCow(canvas, coinCenter, coinRadius, playerColor, playerDark, i == 0);
+    }
+
+    if (herdSize > 1) {
+      final textPainter = TextPainter(
+        text: TextSpan(
+          text: '$herdSize',
+          style: TextStyle(
+            fontSize: coinRadius * 1.1,
+            fontWeight: FontWeight.w900,
+            color: Colors.white,
+            shadows: [
+              Shadow(
+                color: Colors.black.withValues(alpha: 0.6),
+                offset: const Offset(1, 1),
+                blurRadius: 2,
+              ),
+            ],
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      );
+      textPainter.layout();
+      textPainter.paint(
+        canvas,
+        Offset(
+          center.x - textPainter.width / 2,
+          center.y - textPainter.height / 2 - (displayCount - 1) * coinSpacing / 2,
+        ),
+      );
     }
   }
 
-  void _drawSingleCoin(Canvas canvas, Offset center, double radius, Color faceColor, Color edgeColor) {
-    final edgeHeight = radius * 0.3;
+  void _drawSingleCow(Canvas canvas, Offset center, double radius, Color faceColor, Color edgeColor, bool isBottom) {
+    final edgeHeight = radius * 0.25;
+
+    final shadowPaint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.3)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+    canvas.drawOval(
+      Rect.fromCircle(center: Offset(center.dx + 2, center.dy + edgeHeight + 2), radius: radius),
+      shadowPaint,
+    );
 
     final edgePath = Path()
       ..addOval(Rect.fromCircle(center: Offset(center.dx, center.dy + edgeHeight), radius: radius))
@@ -220,7 +258,7 @@ class HexCellComponent extends PositionComponent with TapCallbacks {
     final faceGradient = RadialGradient(
       center: const Alignment(-0.3, -0.3),
       colors: [
-        _lightenColor(faceColor, 0.3),
+        _lightenColor(faceColor, 0.35),
         faceColor,
         _darkenColor(faceColor, 0.2),
       ],
@@ -233,23 +271,13 @@ class HexCellComponent extends PositionComponent with TapCallbacks {
     );
 
     final rimPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.3)
+      ..color = Colors.white.withValues(alpha: 0.4)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
 
     canvas.drawOval(
-      Rect.fromCircle(center: center, radius: radius * 0.85),
+      Rect.fromCircle(center: center, radius: radius * 0.82),
       rimPaint,
-    );
-
-    final innerDark = Paint()
-      ..color = _darkenColor(faceColor, 0.15)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
-
-    canvas.drawOval(
-      Rect.fromCircle(center: center, radius: radius * 0.7),
-      innerDark,
     );
 
     final highlightPaint = Paint()
@@ -257,50 +285,15 @@ class HexCellComponent extends PositionComponent with TapCallbacks {
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: [
-          Colors.white.withValues(alpha: 0.25),
+          Colors.white.withValues(alpha: 0.35),
           Colors.white.withValues(alpha: 0.0),
         ],
       ).createShader(Rect.fromCircle(center: center, radius: radius));
 
     canvas.drawOval(
-      Rect.fromCircle(center: center, radius: radius * 0.9),
+      Rect.fromCircle(center: center, radius: radius * 0.88),
       highlightPaint,
     );
-
-    if (herd!.size > 1) {
-      final cowIcon = _getHerdIcon();
-      final iconPainter = TextPainter(
-        text: TextSpan(
-          text: cowIcon,
-          style: TextStyle(
-            fontSize: radius * 0.9,
-            color: _darkenColor(faceColor, 0.3),
-          ),
-        ),
-        textDirection: TextDirection.ltr,
-      );
-      iconPainter.layout();
-      iconPainter.paint(
-        canvas,
-        Offset(
-          center.dx - iconPainter.width / 2,
-          center.dy - iconPainter.height / 2,
-        ),
-      );
-    }
-  }
-
-  String _getHerdIcon() {
-    switch (herd!.owner) {
-      case PlayerColor.blue:
-        return '\u2740';
-      case PlayerColor.red:
-        return '\u2741';
-      case PlayerColor.yellow:
-        return '\u2742';
-      case PlayerColor.purple:
-        return '\u2743';
-    }
   }
 
   Color _lightenColor(Color color, double amount) {
