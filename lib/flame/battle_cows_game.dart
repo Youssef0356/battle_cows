@@ -12,6 +12,7 @@ import '../game/board/board_generator.dart';
 import '../game/ai/ai_player.dart';
 import 'components/hex_board_component.dart';
 import 'components/background_component.dart';
+import 'audio_manager.dart';
 
 class BattleCowsGame extends FlameGame {
   final List<Player> players;
@@ -53,6 +54,7 @@ class BattleCowsGame extends FlameGame {
   @override
   Future<void> onLoad() async {
     await super.onLoad();
+    await AudioManager().init();
     _aiPlayer = AiPlayer();
     _initializeGame();
 
@@ -157,6 +159,9 @@ class BattleCowsGame extends FlameGame {
         return;
       }
       timeRemaining--;
+      if (timeRemaining <= 5 && timeRemaining > 0) {
+        AudioManager().playTick();
+      }
       if (timeRemaining <= 0) {
         _handleTimeUp();
       }
@@ -239,6 +244,7 @@ class BattleCowsGame extends FlameGame {
             player: _engine.currentPlayer.color,
           );
           splitCount = 1;
+          AudioManager().playSelect();
         }
       } else {
         selectedPosition = null;
@@ -292,6 +298,7 @@ class BattleCowsGame extends FlameGame {
     selectedMove = null;
     _updateCounts();
     _boardComponent?.updateBoard(_engine.board!);
+    AudioManager().playMove();
     nextTurn();
   }
 
@@ -319,6 +326,7 @@ class BattleCowsGame extends FlameGame {
     isGameOver = true;
     winner = _engine.determineWinner();
     _updateCounts();
+    AudioManager().playGameOver();
     onGameOver?.call(winner, territoryCounts);
     onStateChanged?.call();
   }
