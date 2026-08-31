@@ -38,7 +38,6 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
 
   late AnimationController _dropAnimController;
   late Animation<double> _dropScaleAnimation;
-  late Animation<double> _dropBounceAnimation;
   bool _showDropAnim = false;
   List<HexPosition> _dropAnimatingHexes = [];
 
@@ -55,9 +54,6 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
     );
     _dropScaleAnimation = Tween<double>(begin: 1.5, end: 1.0).animate(
       CurvedAnimation(parent: _dropAnimController, curve: Curves.elasticOut),
-    );
-    _dropBounceAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _dropAnimController, curve: Curves.easeOutBack),
     );
   }
 

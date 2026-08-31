@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:battle_cows/game/models/hex_position.dart';
 import 'package:battle_cows/game/models/pasture_tile.dart';
-import 'package:battle_cows/game/models/herd.dart';
 import 'package:battle_cows/game/models/game_board.dart';
 import 'package:battle_cows/game/models/move.dart';
 import 'package:battle_cows/game/logic/game_engine.dart';

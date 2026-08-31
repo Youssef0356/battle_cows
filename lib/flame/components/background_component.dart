@@ -15,7 +15,12 @@ class BackgroundComponent extends PositionComponent {
   @override
   Future<void> onLoad() async {
     try {
-      final data = await rootBundle.load('assets/images/Background/Background.jpg');
+      ByteData data;
+      try {
+        data = await rootBundle.load('assets/images/Background/Table image.jpg');
+      } catch (_) {
+        data = await rootBundle.load('assets/images/Background/Background.jpg');
+      }
       final bytes = data.buffer.asUint8List();
       final codec = await ui.instantiateImageCodec(bytes);
       final frame = await codec.getNextFrame();

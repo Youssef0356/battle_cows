@@ -1,6 +1,7 @@
 import 'dart:async' as async;
 import 'dart:math';
 import 'package:flame/game.dart';
+import 'package:flame/components.dart';
 import '../game/models/hex_position.dart';
 import '../game/models/move.dart';
 import '../game/models/player.dart';

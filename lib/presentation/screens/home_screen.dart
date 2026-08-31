@@ -122,80 +122,39 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildLogo() {
-    return Column(
-      children: [
-        Image.asset(
-          'assets/images/Background/Logo.png',
-          width: 120,
-          height: 120,
-          fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) {
-            return Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.15),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 2),
-              ),
-              child: const Center(
-                child: Text('\ud83d\udc2e', style: TextStyle(fontSize: 60)),
-              ),
-            );
-          },
-        ),
-        const SizedBox(height: 12),
-        Image.asset(
-          'assets/images/Background/Title Text.png',
-          width: 280,
-          fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) {
-            return Column(
-              children: [
-                Text(
-                  'BATTLE',
-                  style: GoogleFonts.bangers(
-                    fontSize: 48,
-                    color: Colors.white,
-                    letterSpacing: 4,
-                    shadows: [
-                      Shadow(
-                        color: Colors.black.withValues(alpha: 0.5),
-                        offset: const Offset(2, 2),
-                        blurRadius: 4,
-                      ),
-                    ],
-                  ),
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 320, maxHeight: 260),
+      child: Image.asset(
+        'assets/images/Background/Logo.png',
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) {
+          return Column(
+            children: [
+              Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.15),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 2),
                 ),
-                Text(
-                  'COWS',
-                  style: GoogleFonts.bangers(
-                    fontSize: 56,
-                    color: const Color(0xFFFFECB3),
-                    letterSpacing: 6,
-                    shadows: [
-                      Shadow(
-                        color: Colors.black.withValues(alpha: 0.5),
-                        offset: const Offset(3, 3),
-                        blurRadius: 6,
-                      ),
-                    ],
-                  ),
+                child: const Center(
+                  child: Text('\ud83d\udc2e', style: TextStyle(fontSize: 50)),
                 ),
-              ],
-            );
-          },
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Claim the pasture, outsmart your rivals!',
-          style: GoogleFonts.bangers(
-            fontSize: 16,
-            color: Colors.white.withValues(alpha: 0.85),
-            letterSpacing: 1.5,
-          ),
-        ),
-      ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'BATTLE COWS',
+                style: GoogleFonts.bangers(
+                  fontSize: 42,
+                  color: Colors.white,
+                  letterSpacing: 4,
+                ),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 

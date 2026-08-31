@@ -1,4 +1,6 @@
 import 'dart:math';
+import 'dart:ui' as ui;
+import 'package:flutter/services.dart';
 import 'package:flame/components.dart';
 import '../../game/models/hex_position.dart';
 import '../../game/models/game_board.dart';
@@ -10,6 +12,7 @@ class HexBoardComponent extends PositionComponent {
   HexPosition? _selectedPosition;
   List<HexPosition> _validMoves = [];
   double _pulseTime = 0;
+  ui.Image? _texture;
   final void Function(HexPosition)? onCellTap;
 
   HexBoardComponent({
@@ -23,6 +26,14 @@ class HexBoardComponent extends PositionComponent {
 
   @override
   Future<void> onLoad() async {
+    try {
+      final data = await rootBundle.load('assets/images/Tile Image/Tile Texture.png');
+      final bytes = data.buffer.asUint8List();
+      final codec = await ui.instantiateImageCodec(bytes);
+      final frame = await codec.getNextFrame();
+      _texture = frame.image;
+    } catch (_) {}
+
     final hexSize = size.x / 14;
 
     for (final entry in board.cells.entries) {
@@ -37,6 +48,7 @@ class HexBoardComponent extends PositionComponent {
         position: pixelPos,
         size: Vector2.all(hexSize * 2),
         flipMode: HexCellComponent.getFlipMode(pos.q, pos.r),
+        texture: _texture,
         onTapCallback: () => onCellTap?.call(pos),
       );
 

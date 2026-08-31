@@ -11,24 +11,21 @@ All 3D models should be placed in `assets/models/` and referenced through `lib/a
 ```text
 assets/
   models/
-    cow_blue.glb
-    cow_red.glb
-    cow_neutral.glb
-    hex_grass.glb
-    hex_blocked.glb
+    Cow Pawn .glb
     fence.glb
+    flower.glb
     rock.glb
-    flowers.glb
-    table.glb
   images/
-    logo.png
-    avatar_cow.png
+    Background/
+      Background.jpg
+      Logo.png
+      Table image.jpg
+      Title Text.png
+    Tile Image/
+      Grass Texture.jpg
+      Tile Texture.png
   sounds/
-    tap.mp3
-    select.mp3
-    move.mp3
-    victory.mp3
-    defeat.mp3
+    README.md
 ```
 
 ---

@@ -1,6 +1,5 @@
 import 'dart:math';
 import '../models/hex_position.dart';
-import '../models/hex_cell.dart';
 import '../models/herd.dart';
 import '../models/pasture_tile.dart';
 import '../models/game_board.dart';

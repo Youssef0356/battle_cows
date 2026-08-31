@@ -48,7 +48,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   late AnimationController _turnTransitionController;
   late Animation<double> _turnFadeAnimation;
   late Animation<Offset> _turnSlideAnimation;
-  PlayerColor? _previousPlayerColor;
 
   Move? _animatingMove;
   late AnimationController _coinSlideController;
@@ -100,7 +99,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   void _initializeGame() {
-    _previousPlayerColor = null;
     _engine = GameEngine();
 
     if (widget.tiles != null && widget.tiles!.isNotEmpty) {
@@ -179,8 +177,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _selectedPosition = null;
     _validMoves = [];
     _selectedMove = null;
-
-    _previousPlayerColor = _engine.currentPlayer.color;
 
     setState(() {});
 

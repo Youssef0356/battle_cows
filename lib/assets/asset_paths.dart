@@ -5,20 +5,20 @@ class AssetPaths {
   static const String soundsPath = 'assets/sounds';
 
   // 3D Models (GLB)
-  static const String cowBlueModel = '$modelsPath/cow_blue.glb';
-  static const String cowRedModel = '$modelsPath/cow_red.glb';
-  static const String cowNeutralModel = '$modelsPath/cow_neutral.glb';
-  static const String hexGrassModel = '$modelsPath/hex_grass.glb';
-  static const String hexBlockedModel = '$modelsPath/hex_blocked.glb';
+  static const String cowPawnModel = '$modelsPath/Cow Pawn .glb';
   static const String fenceModel = '$modelsPath/fence.glb';
+  static const String flowerModel = '$modelsPath/flower.glb';
   static const String rockModel = '$modelsPath/rock.glb';
-  static const String flowersModel = '$modelsPath/flowers.glb';
-  static const String tableModel = '$modelsPath/table.glb';
 
-  // UI Images
-  static const String logo = '$imagesPath/logo.png';
-  static const String avatarCow = '$imagesPath/avatar_cow.png';
-  static const String tableWoodTexture = '$imagesPath/table_wood.png';
+  // Background & UI Images
+  static const String background = '$imagesPath/Background/Background.jpg';
+  static const String tableImage = '$imagesPath/Background/Table image.jpg';
+  static const String logo = '$imagesPath/Background/Logo.png';
+  static const String titleText = '$imagesPath/Background/Title Text.png';
+
+  // Tile & Pasture Textures
+  static const String grassTexture = '$imagesPath/Tile Image/Grass Texture.jpg';
+  static const String tileTexture = '$imagesPath/Tile Image/Tile Texture.png';
 
   // Sounds
   static const String soundTap = 'sounds/tap.mp3';

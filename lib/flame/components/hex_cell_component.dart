@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:ui' as ui;
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +14,7 @@ class HexCellComponent extends PositionComponent with TapCallbacks {
   bool isValidMove;
   double pulseValue;
   final int flipMode;
+  final ui.Image? texture;
   final void Function()? onTapCallback;
 
   HexCellComponent({
@@ -24,6 +26,7 @@ class HexCellComponent extends PositionComponent with TapCallbacks {
     required super.position,
     required super.size,
     this.flipMode = 0,
+    this.texture,
     this.onTapCallback,
   }) : super(anchor: Anchor.center);
 
@@ -135,7 +138,9 @@ class HexCellComponent extends PositionComponent with TapCallbacks {
     canvas.save();
     canvas.clipPath(path);
 
-    if (cell.isObstacle) {
+    if (texture != null && !cell.isObstacle) {
+      _drawTexture(canvas, center, radius);
+    } else if (cell.isObstacle) {
       canvas.drawPath(path, Paint()..color = AppColors.obstacle);
     } else if (herd != null && herd!.size > 0) {
       canvas.drawPath(path, Paint()..color = AppColors.getPlayerPrimary(herd!.owner));
@@ -145,10 +150,41 @@ class HexCellComponent extends PositionComponent with TapCallbacks {
     }
 
     if (herd != null && herd!.size > 0) {
-      final tint = AppColors.getPlayerPrimary(herd!.owner).withValues(alpha: 0.35);
+      final tint = AppColors.getPlayerPrimary(herd!.owner).withValues(alpha: texture != null ? 0.35 : 0.45);
       canvas.drawPath(path, Paint()..color = tint);
     }
 
+    canvas.restore();
+  }
+
+  void _drawTexture(Canvas canvas, Vector2 center, double radius) {
+    if (texture == null) return;
+
+    final imgSize = radius * 2.0;
+    final src = Rect.fromLTWH(0, 0, texture!.width.toDouble(), texture!.height.toDouble());
+    final dst = Rect.fromLTWH(
+      center.x - radius,
+      center.y - radius,
+      imgSize,
+      imgSize,
+    );
+
+    canvas.save();
+    if (flipMode == 1) {
+      canvas.translate(center.x, center.y);
+      canvas.scale(-1, 1);
+      canvas.translate(-center.x, -center.y);
+    } else if (flipMode == 2) {
+      canvas.translate(center.x, center.y);
+      canvas.scale(1, -1);
+      canvas.translate(-center.x, -center.y);
+    } else if (flipMode == 3) {
+      canvas.translate(center.x, center.y);
+      canvas.scale(-1, -1);
+      canvas.translate(-center.x, -center.y);
+    }
+
+    canvas.drawImageRect(texture!, src, dst, Paint()..filterQuality = FilterQuality.medium);
     canvas.restore();
   }
 

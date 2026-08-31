@@ -124,7 +124,6 @@ class _HexPainter extends CustomPainter {
         center.dx + radius * cos(angle),
         center.dy + radius * sin(angle),
       );
-      final bottomPoint = Offset(topPoint.dx, topPoint.dy + depthOffset);
 
       if (i == 0) {
         sidePath.moveTo(topPoint.dx, topPoint.dy);

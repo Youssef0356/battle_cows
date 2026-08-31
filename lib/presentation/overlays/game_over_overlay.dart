@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../flame/battle_cows_game.dart';
 import '../../game/models/player.dart';
-import '../../game/models/player_color.dart';
 import '../../core/constants/colors.dart';
 import '../../ads/ad_manager.dart';
 
