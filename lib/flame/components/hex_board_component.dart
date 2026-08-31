@@ -10,11 +10,13 @@ class HexBoardComponent extends PositionComponent {
   HexPosition? _selectedPosition;
   List<HexPosition> _validMoves = [];
   double _pulseTime = 0;
+  final void Function(HexPosition)? onCellTap;
 
   HexBoardComponent({
     required this.board,
     required super.position,
     required super.size,
+    this.onCellTap,
   });
 
   Map<HexPosition, HexCellComponent> get cells => _cells;
@@ -35,6 +37,7 @@ class HexBoardComponent extends PositionComponent {
         position: pixelPos,
         size: Vector2.all(hexSize * 2),
         flipMode: HexCellComponent.getFlipMode(pos.q, pos.r),
+        onTapCallback: () => onCellTap?.call(pos),
       );
 
       _cells[pos] = cellComponent;

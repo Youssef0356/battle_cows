@@ -14,6 +14,7 @@ class HexCellComponent extends PositionComponent with TapCallbacks {
   bool isValidMove;
   double pulseValue;
   final int flipMode;
+  final void Function()? onTapCallback;
 
   HexCellComponent({
     required this.cell,
@@ -24,6 +25,7 @@ class HexCellComponent extends PositionComponent with TapCallbacks {
     required super.position,
     required super.size,
     this.flipMode = 0,
+    this.onTapCallback,
   }) : super(anchor: Anchor.center);
 
   @override
@@ -312,7 +314,9 @@ class HexCellComponent extends PositionComponent with TapCallbacks {
   }
 
   @override
-  void onTapDown(TapDownEvent event) {}
+  void onTapDown(TapDownEvent event) {
+    onTapCallback?.call();
+  }
 
   static int getFlipMode(int q, int r) {
     return (q * 7 + r * 13 + q * r * 3).abs() % 4;

@@ -94,6 +94,7 @@ class BattleCowsGame extends FlameGame {
       board: _engine.board!,
       position: Vector2(size.x / 2, size.y / 2 - 50),
       size: Vector2(boardSize, boardSize),
+      onCellTap: (pos) => onCellTapped(pos),
     );
     world.add(_boardComponent!);
 
