@@ -59,13 +59,14 @@ class BattleCowsGame extends FlameGame {
     await super.onLoad();
     await AudioManager().init();
     _aiPlayer = AiPlayer();
-    _initializeGame();
 
     final bg = BackgroundComponent(
       position: Vector2.zero(),
       size: Vector2(size.x, size.y),
     );
-    world.add(bg);
+    camera.backdrop.add(bg);
+
+    _initializeGame();
   }
 
   void _initializeGame() {
@@ -96,11 +97,14 @@ class BattleCowsGame extends FlameGame {
     final boardSize = _calculateBoardSize();
     _boardComponent = HexBoardComponent(
       board: _engine.board!,
-      position: Vector2(size.x / 2, size.y / 2),
+      position: Vector2.zero(),
       size: Vector2(boardSize, boardSize),
       onCellTap: (pos) => onCellTapped(pos),
     );
     world.add(_boardComponent!);
+
+    camera.viewfinder.position = Vector2.zero();
+    camera.viewfinder.anchor = Anchor.center;
 
     onStateChanged?.call();
   }
@@ -125,8 +129,8 @@ class BattleCowsGame extends FlameGame {
       if (y > maxY) maxY = y;
     }
 
-    final width = maxX - minX + hexSize * 4;
-    final height = maxY - minY + hexSize * 4;
+    final width = maxX - minX + hexSize * 6;
+    final height = maxY - minY + hexSize * 6;
     return max(width, height);
   }
 
@@ -286,9 +290,9 @@ class BattleCowsGame extends FlameGame {
       return;
     }
 
-    final hexSize = _boardComponent!.size.x / 20;
-    final fromPixel = _boardComponent!.hexToPixel(fromPos, hexSize) + _boardComponent!.position;
-    final toPixel = _boardComponent!.hexToPixel(toPos, hexSize) + _boardComponent!.position;
+    final hexSize = _boardComponent!.size.x / 14;
+    final fromPixel = _boardComponent!.hexToPixel(fromPos, hexSize);
+    final toPixel = _boardComponent!.hexToPixel(toPos, hexSize);
 
     final animComponent = MoveAnimationComponent(
       from: fromPixel,
