@@ -2,7 +2,7 @@ import '../models/game_board.dart';
 import '../models/herd.dart';
 import '../models/move.dart';
 import '../models/player.dart';
-import '../../core/constants/colors.dart';
+import '../models/player_color.dart';
 
 class GameEngine {
   GameBoard? _board;

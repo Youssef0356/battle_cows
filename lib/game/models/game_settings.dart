@@ -1,4 +1,4 @@
-import '../../core/constants/colors.dart';
+import 'player_color.dart';
 
 class GameSettings {
   final int playerCount;

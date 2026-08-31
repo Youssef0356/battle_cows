@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../game/models/player_color.dart';
+export '../../game/models/player_color.dart' show PlayerColor;
 
 class AppColors {
   // Team Colors
@@ -83,5 +85,3 @@ class AppColors {
     }
   }
 }
-
-enum PlayerColor { blue, red, yellow, purple }

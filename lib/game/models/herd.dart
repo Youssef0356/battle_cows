@@ -1,5 +1,5 @@
 import 'hex_position.dart';
-import '../../core/constants/colors.dart';
+import 'player_color.dart';
 
 class Herd {
   final HexPosition position;

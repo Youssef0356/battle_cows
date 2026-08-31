@@ -1,6 +1,6 @@
 import '../models/game_board.dart';
 import '../models/player.dart';
-import '../../core/constants/colors.dart';
+import '../models/player_color.dart';
 
 class TerritoryCounter {
   static Map<PlayerColor, int> countTerritory(GameBoard board, List<Player> players) {

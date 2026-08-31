@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../screens/home_screen.dart';
-import '../screens/game_screen.dart';
+import '../screens/flame_game_screen.dart';
 import '../screens/tutorial_screen.dart';
 import '../screens/result_screen.dart';
 import '../screens/tile_placement_screen.dart';
@@ -23,7 +23,7 @@ class AppRouter {
         final herdSize = args?['herdSize'] as int? ?? 16;
         final boardSize = args?['boardSize'] as int? ?? 7;
         return MaterialPageRoute(
-          builder: (_) => GameScreen(
+          builder: (_) => FlameGameScreen(
             players: players,
             tiles: tiles,
             herdSize: herdSize,

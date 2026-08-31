@@ -2,7 +2,7 @@ import 'dart:math';
 import '../models/hex_position.dart';
 import '../models/move.dart';
 import '../logic/game_engine.dart';
-import '../../core/constants/colors.dart';
+import '../models/player_color.dart';
 
 enum Difficulty { easy, medium, hard }
 
