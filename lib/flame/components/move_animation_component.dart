@@ -18,7 +18,11 @@ class MoveAnimationComponent extends PositionComponent {
     required this.count,
     required this.color,
     required this.onComplete,
-  }) : super(position: from);
+  }) : super(
+          position: from,
+          size: Vector2(40, 40),
+          anchor: Anchor.center,
+        );
 
   @override
   void update(double dt) {

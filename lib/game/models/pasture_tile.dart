@@ -28,6 +28,15 @@ class PastureTile {
     );
   }
 
+  PastureTile rotate([int steps = 1]) {
+    var currentHexes = hexes;
+    final normalizedSteps = (steps % 6 + 6) % 6;
+    for (var s = 0; s < normalizedSteps; s++) {
+      currentHexes = currentHexes.map((h) => HexPosition(-h.r, h.q + h.r)).toList();
+    }
+    return PastureTile(id: id, hexes: currentHexes);
+  }
+
   bool sharesEdgeWith(List<HexPosition> boardHexes) {
     for (final hex in hexes) {
       for (final dir in HexPosition.directions) {

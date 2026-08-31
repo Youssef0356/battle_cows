@@ -21,7 +21,7 @@ class BoardGenerator {
       allHexes.addAll(tile.hexes);
     }
 
-    final outerHexes = _getOuterHexes(allHexes);
+    final outerHexes = getOuterHexes(allHexes);
     final startPositions = _selectStartingPositions(outerHexes, players.length);
 
     final herds = <Herd>[];
@@ -36,7 +36,7 @@ class BoardGenerator {
     return herds;
   }
 
-  static List<HexPosition> _getOuterHexes(List<HexPosition> allHexes) {
+  static List<HexPosition> getOuterHexes(List<HexPosition> allHexes) {
     final outer = <HexPosition>[];
     for (final hex in allHexes) {
       for (final dir in HexPosition.directions) {

@@ -14,6 +14,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   int _playerCount = 2;
+  int _tilesPerPlayer = 4;
   List<Player> _players = [];
   late AnimationController _animController;
   late Animation<double> _titleScale;
@@ -56,9 +57,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   void _startGame() {
     Navigator.pushNamed(
       context,
-      AppRouter.game,
+      AppRouter.tilePlacement,
       arguments: {
         'players': _players,
+        'tilesPerPlayer': _tilesPerPlayer,
       },
     );
   }
@@ -105,6 +107,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     ),
                     const SizedBox(height: 24),
                     _buildPlayerCountSelector(),
+                    const SizedBox(height: 16),
+                    _buildTileCountSelector(),
                     const SizedBox(height: 16),
                     _buildPlayerList(),
                     const SizedBox(height: 24),
@@ -209,6 +213,71 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         '$count',
                         style: GoogleFonts.bangers(
                           fontSize: 28,
+                          color: Colors.white,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTileCountSelector() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1),
+      ),
+      child: Column(
+        children: [
+          Text(
+            'PASTURE TILES PER PLAYER',
+            style: GoogleFonts.bangers(
+              fontSize: 18,
+              color: Colors.white,
+              letterSpacing: 2,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [3, 4, 5].map((count) {
+              final isSelected = _tilesPerPlayer == count;
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _tilesPerPlayer = count;
+                    });
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 58,
+                    height: 58,
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppColors.primaryAction
+                          : Colors.white.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.2),
+                        width: 2,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '$count',
+                        style: GoogleFonts.bangers(
+                          fontSize: 24,
                           color: Colors.white,
                           letterSpacing: 1,
                         ),

@@ -8,6 +8,7 @@ import '../../core/theme/game_button_styles.dart';
 import '../../game/models/hex_position.dart';
 import '../../game/models/pasture_tile.dart';
 import '../../game/board/board_builder.dart';
+import '../../game/board/board_generator.dart';
 import '../../game/models/player.dart';
 import '../router/app_router.dart';
 
@@ -90,8 +91,9 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
   }
 
   void _rotateTile() {
+    if (_currentTile == null) return;
     setState(() {
-      _generateNewTile();
+      _currentTile = _currentTile!.rotate(1);
     });
   }
 
@@ -135,6 +137,54 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
     do {
       _currentPlayerIndex = (_currentPlayerIndex + 1) % widget.players.length;
     } while (_tilesRemaining[_currentPlayerIndex] == 0 && !_allTilesPlaced);
+
+    if (!_allTilesPlaced && _currentPlayer.isAi) {
+      _scheduleAiPlacement();
+    }
+  }
+
+  void _scheduleAiPlacement() {
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (!mounted || _allTilesPlaced || !_currentPlayer.isAi) return;
+      _performAiTilePlacement();
+    });
+  }
+
+  void _performAiTilePlacement() {
+    final existing = _builder.placedHexes;
+    if (existing.isEmpty) {
+      _currentTile = PastureTile.diamond(_builder.placedTiles.length, const HexPosition(0, 0));
+      _tileOffset = const HexPosition(0, 0);
+      _tryPlaceTile();
+      return;
+    }
+
+    final outer = BoardGenerator.getOuterHexes(existing);
+    final random = Random();
+    final candidateOffsets = <HexPosition>[];
+    for (final hex in outer) {
+      for (final dir in HexPosition.directions) {
+        final pos = hex + dir;
+        if (!existing.contains(pos)) {
+          candidateOffsets.add(pos);
+        }
+      }
+    }
+    candidateOffsets.shuffle(random);
+
+    for (final offset in candidateOffsets) {
+      for (var rot = 0; rot < 6; rot++) {
+        final candidate = PastureTile.diamond(_builder.placedTiles.length, const HexPosition(0, 0))
+            .rotate(rot)
+            .translate(offset);
+        if (_builder.canPlace(candidate)) {
+          _currentTile = PastureTile.diamond(_builder.placedTiles.length, const HexPosition(0, 0)).rotate(rot);
+          _tileOffset = offset;
+          _tryPlaceTile();
+          return;
+        }
+      }
+    }
   }
 
   void _startGame() {

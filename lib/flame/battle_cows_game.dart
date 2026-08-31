@@ -28,6 +28,7 @@ class BattleCowsGame extends FlameGame {
 
   HexPosition? selectedPosition;
   List<HexPosition> validMoves = [];
+  int selectedSplitCount = 1;
   int timeRemaining = 30;
   bool _timerRunning = false;
   async.Timer? _gameTimer;
@@ -248,6 +249,7 @@ class BattleCowsGame extends FlameGame {
     if (selectedPosition == null) {
       if (herd != null && herd.owner == _engine.currentPlayer.color && herd.size >= 2) {
         selectedPosition = position;
+        selectedSplitCount = max(1, herd.size - 1);
         validMoves = _engine.board!.getReachablePositions(position, herd.size)
             .where((p) => _engine.board!.isEmpty(p))
             .toList();
@@ -257,11 +259,12 @@ class BattleCowsGame extends FlameGame {
       if (validMoves.contains(position)) {
         final h = _engine.board!.getHerdAt(selectedPosition!);
         if (h != null) {
+          final split = selectedSplitCount.clamp(1, max(1, h.size - 1)).toInt();
           final move = Move(
             from: selectedPosition!,
             to: position,
-            splitCount: 1,
-            stayCount: h.size - 1,
+            splitCount: split,
+            stayCount: h.size - split,
             player: _engine.currentPlayer.color,
           );
           _executeWithAnimation(move);
@@ -273,6 +276,21 @@ class BattleCowsGame extends FlameGame {
     }
 
     _boardComponent?.updateSelection(selectedPosition, validMoves);
+    onStateChanged?.call();
+  }
+
+  void setSplitCount(int count) {
+    if (selectedPosition == null) return;
+    final herd = _engine.board?.getHerdAt(selectedPosition!);
+    if (herd == null) return;
+    selectedSplitCount = count.clamp(1, max(1, herd.size - 1));
+    onStateChanged?.call();
+  }
+
+  void cancelMove() {
+    selectedPosition = null;
+    validMoves = [];
+    _boardComponent?.updateSelection(null, []);
     onStateChanged?.call();
   }
 
@@ -316,13 +334,6 @@ class BattleCowsGame extends FlameGame {
     _boardComponent?.updateBoard(_engine.board!);
     AudioManager().playMove();
     nextTurn();
-  }
-
-  void cancelMove() {
-    selectedPosition = null;
-    validMoves = [];
-    _boardComponent?.updateSelection(null, []);
-    onStateChanged?.call();
   }
 
   void _updateCounts() {
