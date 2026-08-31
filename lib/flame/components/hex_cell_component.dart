@@ -4,7 +4,6 @@ import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
 import '../../game/models/hex_cell.dart';
 import '../../game/models/herd.dart';
-import '../../game/models/player_color.dart';
 import '../../core/constants/colors.dart';
 
 class HexCellComponent extends PositionComponent with TapCallbacks {

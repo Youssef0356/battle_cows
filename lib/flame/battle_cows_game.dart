@@ -1,13 +1,11 @@
 import 'dart:async' as async;
 import 'dart:math';
 import 'package:flame/game.dart';
-import 'package:flutter/painting.dart';
 import '../game/models/hex_position.dart';
 import '../game/models/move.dart';
 import '../game/models/player.dart';
 import '../game/models/herd.dart';
 import '../game/models/pasture_tile.dart';
-import '../game/models/player_color.dart';
 import '../game/logic/game_engine.dart';
 import '../game/board/board_generator.dart';
 import '../game/ai/ai_player.dart';
@@ -98,7 +96,7 @@ class BattleCowsGame extends FlameGame {
     final boardSize = _calculateBoardSize();
     _boardComponent = HexBoardComponent(
       board: _engine.board!,
-      position: Vector2(size.x / 2, size.y / 2 - 50),
+      position: Vector2(size.x / 2, size.y / 2),
       size: Vector2(boardSize, boardSize),
       onCellTap: (pos) => onCellTapped(pos),
     );
@@ -117,7 +115,7 @@ class BattleCowsGame extends FlameGame {
     var minY = double.infinity;
     var maxY = double.negativeInfinity;
 
-    final hexSize = 20.0;
+    final hexSize = 30.0;
     for (final pos in cells.keys) {
       final x = hexSize * (sqrt(3) * pos.q + sqrt(3) / 2 * pos.r);
       final y = hexSize * (3.0 / 2 * pos.r);
@@ -142,8 +140,14 @@ class BattleCowsGame extends FlameGame {
       const HexPosition(0, -2),
       const HexPosition(2, -2),
       const HexPosition(-2, 2),
-      const HexPosition(3, -1),
-      const HexPosition(-3, 1),
+      const HexPosition(-2, -2),
+      const HexPosition(2, 2),
+      const HexPosition(4, 0),
+      const HexPosition(-4, 0),
+      const HexPosition(0, 4),
+      const HexPosition(0, -4),
+      const HexPosition(3, -3),
+      const HexPosition(-3, 3),
     ];
 
     for (var i = 0; i < offsets.length; i++) {

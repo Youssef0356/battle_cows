@@ -23,7 +23,7 @@ class HexBoardComponent extends PositionComponent {
 
   @override
   Future<void> onLoad() async {
-    final hexSize = size.x / 20;
+    final hexSize = size.x / 14;
 
     for (final entry in board.cells.entries) {
       final pos = entry.key;

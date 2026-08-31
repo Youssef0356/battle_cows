@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flame/game.dart';
-import 'package:flame/extensions.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../flame/battle_cows_game.dart';
 import '../../game/models/player.dart';
@@ -31,11 +31,11 @@ class FlameGameScreen extends StatefulWidget {
 
 class _FlameGameScreenState extends State<FlameGameScreen> {
   late BattleCowsGame _game;
-  Offset? _panStart;
 
   @override
   void initState() {
     super.initState();
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     AdManager().loadRewardedAd();
     _game = BattleCowsGame(
       players: widget.players,
@@ -54,6 +54,12 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
         if (mounted) _showTimeUpAdDialog();
       },
     );
+  }
+
+  @override
+  void dispose() {
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    super.dispose();
   }
 
   void _showTimeUpAdDialog() {
@@ -137,22 +143,7 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: GestureDetector(
-        onPanStart: (details) {
-          _panStart = details.localPosition;
-        },
-        onPanUpdate: (details) {
-          if (_panStart == null) return;
-          final delta = _panStart! - details.localPosition;
-          _game.camera.viewfinder.position += delta.toVector2();
-          _panStart = details.localPosition;
-        },
-        onPanEnd: (_) {
-          _panStart = null;
-        },
-        onPanCancel: () {
-          _panStart = null;
-        },
+      body: SafeArea(
         child: GameWidget(
           game: _game,
           overlayBuilderMap: {
