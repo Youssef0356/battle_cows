@@ -10,6 +10,8 @@ import '../game/models/player_color.dart';
 import '../game/logic/game_engine.dart';
 import '../game/board/board_generator.dart';
 import '../game/ai/ai_player.dart';
+import 'components/hex_board_component.dart';
+import 'components/background_component.dart';
 
 class BattleCowsGame extends FlameGame {
   final List<Player> players;
@@ -19,6 +21,7 @@ class BattleCowsGame extends FlameGame {
 
   late GameEngine _engine;
   late AiPlayer _aiPlayer;
+  HexBoardComponent? _boardComponent;
 
   HexPosition? selectedPosition;
   List<HexPosition> validMoves = [];
@@ -52,6 +55,12 @@ class BattleCowsGame extends FlameGame {
     await super.onLoad();
     _aiPlayer = AiPlayer();
     _initializeGame();
+
+    final bg = BackgroundComponent(
+      position: Vector2.zero(),
+      size: Vector2(size.x, size.y),
+    );
+    world.add(bg);
   }
 
   void _initializeGame() {
@@ -75,7 +84,45 @@ class BattleCowsGame extends FlameGame {
 
     _updateCounts();
     _startTimer();
+
+    if (_boardComponent != null) {
+      _boardComponent!.removeFromParent();
+    }
+
+    final boardSize = _calculateBoardSize();
+    _boardComponent = HexBoardComponent(
+      board: _engine.board!,
+      position: Vector2(size.x / 2, size.y / 2 - 50),
+      size: Vector2(boardSize, boardSize),
+    );
+    world.add(_boardComponent!);
+
     onStateChanged?.call();
+  }
+
+  double _calculateBoardSize() {
+    if (_engine.board == null) return 400;
+    final cells = _engine.board!.cells;
+    if (cells.isEmpty) return 400;
+
+    var minX = double.infinity;
+    var maxX = double.negativeInfinity;
+    var minY = double.infinity;
+    var maxY = double.negativeInfinity;
+
+    final hexSize = 20.0;
+    for (final pos in cells.keys) {
+      final x = hexSize * (sqrt(3) * pos.q + sqrt(3) / 2 * pos.r);
+      final y = hexSize * (3.0 / 2 * pos.r);
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+
+    final width = maxX - minX + hexSize * 4;
+    final height = maxY - minY + hexSize * 4;
+    return max(width, height);
   }
 
   List<PastureTile> _generateDefaultTiles() {
@@ -139,6 +186,8 @@ class BattleCowsGame extends FlameGame {
     selectedMove = null;
     splitCount = 1;
 
+    _boardComponent?.updateSelection(null, []);
+
     if (_engine.gameOver) {
       _handleGameOver();
       return;
@@ -197,6 +246,7 @@ class BattleCowsGame extends FlameGame {
       }
     }
 
+    _boardComponent?.updateSelection(selectedPosition, validMoves);
     onStateChanged?.call();
   }
 
@@ -240,6 +290,7 @@ class BattleCowsGame extends FlameGame {
     validMoves = [];
     selectedMove = null;
     _updateCounts();
+    _boardComponent?.updateBoard(_engine.board!);
     nextTurn();
   }
 
@@ -247,6 +298,7 @@ class BattleCowsGame extends FlameGame {
     selectedPosition = null;
     validMoves = [];
     selectedMove = null;
+    _boardComponent?.updateSelection(null, []);
     onStateChanged?.call();
   }
 
