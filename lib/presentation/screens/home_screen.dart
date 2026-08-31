@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/colors.dart';
-import '../../core/theme/game_button_styles.dart';
 import '../../game/models/player.dart';
 import '../router/app_router.dart';
 
@@ -12,11 +11,13 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   int _playerCount = 2;
   List<Player> _players = [];
   late AnimationController _animController;
   late Animation<double> _titleScale;
+  late AnimationController _cowAnimController;
+  late Animation<double> _cowBounce;
 
   @override
   void initState() {
@@ -29,11 +30,20 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     _titleScale = Tween<double>(begin: 0.5, end: 1.0).animate(
       CurvedAnimation(parent: _animController, curve: Curves.elasticOut),
     );
+
+    _cowAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
+    _cowBounce = Tween<double>(begin: 0, end: -15).animate(
+      CurvedAnimation(parent: _cowAnimController, curve: Curves.easeInOut),
+    );
   }
 
   @override
   void dispose() {
     _animController.dispose();
+    _cowAnimController.dispose();
     super.dispose();
   }
 
@@ -73,9 +83,24 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       body: Stack(
         children: [
           Positioned.fill(
-            child: Image.asset(
-              'assets/images/Background/Background.jpg',
-              fit: BoxFit.cover,
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color(0xFF1B5E20),
+                    Color(0xFF2E7D32),
+                    Color(0xFF388E3C),
+                    Color(0xFF4CAF50),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: CustomPaint(
+              painter: _JungleBackgroundPainter(),
             ),
           ),
           Positioned.fill(
@@ -85,8 +110,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
+                    Colors.black.withValues(alpha: 0.3),
                     Colors.black.withValues(alpha: 0.5),
-                    Colors.black.withValues(alpha: 0.7),
                   ],
                 ),
               ),
@@ -103,11 +128,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       scale: _titleScale,
                       child: Column(
                         children: [
-                          Image.asset(
-                            'assets/images/Background/Title Text.png',
-                            width: 280,
-                            fit: BoxFit.contain,
-                          ),
+                          _buildTitle(),
                           const SizedBox(height: 8),
                           Text(
                             'Claim the pasture, outsmart your rivals!',
@@ -120,24 +141,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         ],
                       ),
                     ),
-                    const SizedBox(height: 48),
+                    const SizedBox(height: 20),
+                    _buildAnimatedCow(),
+                    const SizedBox(height: 20),
                     _buildPlayerCountSelector(),
-                    const SizedBox(height: 24),
-                    _buildPlayerList(),
-                    const SizedBox(height: 32),
-                    GameButtonStyles.primaryButton(
-                      text: 'START GAME',
-                      onPressed: _startGame,
-                      width: double.infinity,
-                      height: 60,
-                    ),
                     const SizedBox(height: 16),
-                    GameButtonStyles.secondaryButton(
-                      text: 'HOW TO PLAY',
-                      onPressed: _showTutorial,
-                      width: 200,
-                      height: 48,
-                    ),
+                    _buildPlayerList(),
+                    const SizedBox(height: 24),
+                    _buildStartButton(),
+                    const SizedBox(height: 12),
+                    _buildTutorialButton(),
                   ],
                 ),
               ),
@@ -148,20 +161,114 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
+  Widget _buildTitle() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF8D6E63), Color(0xFF5D4037)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF3E2723), width: 3),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.4),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Text(
+            'BATTLE',
+            style: GoogleFonts.bangers(
+              fontSize: 48,
+              color: Colors.white,
+              letterSpacing: 4,
+              shadows: [
+                Shadow(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  offset: const Offset(2, 2),
+                  blurRadius: 4,
+                ),
+              ],
+            ),
+          ),
+          Text(
+            'COWS',
+            style: GoogleFonts.bangers(
+              fontSize: 56,
+              color: const Color(0xFFFFECB3),
+              letterSpacing: 6,
+              shadows: [
+                Shadow(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  offset: const Offset(3, 3),
+                  blurRadius: 6,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAnimatedCow() {
+    return AnimatedBuilder(
+      animation: _cowBounce,
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(0, _cowBounce.value),
+          child: child,
+        );
+      },
+      child: Container(
+        width: 80,
+        height: 80,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: const LinearGradient(
+            colors: [Color(0xFF8D6E63), Color(0xFF5D4037)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+          border: Border.all(color: Colors.white, width: 3),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: const Center(
+          child: Text(
+            '\ud83d\udc2e',
+            style: TextStyle(fontSize: 48),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildPlayerCountSelector() {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.cardBackground.withValues(alpha: 0.95),
-            AppColors.cardBackground.withValues(alpha: 0.85),
+            const Color(0xFF8D6E63).withValues(alpha: 0.95),
+            const Color(0xFF5D4037).withValues(alpha: 0.95),
           ],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 2),
+        border: Border.all(color: const Color(0xFF3E2723), width: 3),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.3),
@@ -176,7 +283,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             'PLAYERS',
             style: GoogleFonts.bangers(
               fontSize: 22,
-              color: AppColors.darkText,
+              color: Colors.white,
               letterSpacing: 2,
             ),
           ),
@@ -207,19 +314,19 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             )
                           : LinearGradient(
                               colors: [
-                                AppColors.secondaryAction.withValues(alpha: 0.3),
-                                AppColors.secondaryAction.withValues(alpha: 0.1),
+                                Colors.white.withValues(alpha: 0.2),
+                                Colors.white.withValues(alpha: 0.1),
                               ],
                             ),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: isSelected ? Colors.white : AppColors.secondaryAction,
+                        color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.3),
                         width: 3,
                       ),
                       boxShadow: isSelected
                           ? [
                               BoxShadow(
-                                color: AppColors.primaryAction.withValues(alpha: 0.4),
+                                color: const Color(0xFF66BB6A).withValues(alpha: 0.5),
                                 blurRadius: 12,
                                 offset: const Offset(0, 4),
                               ),
@@ -231,7 +338,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         '$count',
                         style: GoogleFonts.bangers(
                           fontSize: 32,
-                          color: isSelected ? Colors.white : AppColors.darkText,
+                          color: Colors.white,
                           letterSpacing: 1,
                         ),
                       ),
@@ -252,14 +359,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            AppColors.cardBackground.withValues(alpha: 0.95),
-            AppColors.cardBackground.withValues(alpha: 0.85),
+            const Color(0xFF8D6E63).withValues(alpha: 0.95),
+            const Color(0xFF5D4037).withValues(alpha: 0.95),
           ],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 2),
+        border: Border.all(color: const Color(0xFF3E2723), width: 3),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.3),
@@ -274,7 +381,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             'ROSTER',
             style: GoogleFonts.bangers(
               fontSize: 22,
-              color: AppColors.darkText,
+              color: Colors.white,
               letterSpacing: 2,
             ),
           ),
@@ -287,10 +394,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
-                  color: AppColors.getPlayerPrimary(player.color).withValues(alpha: 0.15),
+                  color: AppColors.getPlayerPrimary(player.color).withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: AppColors.getPlayerPrimary(player.color).withValues(alpha: 0.4),
+                    color: AppColors.getPlayerPrimary(player.color).withValues(alpha: 0.5),
                     width: 2,
                   ),
                 ),
@@ -310,12 +417,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         ),
                         shape: BoxShape.circle,
                         border: Border.all(color: Colors.white, width: 2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.getPlayerPrimary(player.color).withValues(alpha: 0.5),
-                            blurRadius: 6,
-                          ),
-                        ],
                       ),
                       child: Center(
                         child: Text(
@@ -333,7 +434,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         player.name,
                         style: GoogleFonts.bangers(
                           fontSize: 18,
-                          color: AppColors.darkText,
+                          color: Colors.white,
                           letterSpacing: 1,
                         ),
                       ),
@@ -342,13 +443,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: player.isAi
-                            ? AppColors.secondaryAction.withValues(alpha: 0.3)
-                            : AppColors.primaryAction.withValues(alpha: 0.3),
+                            ? Colors.white.withValues(alpha: 0.2)
+                            : const Color(0xFF66BB6A).withValues(alpha: 0.3),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: player.isAi
-                              ? AppColors.secondaryAction
-                              : AppColors.primaryAction,
+                              ? Colors.white.withValues(alpha: 0.3)
+                              : const Color(0xFF66BB6A),
                           width: 1,
                         ),
                       ),
@@ -356,9 +457,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         player.isAi ? 'CPU' : 'YOU',
                         style: GoogleFonts.bangers(
                           fontSize: 14,
-                          color: player.isAi
-                              ? AppColors.secondaryAction
-                              : AppColors.primaryAction,
+                          color: Colors.white,
                           letterSpacing: 1,
                         ),
                       ),
@@ -372,4 +471,137 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       ),
     );
   }
+
+  Widget _buildStartButton() {
+    return Container(
+      width: double.infinity,
+      height: 60,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF66BB6A), Color(0xFF2E7D32)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white, width: 3),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF66BB6A).withValues(alpha: 0.5),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ElevatedButton(
+        onPressed: _startGame,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          padding: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+        child: Text(
+          'START GAME',
+          style: GoogleFonts.bangers(
+            fontSize: 24,
+            color: Colors.white,
+            letterSpacing: 3,
+            shadows: [
+              Shadow(
+                color: Colors.black.withValues(alpha: 0.3),
+                offset: const Offset(1, 1),
+                blurRadius: 2,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTutorialButton() {
+    return Container(
+      width: 200,
+      height: 48,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.white.withValues(alpha: 0.2),
+            Colors.white.withValues(alpha: 0.1),
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 2),
+      ),
+      child: ElevatedButton(
+        onPressed: _showTutorial,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          padding: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+        child: Text(
+          'HOW TO PLAY',
+          style: GoogleFonts.bangers(
+            fontSize: 18,
+            color: Colors.white,
+            letterSpacing: 2,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _JungleBackgroundPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint();
+
+    for (var i = 0; i < 8; i++) {
+      final x = (i * size.width / 7);
+      final trunkHeight = size.height * 0.3 + (i % 3) * 30.0;
+
+      paint.color = const Color(0xFF5D4037);
+      canvas.drawRect(
+        Rect.fromLTWH(x - 8, size.height - trunkHeight, 16, trunkHeight),
+        paint,
+      );
+
+      paint.color = const Color(0xFF2E7D32);
+      canvas.drawOval(
+        Rect.fromCenter(
+          center: Offset(x, size.height - trunkHeight),
+          width: 60 + (i % 2) * 20.0,
+          height: 40,
+        ),
+        paint,
+      );
+    }
+
+    for (var i = 0; i < 12; i++) {
+      final x = (i * size.width / 11);
+      final y = size.height - 20 - (i % 3) * 15.0;
+
+      paint.color = Color(0xFF4CAF50).withValues(alpha: 0.4);
+      canvas.drawOval(
+        Rect.fromCenter(
+          center: Offset(x, y),
+          width: 30,
+          height: 12,
+        ),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
