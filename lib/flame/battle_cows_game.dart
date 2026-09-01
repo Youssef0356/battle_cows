@@ -39,7 +39,7 @@ class BattleCowsGame extends FlameGame {
   Map<PlayerColor, int> cowCounts = {};
   bool isGameOver = false;
 
-  final void Function()? onStateChanged;
+  void Function()? onStateChanged;
   final void Function(PlayerColor? winner, Map<PlayerColor, int> scores)? onGameOver;
   final void Function()? onTimeUp;
 

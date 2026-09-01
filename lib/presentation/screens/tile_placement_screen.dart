@@ -237,7 +237,7 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
             child: Image.asset(
               'assets/images/Background/Table_Gameplay_Background.jpg',
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Image.asset(
+              errorBuilder: (context, error, stack) => Image.asset(
                 'assets/images/Background/Background.jpg',
                 fit: BoxFit.cover,
               ),

@@ -279,8 +279,11 @@ class HexCellComponent extends PositionComponent with TapCallbacks {
     for (var i = 0; i < 6; i++) {
       final angle = (pi / 3) * i;
       final point = Offset(center.x + pieceRadius * cos(angle), center.y + pieceRadius * sin(angle));
-      if (i == 0) pedSidePath.moveTo(point.dx, point.dy);
-      else pedSidePath.lineTo(point.dx, point.dy);
+      if (i == 0) {
+        pedSidePath.moveTo(point.dx, point.dy);
+      } else {
+        pedSidePath.lineTo(point.dx, point.dy);
+      }
     }
     for (var i = 5; i >= 0; i--) {
       final angle = (pi / 3) * i;
@@ -390,6 +393,7 @@ class HexCellComponent extends PositionComponent with TapCallbacks {
     return hsl.withLightness((hsl.lightness + amount).clamp(0.0, 1.0)).toColor();
   }
 
+  // ignore: unused_element
   Color _darkenColor(Color color, double amount) {
     final hsl = HSLColor.fromColor(color);
     return hsl.withLightness((hsl.lightness - amount).clamp(0.0, 1.0)).toColor();

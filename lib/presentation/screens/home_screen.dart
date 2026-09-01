@@ -371,7 +371,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             child: Image.asset(
               'assets/images/Background/MainMenu_Background.jpg',
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Image.asset(
+              errorBuilder: (context, error, stack) => Image.asset(
                 'assets/images/Background/Background.jpg',
                 fit: BoxFit.cover,
               ),
@@ -611,7 +611,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       child: Image.asset(
         'assets/images/Background/Logo.png',
         fit: BoxFit.contain,
-        errorBuilder: (_, __, ___) => Column(
+        errorBuilder: (context, error, stack) => Column(
           children: [
             const Text('🐮', style: TextStyle(fontSize: 50)),
             Text(
