@@ -44,16 +44,20 @@ class HexCellComponent extends PositionComponent with TapCallbacks {
     _drawHexFill(canvas, path, center, hexRadius);
     _drawHexBorder(canvas, path);
 
+    if (cell.isObstacle) {
+      _drawObstacleFenceOrRock(canvas, center, hexRadius);
+    }
+
     if (isSelected) {
       _drawSelectionGlow(canvas, path);
     }
 
     if (isValidMove) {
-      _drawValidMoveOutline(canvas, path);
+      _drawValidMoveDashedOutline(canvas, center, hexRadius);
     }
 
     if (herd != null && herd!.size > 0) {
-      _drawCowStack(canvas, center, hexRadius);
+      _drawCowPieceWithShield(canvas, center, hexRadius);
     }
   }
 
@@ -76,7 +80,7 @@ class HexCellComponent extends PositionComponent with TapCallbacks {
   }
 
   void _draw3DDepth(Canvas canvas, Path path, Vector2 center, double radius) {
-    final depthOffset = radius * 0.12;
+    final depthOffset = radius * 0.14;
     final sidePath = Path();
 
     for (var i = 0; i < 6; i++) {
@@ -104,7 +108,7 @@ class HexCellComponent extends PositionComponent with TapCallbacks {
 
     final sidePaint = Paint()
       ..shader = const LinearGradient(
-        colors: [Color(0xFF4E7A25), Color(0xFF2D5016)],
+        colors: [Color(0xFF5A3D1E), Color(0xFF321E0B)],
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
       ).createShader(Rect.fromLTWH(0, center.y, size.x, depthOffset));
@@ -116,7 +120,7 @@ class HexCellComponent extends PositionComponent with TapCallbacks {
       final angle = (pi / 3) * i - pi / 6;
       final point = Offset(
         center.x + radius * cos(angle),
-        center.y + radius * sin(angle) + depthOffset + 2,
+        center.y + radius * sin(angle) + depthOffset + 3,
       );
       if (i == 0) {
         shadowPath.moveTo(point.dx, point.dy);
@@ -129,7 +133,7 @@ class HexCellComponent extends PositionComponent with TapCallbacks {
     canvas.drawPath(
       shadowPath,
       Paint()
-        ..color = Colors.black.withValues(alpha: 0.25)
+        ..color = Colors.black.withValues(alpha: 0.3)
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
     );
   }
@@ -141,16 +145,18 @@ class HexCellComponent extends PositionComponent with TapCallbacks {
     if (texture != null && !cell.isObstacle) {
       _drawTexture(canvas, center, radius);
     } else if (cell.isObstacle) {
-      canvas.drawPath(path, Paint()..color = AppColors.obstacle);
-    } else if (herd != null && herd!.size > 0) {
-      canvas.drawPath(path, Paint()..color = AppColors.getPlayerPrimary(herd!.owner));
+      canvas.drawPath(path, Paint()..color = const Color(0xFF4E342E));
     } else {
-      final grassShades = [AppColors.grassMid, AppColors.grassLight, AppColors.grassDark];
+      final grassShades = [
+        const Color(0xFF689F38),
+        const Color(0xFF7CB342),
+        const Color(0xFF558B2F),
+      ];
       canvas.drawPath(path, Paint()..color = grassShades[cell.position.q.abs() % 3]);
     }
 
     if (herd != null && herd!.size > 0) {
-      final tint = AppColors.getPlayerPrimary(herd!.owner).withValues(alpha: texture != null ? 0.35 : 0.45);
+      final tint = AppColors.getPlayerPrimary(herd!.owner).withValues(alpha: 0.3);
       canvas.drawPath(path, Paint()..color = tint);
     }
 
@@ -190,144 +196,192 @@ class HexCellComponent extends PositionComponent with TapCallbacks {
 
   void _drawHexBorder(Canvas canvas, Path path) {
     final borderPaint = Paint()
-      ..color = AppColors.tileBorder
+      ..color = const Color(0xFF33691E).withValues(alpha: 0.8)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
+      ..strokeWidth = 1.5;
 
     canvas.drawPath(path, borderPaint);
   }
 
+  void _drawObstacleFenceOrRock(Canvas canvas, Vector2 center, double radius) {
+    final isFence = (cell.position.q + cell.position.r) % 2 == 0;
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: isFence ? '🪵' : '🪨',
+        style: TextStyle(fontSize: radius * 0.9),
+      ),
+      textDirection: TextDirection.ltr,
+    );
+    textPainter.layout();
+    textPainter.paint(
+      canvas,
+      Offset(center.x - textPainter.width / 2, center.y - textPainter.height / 2),
+    );
+  }
+
   void _drawSelectionGlow(Canvas canvas, Path path) {
     final glowPaint = Paint()
-      ..color = AppColors.selectionGlow.withValues(alpha: 0.3 + pulseValue * 0.4)
+      ..color = const Color(0xFFFFD54F).withValues(alpha: 0.6 + pulseValue * 0.4)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3 + pulseValue * 3
-      ..maskFilter = MaskFilter.blur(BlurStyle.normal, 3 + pulseValue * 4);
+      ..strokeWidth = 4 + pulseValue * 2
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
 
     canvas.drawPath(path, glowPaint);
-
-    final innerGlow = Paint()
-      ..color = AppColors.selectionGlow.withValues(alpha: 0.15 + pulseValue * 0.15)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
-
-    canvas.drawPath(path, innerGlow);
   }
 
-  void _drawValidMoveOutline(Canvas canvas, Path path) {
-    final movePaint = Paint()
-      ..color = AppColors.validMoveOutline
+  void _drawValidMoveDashedOutline(Canvas canvas, Vector2 center, double radius) {
+    final dashPaint = Paint()
+      ..color = Colors.white
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3;
+      ..strokeWidth = 2.5;
 
-    canvas.drawPath(path, movePaint);
+    // Draw dashed hex perimeter
+    final innerRadius = radius * 0.9;
+    for (var i = 0; i < 6; i++) {
+      final a1 = (pi / 3) * i - pi / 6;
+      final a2 = (pi / 3) * (i + 1) - pi / 6;
+      final p1 = Offset(center.x + innerRadius * cos(a1), center.y + innerRadius * sin(a1));
+      final p2 = Offset(center.x + innerRadius * cos(a2), center.y + innerRadius * sin(a2));
+
+      final mid1 = Offset(p1.dx * 0.65 + p2.dx * 0.35, p1.dy * 0.65 + p2.dy * 0.35);
+      final mid2 = Offset(p1.dx * 0.35 + p2.dx * 0.65, p1.dy * 0.35 + p2.dy * 0.65);
+
+      canvas.drawLine(p1, mid1, dashPaint);
+      canvas.drawLine(mid2, p2, dashPaint);
+    }
   }
 
-  void _drawCowStack(Canvas canvas, Vector2 center, double radius) {
+  void _drawCowPieceWithShield(Canvas canvas, Vector2 center, double radius) {
     final herdSize = herd!.size;
-    final playerColor = AppColors.getPlayerPrimary(herd!.owner);
-    final playerDark = AppColors.getPlayerDark(herd!.owner);
+    final primaryColor = AppColors.getPlayerPrimary(herd!.owner);
+    final darkColor = AppColors.getPlayerDark(herd!.owner);
+    final pieceRadius = radius * 0.55;
 
-    final displayCount = min(herdSize, 5);
-    final coinRadius = radius * 0.35;
-    final coinSpacing = radius * 0.2;
-    final totalHeight = coinRadius * 2 + (displayCount - 1) * coinSpacing;
-    final startY = center.y + totalHeight / 2 - coinRadius;
-
-    for (int i = displayCount - 1; i >= 0; i--) {
-      final coinCenter = Offset(
-        center.x,
-        startY - i * coinSpacing,
+    // 1. 3D Hexagonal / Octagonal Pedestal Base
+    final pedestalPath = Path();
+    for (var i = 0; i < 6; i++) {
+      final angle = (pi / 3) * i;
+      final point = Offset(
+        center.x + pieceRadius * cos(angle),
+        center.y + pieceRadius * sin(angle),
       );
-      _drawSingleCow(canvas, coinCenter, coinRadius, playerColor, playerDark, i == 0);
+      if (i == 0) {
+        pedestalPath.moveTo(point.dx, point.dy);
+      } else {
+        pedestalPath.lineTo(point.dx, point.dy);
+      }
     }
+    pedestalPath.close();
 
-    if (herdSize > 1) {
-      final textPainter = TextPainter(
-        text: TextSpan(
-          text: '$herdSize',
-          style: TextStyle(
-            fontSize: coinRadius * 1.1,
-            fontWeight: FontWeight.w900,
-            color: Colors.white,
-            shadows: [
-              Shadow(
-                color: Colors.black.withValues(alpha: 0.6),
-                offset: const Offset(1, 1),
-                blurRadius: 2,
-              ),
-            ],
-          ),
-        ),
-        textDirection: TextDirection.ltr,
-      );
-      textPainter.layout();
-      textPainter.paint(
-        canvas,
-        Offset(
-          center.x - textPainter.width / 2,
-          center.y - textPainter.height / 2 - (displayCount - 1) * coinSpacing / 2,
-        ),
-      );
+    // Pedestal Depth / Shadow
+    final pedDepth = pieceRadius * 0.25;
+    final pedSidePath = Path();
+    for (var i = 0; i < 6; i++) {
+      final angle = (pi / 3) * i;
+      final point = Offset(center.x + pieceRadius * cos(angle), center.y + pieceRadius * sin(angle));
+      if (i == 0) pedSidePath.moveTo(point.dx, point.dy);
+      else pedSidePath.lineTo(point.dx, point.dy);
     }
+    for (var i = 5; i >= 0; i--) {
+      final angle = (pi / 3) * i;
+      final point = Offset(center.x + pieceRadius * cos(angle), center.y + pieceRadius * sin(angle) + pedDepth);
+      pedSidePath.lineTo(point.dx, point.dy);
+    }
+    pedSidePath.close();
+
+    canvas.drawPath(pedSidePath, Paint()..color = darkColor);
+
+    // Pedestal Face Gradient
+    final faceGradient = RadialGradient(
+      center: const Alignment(-0.2, -0.3),
+      colors: [
+        _lightenColor(primaryColor, 0.3),
+        primaryColor,
+        darkColor,
+      ],
+      stops: const [0.0, 0.6, 1.0],
+    );
+
+    canvas.drawPath(
+      pedestalPath,
+      Paint()..shader = faceGradient.createShader(Rect.fromCircle(center: Offset(center.x, center.y), radius: pieceRadius)),
+    );
+
+    // White Pedestal Rim
+    canvas.drawPath(
+      pedestalPath,
+      Paint()
+        ..color = Colors.white.withValues(alpha: 0.5)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5,
+    );
+
+    // 2. Cow Face Center Avatar
+    final cowPainter = TextPainter(
+      text: TextSpan(
+        text: '🐮',
+        style: TextStyle(fontSize: pieceRadius * 1.1),
+      ),
+      textDirection: TextDirection.ltr,
+    );
+    cowPainter.layout();
+    cowPainter.paint(
+      canvas,
+      Offset(center.x - cowPainter.width / 2, center.y - cowPainter.height / 2 - 2),
+    );
+
+    // 3. Shield Badge with Stack Count (Bottom-Right / Center-Bottom)
+    final shieldWidth = pieceRadius * 0.75;
+    final shieldHeight = pieceRadius * 0.85;
+    final shieldCenter = Offset(center.x + pieceRadius * 0.35, center.y + pieceRadius * 0.3);
+
+    _drawShieldBadge(canvas, shieldCenter, shieldWidth, shieldHeight, herdSize, primaryColor);
   }
 
-  void _drawSingleCow(Canvas canvas, Offset center, double radius, Color faceColor, Color edgeColor, bool isBottom) {
-    final edgeHeight = radius * 0.25;
+  void _drawShieldBadge(Canvas canvas, Offset center, double width, double height, int count, Color teamColor) {
+    final hw = width / 2;
+    final hh = height / 2;
 
-    final shadowPaint = Paint()
-      ..color = Colors.black.withValues(alpha: 0.3)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
-    canvas.drawOval(
-      Rect.fromCircle(center: Offset(center.dx + 2, center.dy + edgeHeight + 2), radius: radius),
-      shadowPaint,
+    final shieldPath = Path()
+      ..moveTo(center.dx - hw, center.dy - hh)
+      ..lineTo(center.dx + hw, center.dy - hh)
+      ..lineTo(center.dx + hw, center.dy)
+      ..quadraticBezierTo(center.dx + hw, center.dy + hh, center.dx, center.dy + hh)
+      ..quadraticBezierTo(center.dx - hw, center.dy + hh, center.dx - hw, center.dy)
+      ..close();
+
+    // Shield shadow & fill
+    canvas.drawPath(
+      shieldPath,
+      Paint()..color = const Color(0xFF1B0000).withValues(alpha: 0.85),
     );
 
-    final edgePath = Path()
-      ..addOval(Rect.fromCircle(center: Offset(center.dx, center.dy + edgeHeight), radius: radius))
-      ..addOval(Rect.fromCircle(center: center, radius: radius))
-      ..fillType = PathFillType.evenOdd;
-
-    canvas.drawPath(edgePath, Paint()..color = edgeColor);
-
-    final faceGradient = RadialGradient(
-      center: const Alignment(-0.3, -0.3),
-      colors: [
-        _lightenColor(faceColor, 0.35),
-        faceColor,
-        _darkenColor(faceColor, 0.2),
-      ],
-      stops: const [0.0, 0.5, 1.0],
+    // Shield border
+    canvas.drawPath(
+      shieldPath,
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2,
     );
 
-    canvas.drawOval(
-      Rect.fromCircle(center: center, radius: radius),
-      Paint()..shader = faceGradient.createShader(Rect.fromCircle(center: center, radius: radius)),
+    // Count text
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: '$count',
+        style: TextStyle(
+          fontSize: height * 0.65,
+          fontWeight: FontWeight.w900,
+          color: Colors.white,
+          fontFamily: 'Bangers',
+        ),
+      ),
+      textDirection: TextDirection.ltr,
     );
-
-    final rimPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.4)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
-
-    canvas.drawOval(
-      Rect.fromCircle(center: center, radius: radius * 0.82),
-      rimPaint,
-    );
-
-    final highlightPaint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Colors.white.withValues(alpha: 0.35),
-          Colors.white.withValues(alpha: 0.0),
-        ],
-      ).createShader(Rect.fromCircle(center: center, radius: radius));
-
-    canvas.drawOval(
-      Rect.fromCircle(center: center, radius: radius * 0.88),
-      highlightPaint,
+    textPainter.layout();
+    textPainter.paint(
+      canvas,
+      Offset(center.dx - textPainter.width / 2, center.dy - textPainter.height / 2 - 1),
     );
   }
 

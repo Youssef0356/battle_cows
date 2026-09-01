@@ -19,7 +19,7 @@ class TilePlacementScreen extends StatefulWidget {
   const TilePlacementScreen({
     super.key,
     required this.players,
-    this.tilesPerPlayer = 5,
+    this.tilesPerPlayer = 4,
   });
 
   @override
@@ -51,11 +51,15 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
 
     _dropAnimController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 400),
     );
-    _dropScaleAnimation = Tween<double>(begin: 1.5, end: 1.0).animate(
+    _dropScaleAnimation = Tween<double>(begin: 1.4, end: 1.0).animate(
       CurvedAnimation(parent: _dropAnimController, curve: Curves.elasticOut),
     );
+
+    if (_currentPlayer.isAi) {
+      _scheduleAiPlacement();
+    }
   }
 
   Future<void> _loadTexture() async {
@@ -69,29 +73,39 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
           _texture = frame.image;
         });
       }
-    } catch (e) {
-      // Fallback: texture will be null, painter uses solid color
-    }
+    } catch (_) {}
   }
 
   void _generateNewTile() {
     final tileIndex = _builder.placedTiles.length;
     _currentTile = PastureTile.diamond(tileIndex, const HexPosition(0, 0));
     _tileOffset = const HexPosition(0, 0);
+
+    // Default offset to adjacent position if board already has hexes
+    if (_builder.placedHexes.isNotEmpty) {
+      final outer = BoardGenerator.getOuterHexes(_builder.placedHexes);
+      if (outer.isNotEmpty) {
+        for (final hex in outer) {
+          for (final dir in HexPosition.directions) {
+            final testOffset = hex + dir;
+            final candidate = _currentTile!.translate(testOffset);
+            if (_builder.canPlace(candidate)) {
+              _tileOffset = testOffset;
+              return;
+            }
+          }
+        }
+      }
+    }
   }
 
   Player get _currentPlayer => widget.players[_currentPlayerIndex];
 
   bool get _allTilesPlaced => _tilesRemaining.every((count) => count == 0);
 
-  void _moveTile(HexPosition direction) {
-    setState(() {
-      _tileOffset = _tileOffset + direction;
-    });
-  }
-
   void _rotateTile() {
     if (_currentTile == null) return;
+    HapticFeedback.selectionClick();
     setState(() {
       _currentTile = _currentTile!.rotate(1);
     });
@@ -102,13 +116,16 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
 
     final translated = _currentTile!.translate(_tileOffset);
     if (_builder.canPlace(translated)) {
+      HapticFeedback.mediumImpact();
       _dropAnimatingHexes = List.from(translated.hexes);
       _showDropAnim = true;
       _dropAnimController.forward(from: 0).then((_) {
-        setState(() {
-          _showDropAnim = false;
-          _dropAnimatingHexes = [];
-        });
+        if (mounted) {
+          setState(() {
+            _showDropAnim = false;
+            _dropAnimatingHexes = [];
+          });
+        }
       });
 
       setState(() {
@@ -199,13 +216,13 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
     );
   }
 
-  HexPosition _pixelToHexOffset(Offset dropPosition, RenderBox boardBox, double hexSize) {
-    final center = Offset(boardBox.size.width / 2 + hexSize * 10, boardBox.size.height / 2 + hexSize * 10);
-    final dx = dropPosition.dx - center.dx;
-    final dy = dropPosition.dy - center.dy;
+  HexPosition _pixelToHexOffset(Offset localPos, RenderBox boardBox, double hexSize) {
+    final center = Offset(boardBox.size.width / 2, boardBox.size.height / 2);
+    final dx = localPos.dx - center.dx;
+    final dy = localPos.dy - center.dy;
 
-    final q = (dx / (sqrt(3) * hexSize)).round();
-    final r = (dy / (3.0 / 2 * hexSize)).round();
+    final q = ((sqrt(3) / 3 * dx - 1.0 / 3 * dy) / hexSize).round();
+    final r = ((2.0 / 3 * dy) / hexSize).round();
 
     return HexPosition(q, r);
   }
@@ -213,31 +230,37 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.black,
       body: Stack(
         children: [
           Positioned.fill(
             child: Image.asset(
-              'assets/images/Background/Background.jpg',
+              'assets/images/Background/Table_Gameplay_Background.jpg',
               fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => Image.asset(
+                'assets/images/Background/Background.jpg',
+                fit: BoxFit.cover,
+              ),
             ),
           ),
           Positioned.fill(
             child: Container(
-              color: Colors.black.withValues(alpha: 0.4),
+              color: Colors.black.withValues(alpha: 0.35),
             ),
           ),
-          Column(
-            children: [
-              _buildTopBar(),
-              _buildPlayerInfo(),
-              Expanded(
-                child: _buildBoardArea(),
-              ),
-              if (_currentTile != null) _buildControls(),
-            ],
+          SafeArea(
+            child: Column(
+              children: [
+                _buildTopBar(),
+                _buildPlayerInfo(),
+                Expanded(
+                  child: _buildBoardArea(),
+                ),
+                if (!_allTilesPlaced) _buildBottomShelf(),
+              ],
+            ),
           ),
-          if (_isDragging) _buildDragOverlay(),
+          if (_isDragging && _currentTile != null) _buildFloatingDragAvatar(),
         ],
       ),
     );
@@ -248,20 +271,30 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
-          Text(
-            'BUILD THE PASTURE',
-            style: GoogleFonts.bangers(
-              fontSize: 20,
-              color: Colors.white,
-              letterSpacing: 2,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF5D4037), Color(0xFF3E2723)],
+              ),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFFFD54F), width: 1.5),
+            ),
+            child: Text(
+              _allTilesPlaced ? 'PASTURE COMPLETE!' : 'BUILD THE PASTURE',
+              style: GoogleFonts.bangers(
+                fontSize: 18,
+                color: const Color(0xFFFFD54F),
+                letterSpacing: 1.5,
+              ),
             ),
           ),
           const Spacer(),
           if (_allTilesPlaced)
             GameButtonStyles.primaryButton(
-              text: 'START GAME',
+              text: 'START BATTLE',
               onPressed: _startGame,
-              width: 140,
+              width: 150,
               height: 44,
             ),
         ],
@@ -271,71 +304,60 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
 
   Widget _buildPlayerInfo() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: List.generate(widget.players.length, (index) {
           final player = widget.players[index];
-          final isCurrent = index == _currentPlayerIndex;
+          final isCurrent = index == _currentPlayerIndex && !_allTilesPlaced;
           final tilesLeft = _tilesRemaining[index];
 
           return AnimatedContainer(
             duration: const Duration(milliseconds: 300),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              gradient: isCurrent
-                  ? LinearGradient(
-                      colors: [
-                        AppColors.getPlayerPrimary(player.color).withValues(alpha: 0.4),
-                        AppColors.getPlayerPrimary(player.color).withValues(alpha: 0.2),
-                      ],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    )
-                  : null,
-              borderRadius: BorderRadius.circular(14),
+              color: isCurrent
+                  ? AppColors.getPlayerPrimary(player.color).withValues(alpha: 0.35)
+                  : Colors.black45,
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isCurrent
                     ? AppColors.getPlayerPrimary(player.color)
-                    : Colors.white.withValues(alpha: 0.2),
-                width: isCurrent ? 2 : 1,
+                    : Colors.white24,
+                width: isCurrent ? 2.5 : 1,
               ),
-              boxShadow: isCurrent
-                  ? [
-                      BoxShadow(
-                        color: AppColors.getPlayerPrimary(player.color).withValues(alpha: 0.4),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ]
-                  : [],
             ),
-            child: Column(
+            child: Row(
               children: [
                 Container(
-                  width: 28,
-                  height: 28,
+                  width: 22,
+                  height: 22,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppColors.getPlayerPrimary(player.color),
-                        AppColors.getPlayerDark(player.color),
-                      ],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    ),
+                    color: AppColors.getPlayerPrimary(player.color),
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
+                    border: Border.all(color: Colors.white, width: 1.5),
                   ),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  '$tilesLeft LEFT',
-                  style: GoogleFonts.bangers(
-                    fontSize: 12,
-                    color: Colors.white,
-                    letterSpacing: 1,
-                  ),
+                const SizedBox(width: 6),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      player.name,
+                      style: GoogleFonts.bangers(
+                        fontSize: 12,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Text(
+                      '$tilesLeft TILES',
+                      style: GoogleFonts.bangers(
+                        fontSize: 11,
+                        color: isCurrent ? const Color(0xFFFFD54F) : Colors.white70,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -348,61 +370,74 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
   Widget _buildBoardArea() {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final size = min(constraints.maxWidth, constraints.maxHeight) * 0.85;
-        final hexSize = size / 18;
+        final boardDimension = min(constraints.maxWidth, constraints.maxHeight) * 0.92;
+        final hexSize = boardDimension / 16;
 
-        return Center(
-          child: SizedBox(
-            key: _boardKey,
-            width: size,
-            height: size,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppColors.grassMid.withValues(alpha: 0.4),
-                        AppColors.grassMid.withValues(alpha: 0.2),
-                      ],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: AppColors.tileBorder.withValues(alpha: 0.6),
-                      width: 2,
-                    ),
-                  ),
-                ),
-                if (_builder.placedHexes.isEmpty && !_isDragging)
-                  Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.touch_app,
-                          color: Colors.white.withValues(alpha: 0.5),
-                          size: 48,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'TAP ARROWS TO MOVE\nTAP PLACE TO SET',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.bangers(
-                            fontSize: 16,
-                            color: Colors.white.withValues(alpha: 0.7),
-                            letterSpacing: 1.5,
+        return GestureDetector(
+          onPanStart: (details) {
+            if (_currentPlayer.isAi || _allTilesPlaced || _currentTile == null) return;
+            setState(() {
+              _isDragging = true;
+              _dragPosition = details.globalPosition;
+            });
+            _updateSnappedHexOffset(details.globalPosition, hexSize);
+          },
+          onPanUpdate: (details) {
+            if (_currentPlayer.isAi || _allTilesPlaced || _currentTile == null) return;
+            setState(() {
+              _dragPosition = details.globalPosition;
+            });
+            _updateSnappedHexOffset(details.globalPosition, hexSize);
+          },
+          onPanEnd: (_) {
+            if (_currentPlayer.isAi || _allTilesPlaced || _currentTile == null) return;
+            setState(() {
+              _isDragging = false;
+            });
+            _tryPlaceTile();
+          },
+          onTapUp: (details) {
+            if (_currentPlayer.isAi || _allTilesPlaced || _currentTile == null) return;
+            _updateSnappedHexOffset(details.globalPosition, hexSize);
+            _tryPlaceTile();
+          },
+          child: Center(
+            child: Container(
+              key: _boardKey,
+              width: boardDimension,
+              height: boardDimension,
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.25),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.white12, width: 1.5),
+              ),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  if (_builder.placedHexes.isEmpty && !_isDragging)
+                    Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.touch_app_rounded, color: Colors.white54, size: 48),
+                          const SizedBox(height: 8),
+                          Text(
+                            'DRAG TILE ONTO THE BOARD\nOR TAP TO PLACE',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.bangers(
+                              fontSize: 16,
+                              color: Colors.white70,
+                              letterSpacing: 1.5,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ..._buildPlacedTiles(hexSize),
-                if (_currentTile != null && !_isDragging) _buildPreviewTile(hexSize),
-                if (_currentTile != null && _isDragging) _buildDragPreviewOnBoard(hexSize),
-              ],
+                  ..._buildPlacedTiles(hexSize, boardDimension),
+                  if (_currentTile != null)
+                    _buildPreviewTile(hexSize, boardDimension),
+                ],
+              ),
             ),
           ),
         );
@@ -410,11 +445,25 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
     );
   }
 
-  List<Widget> _buildPlacedTiles(double hexSize) {
+  void _updateSnappedHexOffset(Offset globalPos, double hexSize) {
+    final boardBox = _boardKey.currentContext?.findRenderObject() as RenderBox?;
+    if (boardBox == null) return;
+
+    final localPos = boardBox.globalToLocal(globalPos);
+    final snapped = _pixelToHexOffset(localPos, boardBox, hexSize);
+    if (snapped != _tileOffset) {
+      setState(() {
+        _tileOffset = snapped;
+      });
+    }
+  }
+
+  List<Widget> _buildPlacedTiles(double hexSize, double boardDimension) {
     final widgets = <Widget>[];
+    final center = Offset(boardDimension / 2, boardDimension / 2);
 
     for (final hex in _builder.placedHexes) {
-      final pixelPos = _hexToPixel(hex, hexSize);
+      final pixelPos = _hexToPixel(hex, hexSize, center);
       final isAnimating = _showDropAnim && _dropAnimatingHexes.contains(hex);
 
       Widget tileWidget = _drawHex(hexSize, AppColors.grassMid, AppColors.tileBorder, hexPos: hex, hasTexture: true);
@@ -444,26 +493,22 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
     return widgets;
   }
 
-  Widget _buildPreviewTile(double hexSize) {
+  Widget _buildPreviewTile(double hexSize, double boardDimension) {
     final preview = _currentTile!.translate(_tileOffset);
     final canPlace = _builder.canPlace(preview);
+    final center = Offset(boardDimension / 2, boardDimension / 2);
     final widgets = <Widget>[];
 
     for (final hex in preview.hexes) {
-      final pixelPos = _hexToPixel(hex, hexSize);
+      final pixelPos = _hexToPixel(hex, hexSize, center);
+      final color = canPlace ? Colors.green.withValues(alpha: 0.6) : Colors.red.withValues(alpha: 0.6);
+      final border = canPlace ? Colors.greenAccent : Colors.redAccent;
+
       widgets.add(
         Positioned(
           left: pixelPos.dx - hexSize,
           top: pixelPos.dy - hexSize,
-          child: _drawHex(
-            hexSize,
-            canPlace
-                ? AppColors.getPlayerPrimary(_currentPlayer.color).withValues(alpha: 0.8)
-                : AppColors.timerRed.withValues(alpha: 0.6),
-            Colors.white,
-            hexPos: hex,
-            hasTexture: true,
-          ),
+          child: _drawHex(hexSize, color, border, hexPos: hex, hasTexture: canPlace),
         ),
       );
     }
@@ -471,70 +516,148 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
     return Stack(children: widgets);
   }
 
-  Widget _buildDragPreviewOnBoard(double hexSize) {
-    final preview = _currentTile!.translate(_tileOffset);
-    final canPlace = _builder.canPlace(preview);
-    final widgets = <Widget>[];
+  Widget _buildBottomShelf() {
+    final canPlace = _currentTile != null && _builder.canPlace(_currentTile!.translate(_tileOffset));
 
-    for (final hex in preview.hexes) {
-      final pixelPos = _hexToPixel(hex, hexSize);
-      widgets.add(
-        Positioned(
-          left: pixelPos.dx - hexSize,
-          top: pixelPos.dy - hexSize,
-          child: _drawHex(
-            hexSize,
-            canPlace
-                ? AppColors.getPlayerPrimary(_currentPlayer.color).withValues(alpha: 0.9)
-                : AppColors.timerRed.withValues(alpha: 0.7),
-            Colors.white,
-            hexPos: hex,
-            hasTexture: true,
-          ),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2E1C0C).withValues(alpha: 0.95),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppColors.getPlayerPrimary(_currentPlayer.color),
+          width: 2,
         ),
-      );
-    }
-
-    return Stack(children: widgets);
-  }
-
-  Widget _buildDragOverlay() {
-    return Positioned(
-      left: _dragPosition.dx - 40,
-      top: _dragPosition.dy - 40,
-      child: Material(
-        color: Colors.transparent,
-        child: Container(
-          width: 80,
-          height: 80,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                AppColors.getPlayerPrimary(_currentPlayer.color),
-                AppColors.getPlayerDark(_currentPlayer.color),
-              ],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.5),
+            blurRadius: 10,
+            offset: const Offset(0, -3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Current Player Token & Tile Preview
+          GestureDetector(
+            onTap: _rotateTile,
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.black38,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.white24),
+              ),
+              child: Row(
+                children: [
+                  const Text('🌾', style: TextStyle(fontSize: 28)),
+                  const SizedBox(width: 8),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '4-HEX PASTURE',
+                        style: GoogleFonts.bangers(
+                          fontSize: 14,
+                          color: Colors.white,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                      Text(
+                        'TAP TO ROTATE 🔄',
+                        style: GoogleFonts.bangers(
+                          fontSize: 11,
+                          color: const Color(0xFFFFD54F),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
+          ),
+          const Spacer(),
+          // Rotate Button
+          GestureDetector(
+            onTap: _rotateTile,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF5D4037),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF8D6E63), width: 1.5),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.rotate_right_rounded, color: Colors.white, size: 20),
+                  const SizedBox(width: 4),
+                  Text(
+                    'ROTATE',
+                    style: GoogleFonts.bangers(fontSize: 14, color: Colors.white),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          // Place Button
+          GestureDetector(
+            onTap: canPlace ? _tryPlaceTile : null,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              decoration: BoxDecoration(
+                gradient: canPlace
+                    ? const LinearGradient(
+                        colors: [Color(0xFF66BB6A), Color(0xFF2E7D32)],
+                      )
+                    : LinearGradient(
+                        colors: [Colors.grey.shade700, Colors.grey.shade800],
+                      ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: canPlace ? Colors.white : Colors.white24,
+                  width: 1.5,
+                ),
+              ),
+              child: Text(
+                'PLACE',
+                style: GoogleFonts.bangers(
+                  fontSize: 16,
+                  color: canPlace ? Colors.white : Colors.white38,
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFloatingDragAvatar() {
+    return Positioned(
+      left: _dragPosition.dx - 35,
+      top: _dragPosition.dy - 35,
+      child: IgnorePointer(
+        child: Container(
+          width: 70,
+          height: 70,
+          decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 3),
+            color: AppColors.getPlayerPrimary(_currentPlayer.color).withValues(alpha: 0.8),
+            border: Border.all(color: Colors.white, width: 2),
             boxShadow: [
               BoxShadow(
                 color: AppColors.getPlayerPrimary(_currentPlayer.color).withValues(alpha: 0.6),
-                blurRadius: 20,
-                spreadRadius: 5,
+                blurRadius: 15,
+                spreadRadius: 3,
               ),
             ],
           ),
-          child: Center(
-            child: Text(
-              'DRAG',
-              style: GoogleFonts.bangers(
-                fontSize: 16,
-                color: Colors.white,
-                letterSpacing: 1,
-              ),
-            ),
+          child: const Center(
+            child: Text('🌾', style: TextStyle(fontSize: 32)),
           ),
         ),
       ),
@@ -556,287 +679,10 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
     );
   }
 
-  Offset _hexToPixel(HexPosition hex, double size) {
+  Offset _hexToPixel(HexPosition hex, double size, Offset center) {
     final x = size * (sqrt(3) * hex.q + sqrt(3) / 2 * hex.r);
     final y = size * (3.0 / 2 * hex.r);
-    return Offset(x + size * 10, y + size * 10);
-  }
-
-  Widget _buildControls() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Colors.black.withValues(alpha: 0.85),
-            Colors.black.withValues(alpha: 0.95),
-          ],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 2),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            'TILE ${widget.tilesPerPlayer - _tilesRemaining[_currentPlayerIndex] + 1} OF ${widget.tilesPerPlayer}',
-            style: GoogleFonts.bangers(
-              fontSize: 16,
-              color: Colors.white,
-              letterSpacing: 1.5,
-            ),
-          ),
-          const SizedBox(height: 8),
-          _buildDraggablePreview(),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildArrowButton(const HexPosition(0, -1), Icons.arrow_drop_up),
-              const SizedBox(width: 4),
-            ],
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildArrowButton(const HexPosition(-1, 0), Icons.arrow_left),
-              const SizedBox(width: 4),
-              _buildPlaceButton(),
-              const SizedBox(width: 4),
-              _buildArrowButton(const HexPosition(1, 0), Icons.arrow_right),
-            ],
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildArrowButton(const HexPosition(0, 1), Icons.arrow_drop_down),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildArrowButton(const HexPosition(-1, 1), Icons.arrow_downward),
-              const SizedBox(width: 8),
-              _buildRotateButton(),
-              const SizedBox(width: 8),
-              _buildArrowButton(const HexPosition(1, -1), Icons.arrow_upward),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDraggablePreview() {
-    final canPlace = _builder.canPlace(_currentTile!.translate(_tileOffset));
-
-    return GestureDetector(
-      onLongPressStart: (details) {
-        setState(() {
-          _isDragging = true;
-          _dragPosition = details.globalPosition;
-        });
-      },
-      onLongPressMoveUpdate: (details) {
-        setState(() {
-          _dragPosition = details.globalPosition;
-        });
-
-        final boardBox = _boardKey.currentContext?.findRenderObject() as RenderBox?;
-        if (boardBox == null) return;
-
-        final localDrop = boardBox.globalToLocal(details.globalPosition);
-        final size = min(boardBox.size.width, boardBox.size.height) * 0.85;
-        final hexSize = size / 18;
-
-        final newOffset = _pixelToHexOffset(localDrop, boardBox, hexSize);
-        if (newOffset != _tileOffset) {
-          setState(() {
-            _tileOffset = newOffset;
-          });
-        }
-      },
-      onLongPressEnd: (details) {
-        setState(() {
-          _isDragging = false;
-          _dragPosition = Offset.zero;
-        });
-        _tryPlaceTile();
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: canPlace
-                ? [
-                    AppColors.getPlayerPrimary(_currentPlayer.color),
-                    AppColors.getPlayerDark(_currentPlayer.color),
-                  ]
-                : [Colors.grey, Colors.grey.withValues(alpha: 0.7)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white, width: 2),
-          boxShadow: canPlace
-              ? [
-                  BoxShadow(
-                    color: AppColors.getPlayerPrimary(_currentPlayer.color).withValues(alpha: 0.4),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ]
-              : [],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              _isDragging ? Icons.open_with : Icons.drag_indicator,
-              color: Colors.white,
-              size: 20,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              _isDragging ? 'RELEASING...' : 'HOLD & DRAG TO PLACE',
-              style: GoogleFonts.bangers(
-                fontSize: 14,
-                color: Colors.white,
-                letterSpacing: 1,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildArrowButton(HexPosition direction, IconData icon) {
-    return Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.secondaryAction,
-            AppColors.secondaryAction.withValues(alpha: 0.7),
-          ],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white, width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: IconButton(
-        onPressed: () => _moveTile(direction),
-        icon: Icon(icon, color: Colors.white, size: 28),
-        padding: EdgeInsets.zero,
-      ),
-    );
-  }
-
-  Widget _buildPlaceButton() {
-    final canPlace = _builder.canPlace(_currentTile!.translate(_tileOffset));
-
-    return Container(
-      width: 90,
-      height: 48,
-      decoration: BoxDecoration(
-        gradient: canPlace
-            ? const LinearGradient(
-                colors: [Color(0xFF66BB6A), Color(0xFF2E7D32)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              )
-            : LinearGradient(
-                colors: [Colors.grey, Colors.grey.withValues(alpha: 0.7)],
-              ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white, width: 2),
-        boxShadow: canPlace
-            ? [
-                BoxShadow(
-                  color: AppColors.primaryAction.withValues(alpha: 0.5),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                ),
-              ]
-            : [],
-      ),
-      child: ElevatedButton(
-        onPressed: canPlace ? _tryPlaceTile : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-          padding: EdgeInsets.zero,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-        child: Text(
-          'PLACE',
-          style: GoogleFonts.bangers(
-            fontSize: 18,
-            color: Colors.white,
-            letterSpacing: 2,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRotateButton() {
-    return Container(
-      width: 90,
-      height: 48,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.secondaryAction,
-            AppColors.secondaryAction.withValues(alpha: 0.7),
-          ],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white, width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: ElevatedButton(
-        onPressed: _rotateTile,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-          padding: EdgeInsets.zero,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-        child: Text(
-          'NEW',
-          style: GoogleFonts.bangers(
-            fontSize: 18,
-            color: Colors.white,
-            letterSpacing: 2,
-          ),
-        ),
-      ),
-    );
+    return Offset(center.dx + x, center.dy + y);
   }
 }
 
@@ -857,14 +703,7 @@ class _HexPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
-    final path = _createHexPath(center, radius);
 
-    _draw3DDepth(canvas, path, center, radius, size);
-    _drawHexFill(canvas, path, center, radius);
-    _drawHexBorder(canvas, path);
-  }
-
-  Path _createHexPath(Offset center, double radius) {
     final path = Path();
     for (var i = 0; i < 6; i++) {
       final angle = (pi / 3) * i - pi / 6;
@@ -879,12 +718,9 @@ class _HexPainter extends CustomPainter {
       }
     }
     path.close();
-    return path;
-  }
 
-  void _draw3DDepth(Canvas canvas, Path path, Offset center, double radius, Size size) {
+    // 3D Depth bevel
     final depthOffset = radius * 0.12;
-
     final sidePath = Path();
     for (var i = 0; i < 6; i++) {
       final angle = (pi / 3) * i - pi / 6;
@@ -908,97 +744,63 @@ class _HexPainter extends CustomPainter {
     }
     sidePath.close();
 
-    final sidePaint = Paint()
-      ..shader = LinearGradient(
-        colors: [
-          const Color(0xFF4E7A25),
-          const Color(0xFF2D5016),
-        ],
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-      ).createShader(Rect.fromLTWH(0, center.dy, size.width, depthOffset));
-
-    canvas.drawPath(sidePath, sidePaint);
-
-    final shadowPath = Path();
-    for (var i = 0; i < 6; i++) {
-      final angle = (pi / 3) * i - pi / 6;
-      final point = Offset(
-        center.dx + radius * cos(angle),
-        center.dy + radius * sin(angle) + depthOffset + 2,
-      );
-      if (i == 0) {
-        shadowPath.moveTo(point.dx, point.dy);
-      } else {
-        shadowPath.lineTo(point.dx, point.dy);
-      }
-    }
-    shadowPath.close();
-
     canvas.drawPath(
-      shadowPath,
+      sidePath,
       Paint()
-        ..color = Colors.black.withValues(alpha: 0.25)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+        ..shader = const LinearGradient(
+          colors: [Color(0xFF4E7A25), Color(0xFF2D5016)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ).createShader(Rect.fromLTWH(0, center.dy, size.width, depthOffset)),
     );
-  }
 
-  void _drawHexFill(Canvas canvas, Path path, Offset center, double radius) {
+    // Hex fill with texture
     canvas.save();
     canvas.clipPath(path);
-
     if (texture != null) {
-      _drawTexture(canvas, path, center, radius);
+      final imgSize = radius * 2.0;
+      final src = Rect.fromLTWH(0, 0, texture!.width.toDouble(), texture!.height.toDouble());
+      final dst = Rect.fromLTWH(
+        center.dx - radius,
+        center.dy - radius,
+        imgSize,
+        imgSize,
+      );
+      canvas.save();
+      if (flipMode == 1) {
+        canvas.translate(center.dx, center.dy);
+        canvas.scale(-1, 1);
+        canvas.translate(-center.dx, -center.dy);
+      } else if (flipMode == 2) {
+        canvas.translate(center.dx, center.dy);
+        canvas.scale(1, -1);
+        canvas.translate(-center.dx, -center.dy);
+      } else if (flipMode == 3) {
+        canvas.translate(center.dx, center.dy);
+        canvas.scale(-1, -1);
+        canvas.translate(-center.dx, -center.dy);
+      }
+      canvas.drawImageRect(texture!, src, dst, Paint()..filterQuality = FilterQuality.medium);
+      canvas.restore();
     } else {
       canvas.drawPath(path, Paint()..color = fill);
     }
-
     canvas.restore();
-  }
 
-  void _drawTexture(Canvas canvas, Path path, Offset center, double radius) {
-    if (texture == null) return;
-
-    final imgSize = radius * 2.0;
-    final src = Rect.fromLTWH(0, 0, texture!.width.toDouble(), texture!.height.toDouble());
-    final dst = Rect.fromLTWH(
-      center.dx - radius,
-      center.dy - radius,
-      imgSize,
-      imgSize,
+    // Hex border
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = border
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2,
     );
-
-    canvas.save();
-    canvas.translate(center.dx, center.dy);
-
-    switch (flipMode) {
-      case 1:
-        canvas.scale(-1.0, 1.0);
-        break;
-      case 2:
-        canvas.scale(1.0, -1.0);
-        break;
-      case 3:
-        canvas.scale(-1.0, -1.0);
-        break;
-    }
-
-    canvas.translate(-center.dx, -center.dy);
-    canvas.drawImageRect(texture!, src, dst, Paint()..filterQuality = FilterQuality.low);
-    canvas.restore();
-
-    canvas.drawPath(path, Paint()..color = fill.withValues(alpha: 0.3));
-  }
-
-  void _drawHexBorder(Canvas canvas, Path path) {
-    final borderPaint = Paint()
-      ..color = border
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
-
-    canvas.drawPath(path, borderPaint);
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(covariant _HexPainter oldDelegate) =>
+      oldDelegate.fill != fill ||
+      oldDelegate.border != border ||
+      oldDelegate.texture != texture ||
+      oldDelegate.flipMode != flipMode;
 }
