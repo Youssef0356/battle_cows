@@ -63,6 +63,7 @@ class ProgressService {
     final bonus = min(streak, 7) * 25;
     final total = baseReward + bonus;
     progress.coins += total;
+    progress.lastDailyRewardClaimed = DateTime.now().toIso8601String().substring(0, 10);
     _save();
     return total;
   }

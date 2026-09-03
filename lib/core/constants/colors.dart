@@ -29,10 +29,10 @@ class AppColors {
   static const Color obstacle = Color(0xFF6D4C41);
 
   // UI Colors
-  static const Color cardBackground = Color(0xFFFFF8E1);
+  static const Color cardBackground = Color(0xFF3E2723);
   static const Color primaryAction = Color(0xFF43A047);
   static const Color secondaryAction = Color(0xFF8D6E63);
-  static const Color darkText = Color(0xFF3E2723);
+  static const Color darkText = Color(0xFFFFF8E1);
   static const Color lightText = Color(0xFFFFFFFF);
 
   // Selection/Accent Colors

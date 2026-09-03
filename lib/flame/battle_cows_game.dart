@@ -15,11 +15,11 @@ import '../game/board/board_builder.dart';
 import '../game/ai/ai_player.dart';
 import '../core/constants/colors.dart';
 import 'components/hex_board_component.dart';
-import 'components/background_component.dart';
+import 'components/placement_board_component.dart';
 import 'components/move_animation_component.dart';
 import 'audio_manager.dart';
 
-class BattleCowsGame extends FlameGame with TapCallbacks {
+class BattleCowsGame extends FlameGame with TapCallbacks, DragCallbacks {
   final List<Player> players;
   final List<PastureTile>? tiles;
   final int herdSize;
@@ -28,6 +28,27 @@ class BattleCowsGame extends FlameGame with TapCallbacks {
   late GameEngine _engine;
   late AiPlayer _aiPlayer;
   HexBoardComponent? _boardComponent;
+  PlacementBoardComponent? _placementBoardComponent;
+
+  static const int maxPlacementRadius = 4;
+  int placementCount = 0;
+  String currentEncouragement = '';
+
+  static const List<String> farmEncouragements = [
+    '🐮 Mooo-velous placement!',
+    '🌾 Prime grazing territory claimed!',
+    '🚜 Holy cow, what a pasture!',
+    '🥛 Udderly brilliant move!',
+    '🧀 The grass is greener right here!',
+    '🐄 Top tier pasture expansion!',
+    '🌿 Fresh clover discovered!',
+    '🎉 Grade-A bovine real estate!',
+    '🐂 That\'s high-yield farmland!',
+    '🌻 The herd approves of this lawn!',
+    '🧈 Butter me up, that was slick!',
+    '🌽 Pure farm genius at work!',
+    '🏆 Bovine architect of the year!',
+  ];
 
   HexPosition? selectedPosition;
   List<HexPosition> validMoves = [];
@@ -59,6 +80,7 @@ class BattleCowsGame extends FlameGame with TapCallbacks {
   HexPosition _tileOffset = const HexPosition(0, 0);
   final BoardBuilder _boardBuilder = BoardBuilder();
 
+  final List<VoidCallback> _stateListeners = [];
   void Function()? onStateChanged;
   final void Function(PlayerColor? winner, Map<PlayerColor, int> scores)? onGameOver;
   final void Function()? onTimeUp;
@@ -92,17 +114,32 @@ class BattleCowsGame extends FlameGame with TapCallbacks {
   HexPosition get tileOffset => _tileOffset;
   BoardBuilder get boardBuilder => _boardBuilder;
 
+  void addStateListener(VoidCallback listener) {
+    _stateListeners.add(listener);
+  }
+
+  void removeStateListener(VoidCallback listener) {
+    _stateListeners.remove(listener);
+  }
+
+  void _notifyStateChanged() {
+    for (final listener in _stateListeners) {
+      listener();
+    }
+  }
+
+  // Make the Flame canvas transparent — background is handled by Flutter layer
+  @override
+  Color backgroundColor() => const Color(0x00000000);
+
   @override
   Future<void> onLoad() async {
     await super.onLoad();
     await AudioManager().init();
     _aiPlayer = AiPlayer();
 
-    final bg = BackgroundComponent(
-      position: Vector2.zero(),
-      size: Vector2(size.x, size.y),
-    );
-    camera.backdrop.add(bg);
+    // Background is now handled by the Flutter layer (Image.asset in FlameGameScreen)
+    // so we keep the Flame backdrop transparent — no BackgroundComponent added.
 
     _initializeGame();
   }
@@ -145,7 +182,7 @@ class BattleCowsGame extends FlameGame with TapCallbacks {
       _setupBoardComponent();
     }
 
-    onStateChanged?.call();
+    _notifyStateChanged();
   }
 
   void _setupBoardComponent() {
@@ -153,8 +190,15 @@ class BattleCowsGame extends FlameGame with TapCallbacks {
       _boardComponent!.removeFromParent();
       _boardComponent = null;
     }
+    if (_placementBoardComponent != null) {
+      _placementBoardComponent!.removeFromParent();
+      _placementBoardComponent = null;
+    }
 
-    if (!_isPlacementPhase) {
+    if (_isPlacementPhase) {
+      _placementBoardComponent = PlacementBoardComponent(game: this);
+      world.add(_placementBoardComponent!);
+    } else {
       final boardSize = _calculateBoardSize();
       _boardComponent = HexBoardComponent(
         board: _engine.board!,
@@ -198,9 +242,22 @@ class BattleCowsGame extends FlameGame with TapCallbacks {
 
   bool get _allTilesPlaced => _tilesRemaining.every((count) => count == 0);
 
+  HexPosition clampHexOffset(HexPosition pos) {
+    final dist = pos.distanceTo(const HexPosition(0, 0));
+    if (dist <= maxPlacementRadius) return pos;
+    final scale = maxPlacementRadius / dist;
+    return HexPosition((pos.q * scale).round(), (pos.r * scale).round());
+  }
+
   bool get canPlaceCurrentTile {
     if (_currentTile == null) return false;
     final translated = _currentTile!.translate(_tileOffset);
+    // Keep all hexes strictly within placement radius from center so they never go off-screen
+    for (final hex in translated.hexes) {
+      if (hex.distanceTo(const HexPosition(0, 0)) > maxPlacementRadius) {
+        return false;
+      }
+    }
     return _boardBuilder.canPlace(translated);
   }
 
@@ -218,7 +275,7 @@ class BattleCowsGame extends FlameGame with TapCallbacks {
             final testOffset = hex + dir;
             final candidate = _currentTile!.translate(testOffset);
             if (_boardBuilder.canPlace(candidate)) {
-              _tileOffset = testOffset;
+              _tileOffset = clampHexOffset(testOffset);
               return;
             }
           }
@@ -230,12 +287,12 @@ class BattleCowsGame extends FlameGame with TapCallbacks {
   void rotateCurrentTile() {
     if (_currentTile == null) return;
     _currentTile = _currentTile!.rotate(1);
-    onStateChanged?.call();
+    _notifyStateChanged();
   }
 
   void setTileOffset(HexPosition offset) {
-    _tileOffset = offset;
-    onStateChanged?.call();
+    _tileOffset = clampHexOffset(offset);
+    _notifyStateChanged();
   }
 
   bool placeCurrentTile() {
@@ -244,6 +301,10 @@ class BattleCowsGame extends FlameGame with TapCallbacks {
     final translated = _currentTile!.translate(_tileOffset);
     _boardBuilder.placeTile(translated);
     _tilesRemaining[_currentPlayerIndex]--;
+
+    placementCount++;
+    currentEncouragement = farmEncouragements[(placementCount - 1) % farmEncouragements.length];
+    _placementBoardComponent?.triggerStampAnimation(translated.hexes);
 
     AudioManager().playMove();
 
@@ -255,7 +316,7 @@ class BattleCowsGame extends FlameGame with TapCallbacks {
       _finishPlacement();
     }
 
-    onStateChanged?.call();
+    _notifyStateChanged();
     return true;
   }
 
@@ -297,28 +358,39 @@ class BattleCowsGame extends FlameGame with TapCallbacks {
 
       for (final offset in candidateOffsets) {
         for (var rot = 0; rot < 6; rot++) {
-          final candidate = PastureTile.diamond(_boardBuilder.placedTiles.length, const HexPosition(0, 0))
-              .rotate(rot)
-              .translate(offset);
-          if (_boardBuilder.canPlace(candidate)) {
-            _currentTile = PastureTile.diamond(_boardBuilder.placedTiles.length, const HexPosition(0, 0)).rotate(rot);
-            _tileOffset = offset;
+          _currentTile = PastureTile.diamond(_boardBuilder.placedTiles.length, const HexPosition(0, 0)).rotate(rot);
+          _tileOffset = offset;
+          // Check both board placement and radius constraint
+          if (canPlaceCurrentTile) {
             placeCurrentTile();
             return;
           }
         }
+      }
+
+      // Fallback: try placing near center if all outer positions fail
+      _currentTile = PastureTile.diamond(_boardBuilder.placedTiles.length, const HexPosition(0, 0));
+      _tileOffset = const HexPosition(0, 0);
+      if (canPlaceCurrentTile) {
+        placeCurrentTile();
       }
     });
   }
 
   void _finishPlacement() {
     _isPlacementPhase = false;
+    if (_placementBoardComponent != null) {
+      _placementBoardComponent!.removeFromParent();
+      _placementBoardComponent = null;
+    }
+    if (_boardComponent != null) {
+      _boardComponent!.removeFromParent();
+      _boardComponent = null;
+    }
+
     final board = BoardGenerator.generateFromTiles(_boardBuilder.placedTiles, players, herdSize);
     _engine.initializeGame(board, players);
 
-    if (_boardComponent != null) {
-      _boardComponent!.removeFromParent();
-    }
     final boardSize = _calculateBoardSize();
     _boardComponent = HexBoardComponent(
       board: _engine.board!,
@@ -335,15 +407,31 @@ class BattleCowsGame extends FlameGame with TapCallbacks {
     _startTimer();
 
     onPlacementComplete?.call();
-    onStateChanged?.call();
+    _notifyStateChanged();
   }
 
   void onPlacementCellTapped(HexPosition position) {
     if (_currentPlacementPlayer.isAi || _allTilesPlaced || _currentTile == null) return;
+    _tileOffset = clampHexOffset(position);
+    _notifyStateChanged();
+  }
 
-    // Try to place at tapped position
-    _tileOffset = position;
-    placeCurrentTile();
+  @override
+  void onDragStart(DragStartEvent event) {
+    if (!_isPlacementPhase || _currentPlacementPlayer.isAi || _allTilesPlaced || _currentTile == null) {
+      super.onDragStart(event);
+      return;
+    }
+    _handlePlacementPointer(event.canvasPosition);
+  }
+
+  @override
+  void onDragUpdate(DragUpdateEvent event) {
+    if (!_isPlacementPhase || _currentPlacementPlayer.isAi || _allTilesPlaced || _currentTile == null) {
+      super.onDragUpdate(event);
+      return;
+    }
+    _handlePlacementPointer(event.canvasEndPosition);
   }
 
   @override
@@ -353,16 +441,22 @@ class BattleCowsGame extends FlameGame with TapCallbacks {
       return;
     }
 
-    // Convert tap position to hex position
-    final worldPos = camera.viewfinder.globalToLocal(event.canvasPosition);
+    // ONLY smoothly move preview to tapped location — NEVER place on tap!
+    _handlePlacementPointer(event.canvasPosition);
+    super.onTapDown(event);
+  }
+
+  void _handlePlacementPointer(Vector2 canvasPos) {
+    final worldPos = camera.viewfinder.globalToLocal(canvasPos);
     final hexSize = 30.0;
     final q = ((sqrt(3) / 3 * worldPos.x - 1.0 / 3 * worldPos.y) / hexSize).round();
     final r = ((2.0 / 3 * worldPos.y) / hexSize).round();
-    final hexPos = HexPosition(q, r);
+    final hexPos = clampHexOffset(HexPosition(q, r));
 
-    _tileOffset = hexPos;
-    placeCurrentTile();
-    super.onTapDown(event);
+    if (_tileOffset != hexPos) {
+      _tileOffset = hexPos;
+      _notifyStateChanged();
+    }
   }
 
   void _startTimer() {
@@ -381,7 +475,7 @@ class BattleCowsGame extends FlameGame with TapCallbacks {
       if (timeRemaining <= 0) {
         _handleTimeUp();
       }
-      onStateChanged?.call();
+      _notifyStateChanged();
     });
   }
 
@@ -451,7 +545,7 @@ class BattleCowsGame extends FlameGame with TapCallbacks {
         _performAiMove();
       }
 
-      onStateChanged?.call();
+      _notifyStateChanged();
       return;
     }
   }
@@ -507,7 +601,7 @@ class BattleCowsGame extends FlameGame with TapCallbacks {
     }
 
     _boardComponent?.updateSelection(selectedPosition, validMoves);
-    onStateChanged?.call();
+    _notifyStateChanged();
   }
 
   void setSplitCount(int count) {
@@ -515,21 +609,21 @@ class BattleCowsGame extends FlameGame with TapCallbacks {
     final herd = _engine.board?.getHerdAt(selectedPosition!);
     if (herd == null) return;
     selectedSplitCount = count.clamp(1, max(1, herd.size - 1));
-    onStateChanged?.call();
+    _notifyStateChanged();
   }
 
   void cancelMove() {
     selectedPosition = null;
     validMoves = [];
     _boardComponent?.updateSelection(null, []);
-    onStateChanged?.call();
+    _notifyStateChanged();
   }
 
   void _executeWithAnimation(Move move) {
     _isAnimating = true;
     _timerRunning = false;
     _gameTimer?.cancel();
-    onStateChanged?.call();
+    _notifyStateChanged();
 
     final fromPos = move.from;
     final toPos = move.to;
@@ -607,7 +701,7 @@ class BattleCowsGame extends FlameGame with TapCallbacks {
     _updateCounts();
     AudioManager().playGameOver();
     onGameOver?.call(winner, territoryCounts);
-    onStateChanged?.call();
+    _notifyStateChanged();
   }
 
   void rematch() {

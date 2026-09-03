@@ -13,6 +13,7 @@ class AssetPaths {
   // Background & UI Images
   static const String background = '$imagesPath/Background/Background.jpg';
   static const String tableImage = '$imagesPath/Background/Table image.jpg';
+  static const String tableGameplayBackground = '$imagesPath/Background/Table image.jpg';
   static const String logo = '$imagesPath/Background/Logo.png';
   static const String titleText = '$imagesPath/Background/Title Text.png';
 

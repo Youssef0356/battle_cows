@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:icony/icony_gameicons.dart';
 import '../../flame/battle_cows_game.dart';
 import '../../core/constants/colors.dart';
 
@@ -13,17 +14,27 @@ class ScoreboardOverlay extends StatefulWidget {
 }
 
 class _ScoreboardOverlayState extends State<ScoreboardOverlay> {
+  late final VoidCallback _updateListener;
+
   @override
   void initState() {
     super.initState();
-    widget.game.onStateChanged = () {
+    _updateListener = () {
       if (mounted) setState(() {});
     };
+    widget.game.addStateListener(_updateListener);
+  }
+
+  @override
+  void dispose() {
+    widget.game.removeStateListener(_updateListener);
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final players = widget.game.players;
+    if (players.isEmpty) return const SizedBox.shrink();
     final cowCounts = widget.game.cowCounts;
     final territoryCounts = widget.game.territoryCounts;
     final currentColor = widget.game.engine.currentPlayer.color;
@@ -91,7 +102,12 @@ class _ScoreboardOverlayState extends State<ScoreboardOverlay> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text('🐮', style: TextStyle(fontSize: 12)),
+                            GameIcons(
+                              GameIcons.cow,
+                              width: 12,
+                              height: 12,
+                              color: isActive ? const Color(0xFFFFD54F) : Colors.white,
+                            ),
                             const SizedBox(width: 2),
                             Text(
                               '$cows',
@@ -103,7 +119,12 @@ class _ScoreboardOverlayState extends State<ScoreboardOverlay> {
                               ),
                             ),
                             const SizedBox(width: 8),
-                            Text('🏴', style: TextStyle(fontSize: 12)),
+                            GameIcons(
+                              GameIcons.flag_objective,
+                              width: 12,
+                              height: 12,
+                              color: isActive ? const Color(0xFFFFD54F) : Colors.white,
+                            ),
                             const SizedBox(width: 2),
                             Text(
                               '$territory',

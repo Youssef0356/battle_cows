@@ -235,7 +235,7 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
         children: [
           Positioned.fill(
             child: Image.asset(
-              'assets/images/Background/Table_Gameplay_Background.jpg',
+              'assets/images/Background/Table image.jpg',
               fit: BoxFit.cover,
               errorBuilder: (context, error, stack) => Image.asset(
                 'assets/images/Background/Background.jpg',
@@ -243,9 +243,10 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
               ),
             ),
           ),
+          // Subtle warm dark overlay - keep very light so table texture shows
           Positioned.fill(
             child: Container(
-              color: Colors.black.withValues(alpha: 0.35),
+              color: Colors.black.withValues(alpha: 0.15),
             ),
           ),
           SafeArea(
@@ -407,9 +408,9 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
               width: boardDimension,
               height: boardDimension,
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.25),
+                color: Colors.transparent,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white12, width: 1.5),
+                border: Border.all(color: Colors.white24, width: 1.5),
               ),
               child: Stack(
                 clipBehavior: Clip.none,
@@ -435,7 +436,7 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
                     ),
                   ..._buildPlacedTiles(hexSize, boardDimension),
                   if (_currentTile != null)
-                    _buildPreviewTile(hexSize, boardDimension),
+                    ..._buildPreviewTile(hexSize, boardDimension),
                 ],
               ),
             ),
@@ -493,7 +494,7 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
     return widgets;
   }
 
-  Widget _buildPreviewTile(double hexSize, double boardDimension) {
+  List<Widget> _buildPreviewTile(double hexSize, double boardDimension) {
     final preview = _currentTile!.translate(_tileOffset);
     final canPlace = _builder.canPlace(preview);
     final center = Offset(boardDimension / 2, boardDimension / 2);
@@ -513,7 +514,7 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
       );
     }
 
-    return Stack(children: widgets);
+    return widgets;
   }
 
   Widget _buildBottomShelf() {

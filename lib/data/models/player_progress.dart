@@ -9,6 +9,7 @@ class PlayerProgress {
   int totalCaptures;
   int dailyStreak;
   String? lastLoginDate;
+  String? lastDailyRewardClaimed;
   List<String> ownedItems;
   List<QuestProgress> dailyQuests;
   String? lastQuestRefreshDate;
@@ -22,6 +23,7 @@ class PlayerProgress {
     this.totalCaptures = 0,
     this.dailyStreak = 0,
     this.lastLoginDate,
+    this.lastDailyRewardClaimed,
     List<String>? ownedItems,
     List<QuestProgress>? dailyQuests,
     this.lastQuestRefreshDate,
@@ -62,6 +64,7 @@ class PlayerProgress {
         'totalCaptures': totalCaptures,
         'dailyStreak': dailyStreak,
         'lastLoginDate': lastLoginDate,
+        'lastDailyRewardClaimed': lastDailyRewardClaimed,
         'ownedItems': ownedItems,
         'dailyQuests': dailyQuests.map((q) => q.toJson()).toList(),
         'lastQuestRefreshDate': lastQuestRefreshDate,
@@ -77,6 +80,7 @@ class PlayerProgress {
       totalCaptures: json['totalCaptures'] ?? 0,
       dailyStreak: json['dailyStreak'] ?? 0,
       lastLoginDate: json['lastLoginDate'],
+      lastDailyRewardClaimed: json['lastDailyRewardClaimed'],
       ownedItems: List<String>.from(json['ownedItems'] ?? []),
       dailyQuests: (json['dailyQuests'] as List?)
               ?.map((q) => QuestProgress.fromJson(q))

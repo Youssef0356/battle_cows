@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:icony/icony_gameicons.dart';
 
 class TurnBanner extends StatefulWidget {
   final String playerName;
@@ -104,13 +105,18 @@ class _TurnBannerState extends State<TurnBanner>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text('🐮', style: TextStyle(fontSize: 28)),
+                    GameIcons(
+                      GameIcons.cow,
+                      width: 28,
+                      height: 28,
+                      color: Colors.white,
+                    ),
                     const SizedBox(width: 12),
                     Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          widget.isAi ? 'CPU\'S TURN' : 'YOUR TURN',
+                          widget.isAi ? 'CPU\'S TURN' : 'PLAYER TURN',
                           style: GoogleFonts.bangers(
                             fontSize: 14,
                             color: Colors.white.withValues(alpha: 0.85),

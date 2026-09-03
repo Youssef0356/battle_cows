@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:icony/icony_gameicons.dart';
 import '../../flame/battle_cows_game.dart';
 import '../../game/models/player.dart';
 import '../../core/constants/colors.dart';
@@ -74,12 +75,17 @@ class _GameOverOverlayState extends State<GameOverOverlay>
                   width: 3,
                 ),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildConfetti(),
-                  const Text('\ud83c\udfc6', style: TextStyle(fontSize: 64)),
-                  const SizedBox(height: 12),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildConfetti(),
+                    GameIcons(
+                      GameIcons.trophy_cup,
+                      width: 64,
+                      height: 64,
+                      color: const Color(0xFFFFD54F),
+                    ),
+                    const SizedBox(height: 12),
                   Text(
                     winner != null
                         ? '${_getPlayerName(winner)} WINS!'
@@ -226,6 +232,8 @@ class _GameOverOverlayState extends State<GameOverOverlay>
 
   Widget _buildStatsSection() {
     final game = widget.game;
+    final isMultiplayer = widget.players.every((p) => !p.isAi);
+    
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -246,21 +254,72 @@ class _GameOverOverlayState extends State<GameOverOverlay>
             ),
           ),
           const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildStatItem('TURNS', '${game.totalMoves}'),
-              _buildStatItem('YOUR COWS', '${game.cowCounts[widget.players.isNotEmpty ? widget.players[0].color : null] ?? 0}'),
-              _buildStatItem('CPU COWS', '${game.cowCounts[widget.players.length > 1 ? widget.players[1].color : null] ?? 0}'),
-            ],
+          _buildStatItem('TOTAL TURNS', '${game.totalMoves}'),
+          const SizedBox(height: 8),
+          if (isMultiplayer) ...[
+            // Show stats for all players in multiplayer
+            Wrap(
+              spacing: 16,
+              runSpacing: 8,
+              alignment: WrapAlignment.center,
+              children: widget.players.map((player) {
+                final cows = game.cowCounts[player.color] ?? 0;
+                final captures = game.capturesPerPlayer[player.color] ?? 0;
+                return _buildPlayerStatItem(
+                  player.name.toUpperCase(),
+                  '$cows cows | $captures captures',
+                  AppColors.getPlayerPrimary(player.color),
+                );
+              }).toList(),
+            ),
+          ] else ...[
+            // Show 1v1 stats for AI games
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildStatItem('YOUR COWS', '${game.cowCounts[widget.players.isNotEmpty ? widget.players[0].color : null] ?? 0}'),
+                _buildStatItem('CPU COWS', '${game.cowCounts[widget.players.length > 1 ? widget.players[1].color : null] ?? 0}'),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildStatItem('YOUR CAPTURES', '${game.capturesPerPlayer[widget.players.isNotEmpty ? widget.players[0].color : null] ?? 0}'),
+                _buildStatItem('CPU CAPTURES', '${game.capturesPerPlayer[widget.players.length > 1 ? widget.players[1].color : null] ?? 0}'),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlayerStatItem(String name, String stats, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.5), width: 1),
+      ),
+      child: Column(
+        children: [
+          Text(
+            name,
+            style: GoogleFonts.bangers(
+              fontSize: 12,
+              color: color,
+              letterSpacing: 1,
+            ),
           ),
-          const SizedBox(height: 6),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildStatItem('YOUR CAPTURES', '${game.capturesPerPlayer[widget.players.isNotEmpty ? widget.players[0].color : null] ?? 0}'),
-              _buildStatItem('CPU CAPTURES', '${game.capturesPerPlayer[widget.players.length > 1 ? widget.players[1].color : null] ?? 0}'),
-            ],
+          const SizedBox(height: 2),
+          Text(
+            stats,
+            style: GoogleFonts.bangers(
+              fontSize: 10,
+              color: Colors.white.withValues(alpha: 0.8),
+            ),
           ),
         ],
       ),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flame/game.dart';
+import 'package:flame/game.dart' hide Matrix4;
 import 'package:google_fonts/google_fonts.dart';
 import '../../flame/battle_cows_game.dart';
 import '../../data/services/progress_service.dart';
@@ -34,11 +34,18 @@ class FlameGameScreen extends StatefulWidget {
   State<FlameGameScreen> createState() => _FlameGameScreenState();
 }
 
-class _FlameGameScreenState extends State<FlameGameScreen> {
+class _FlameGameScreenState extends State<FlameGameScreen>
+    with TickerProviderStateMixin {
   late BattleCowsGame _game;
   OverlayEntry? _turnBannerEntry;
   OverlayEntry? _captureToastEntry;
   ProgressService? _progressService;
+  bool _overlaysAdded = false;
+
+  // 3D camera breathing animation
+  late AnimationController _cameraController;
+  late Animation<double> _cameraTiltAnim;
+  late Animation<double> _cameraFloatAnim;
 
   @override
   void initState() {
@@ -46,6 +53,20 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     AdManager().loadRewardedAd();
     _initProgress();
+
+    // Slow breathing camera animation – gives the board a living 3D feel
+    _cameraController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 6000),
+    )..repeat(reverse: true);
+
+    _cameraTiltAnim = Tween<double>(begin: -0.045, end: -0.025).animate(
+      CurvedAnimation(parent: _cameraController, curve: Curves.easeInOut),
+    );
+    _cameraFloatAnim = Tween<double>(begin: -3, end: 3).animate(
+      CurvedAnimation(parent: _cameraController, curve: Curves.easeInOut),
+    );
+
     _game = BattleCowsGame(
       players: widget.players,
       tiles: widget.tiles,
@@ -77,13 +98,6 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
         }
       },
     );
-    // Start with placement overlay if no tiles provided
-    if (widget.tiles == null || widget.tiles!.isEmpty) {
-      _game.overlays.add('Placement');
-    } else {
-      _game.overlays.add('GameControls');
-      _game.overlays.add('Scoreboard');
-    }
   }
 
   Future<void> _initProgress() async {
@@ -92,14 +106,20 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
 
   void _recordGameResult(PlayerColor? winner) {
     if (_progressService == null) return;
-    final playerColor = widget.players.isNotEmpty ? widget.players[0].color : null;
-    final won = winner != null && winner == playerColor;
-    final captures = _game.capturesPerPlayer[playerColor] ?? 0;
-    _progressService!.recordMatch(won: won, captures: captures);
+    
+    // Track results for all human players
+    for (final player in widget.players) {
+      if (!player.isAi) {
+        final won = winner != null && winner == player.color;
+        final captures = _game.capturesPerPlayer[player.color] ?? 0;
+        _progressService!.recordMatch(won: won, captures: captures);
+      }
+    }
   }
 
   @override
   void dispose() {
+    _cameraController.dispose();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     _turnBannerEntry?.remove();
     _captureToastEntry?.remove();
@@ -200,37 +220,88 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_overlaysAdded) {
+      _overlaysAdded = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (widget.tiles == null || widget.tiles!.isEmpty) {
+          _game.overlays.add('Placement');
+        } else {
+          _game.overlays.add('GameControls');
+          _game.overlays.add('Scoreboard');
+        }
+      });
+    }
+
     return Scaffold(
       backgroundColor: Colors.black,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            GameWidget(
-              game: _game,
-              backgroundBuilder: (context) => Container(color: Colors.black),
-              overlayBuilderMap: {
-                'HUD': (context, game) => HudOverlay(
-                  game: game as BattleCowsGame,
-                  players: widget.players,
-                ),
-                'Placement': (context, game) => PlacementOverlay(
-                  game: game as BattleCowsGame,
-                ),
-                'GameControls': (context, game) => GameControlsOverlay(
-                  game: game as BattleCowsGame,
-                ),
-                'Scoreboard': (context, game) => ScoreboardOverlay(
-                  game: game as BattleCowsGame,
-                ),
-                'GameOver': (context, game) => GameOverOverlay(
-                  game: game as BattleCowsGame,
-                  players: widget.players,
-                ),
-              },
-              initialActiveOverlays: const ['HUD'],
+      body: Stack(
+        children: [
+          // Table background – fills entire screen
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/Background/Table image.jpg',
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stack) => Image.asset(
+                'assets/images/Background/Background.jpg',
+                fit: BoxFit.cover,
+              ),
             ),
-          ],
-        ),
+          ),
+          // Subtle warm dark overlay to let the Flame board pop
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withValues(alpha: 0.22),
+            ),
+          ),
+          // Animated 3D perspective board area
+          SafeArea(
+            child: AnimatedBuilder(
+              animation: _cameraController,
+              builder: (context, child) {
+                // 3D angled camera: slight X-axis tilt + vertical float
+                final tilt = _cameraTiltAnim.value;
+                final floatY = _cameraFloatAnim.value;
+                final matrix = Matrix4.identity()
+                  ..setEntry(3, 2, 0.0008)   // perspective depth
+                  ..rotateX(tilt.toDouble()); // tilt angle
+
+                return Transform(
+                  transform: matrix,
+                  alignment: Alignment.center,
+                  child: Transform.translate(
+                    offset: Offset(0, floatY),
+                    child: child,
+                  ),
+                );
+              },
+              child: GameWidget(
+                game: _game,
+                backgroundBuilder: (context) => const SizedBox.shrink(),
+                overlayBuilderMap: {
+                  'HUD': (context, game) => HudOverlay(
+                        game: game as BattleCowsGame,
+                        players: widget.players,
+                      ),
+                  'Placement': (context, game) => PlacementOverlay(
+                        game: game as BattleCowsGame,
+                      ),
+                  'GameControls': (context, game) => GameControlsOverlay(
+                        game: game as BattleCowsGame,
+                      ),
+                  'Scoreboard': (context, game) => ScoreboardOverlay(
+                        game: game as BattleCowsGame,
+                      ),
+                  'GameOver': (context, game) => GameOverOverlay(
+                        game: game as BattleCowsGame,
+                        players: widget.players,
+                      ),
+                },
+                initialActiveOverlays: const ['HUD'],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

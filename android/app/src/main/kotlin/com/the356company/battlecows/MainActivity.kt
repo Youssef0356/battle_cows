@@ -1,4 +1,4 @@
-package com.battlecows.battle_cows
+package com.the356company.battlecows
 
 import io.flutter.embedding.android.FlutterActivity
 

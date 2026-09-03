@@ -8,6 +8,7 @@ import '../dialogs/daily_reward_dialog.dart';
 import '../dialogs/daily_quests_dialog.dart';
 import '../dialogs/shop_dialog.dart';
 import '../router/app_router.dart';
+import '../widgets/wood_button.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -53,8 +54,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   void _showDailyRewardIfNeeded() {
     if (_progressService == null) return;
     final today = DateTime.now().toIso8601String().substring(0, 10);
-    final lastClaim = _progressService!.progress.lastLoginDate;
-    if (lastClaim == today) {
+    final lastClaim = _progressService!.progress.lastDailyRewardClaimed;
+    if (lastClaim != today) {
       final reward = _progressService!.claimDailyReward();
       showDialog(
         context: context,
@@ -93,6 +94,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       arguments: {
         'players': players,
         'herdSize': 16,
+        // No tiles passed → triggers placement phase in FlameGameScreen
       },
     );
   }
@@ -491,7 +493,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           // Background pasture image
           Positioned.fill(
             child: Image.asset(
-              'assets/images/Background/background.jpg',
+              'assets/images/Background/Background.jpg',
               fit: BoxFit.cover,
               errorBuilder: (context, error, stack) => Image.asset(
                 'assets/images/Background/MainMenu_Background.jpg',
@@ -765,40 +767,57 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildMenuButtons() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final btnWidth = (screenWidth * 0.75).clamp(240.0, 360.0);
     return Column(
       children: [
-        _buildPillButton(
+        WoodButton.gold(
           label: 'PLAY VS AI',
           icon: Icons.play_arrow_rounded,
-          gradientColors: const [Color(0xFFFFE082), Color(0xFFFFB300), Color(0xFFFF8F00)],
-          borderColor: const Color(0xFFFFF8E1),
-          height: 58,
+          width: btnWidth,
+          height: 62,
           fontSize: 26,
-          onTap: () => _showGameSetupDialog(title: 'PLAY VS AI', isMultiplayer: false),
+          onPressed: () => _showGameSetupDialog(title: 'PLAY VS AI', isMultiplayer: false),
         ),
-        const SizedBox(height: 10),
-        _buildPillButton(
+        const SizedBox(height: 12),
+        WoodButton(
+          label: 'LOCAL MULTIPLAYER',
+          icon: Icons.people_rounded,
+          width: btnWidth,
+          height: 58,
+          fontSize: 24,
+          baseColor: const Color(0xFF1565C0),
+          borderColor: const Color(0xFF42A5F5),
+          onPressed: () => _showGameSetupDialog(title: 'LOCAL MULTIPLAYER', isMultiplayer: true),
+        ),
+        const SizedBox(height: 12),
+        WoodButton.purple(
           label: 'HOW TO PLAY',
           icon: Icons.menu_book_rounded,
-          gradientColors: const [Color(0xFFBA68C8), Color(0xFF8E24AA), Color(0xFF6A1B9A)],
-          borderColor: const Color(0xFFE1BEE7),
-          onTap: () => Navigator.pushNamed(context, AppRouter.tutorial),
+          width: btnWidth,
+          height: 54,
+          fontSize: 22,
+          onPressed: () => Navigator.pushNamed(context, AppRouter.tutorial),
         ),
-        const SizedBox(height: 10),
-        _buildPillButton(
+        const SizedBox(height: 12),
+        WoodButton(
           label: 'CHALLENGES',
           icon: Icons.shield_rounded,
-          gradientColors: const [Color(0xFFA1887F), Color(0xFF6D4C41), Color(0xFF4E342E)],
+          width: btnWidth,
+          height: 54,
+          fontSize: 22,
+          baseColor: const Color(0xFF5D4037),
           borderColor: const Color(0xFFD7CCC8),
-          onTap: () => _showGameSetupDialog(title: 'DAILY CHALLENGE', isMultiplayer: false),
+          onPressed: () => _showGameSetupDialog(title: 'DAILY CHALLENGE', isMultiplayer: false),
         ),
-        const SizedBox(height: 10),
-        _buildPillButton(
+        const SizedBox(height: 12),
+        WoodButton.red(
           label: 'EXIT',
           icon: Icons.exit_to_app_rounded,
-          gradientColors: const [Color(0xFFEF5350), Color(0xFFC62828), Color(0xFFB71C1C)],
-          borderColor: const Color(0xFFFFCDD2),
-          onTap: () {
+          width: btnWidth,
+          height: 54,
+          fontSize: 22,
+          onPressed: () {
             showDialog(
               context: context,
               builder: (ctx) => AlertDialog(
@@ -838,61 +857,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildPillButton({
-    required String label,
-    required IconData icon,
-    required List<Color> gradientColors,
-    required Color borderColor,
-    required VoidCallback onTap,
-    double height = 50,
-    double fontSize = 20,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 270,
-        height: height,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: gradientColors,
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-          borderRadius: BorderRadius.circular(height / 2),
-          border: Border.all(color: borderColor, width: 2.5),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.5),
-              offset: const Offset(0, 4),
-              blurRadius: 6,
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: Colors.white, size: fontSize + 2),
-            const SizedBox(width: 10),
-            Text(
-              label,
-              style: GoogleFonts.bangers(
-                fontSize: fontSize,
-                color: Colors.white,
-                letterSpacing: 2,
-                shadows: [
-                  Shadow(
-                    color: Colors.black.withValues(alpha: 0.6),
-                    offset: const Offset(1.5, 1.5),
-                    blurRadius: 3,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
 
   Widget _buildBottomRusticBar() {
     final p = _progressService?.progress;

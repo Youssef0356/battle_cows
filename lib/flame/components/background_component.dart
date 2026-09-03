@@ -17,9 +17,9 @@ class BackgroundComponent extends PositionComponent {
     try {
       ByteData data;
       try {
-        data = await rootBundle.load('assets/images/Background/background.jpg');
+        data = await rootBundle.load('assets/images/Background/Table image.jpg');
       } catch (_) {
-        data = await rootBundle.load('assets/images/Background/MainMenu_Background.jpg');
+        data = await rootBundle.load('assets/images/Background/Background.jpg');
       }
       final bytes = data.buffer.asUint8List();
       final codec = await ui.instantiateImageCodec(bytes);
@@ -51,12 +51,12 @@ class BackgroundComponent extends PositionComponent {
       final fadePaint = Paint()
         ..shader = LinearGradient(
           colors: [
-            Colors.black.withValues(alpha: 0.7),
             Colors.black.withValues(alpha: 0.3),
+            Colors.black.withValues(alpha: 0.05),
             Colors.transparent,
             Colors.transparent,
+            Colors.black.withValues(alpha: 0.05),
             Colors.black.withValues(alpha: 0.3),
-            Colors.black.withValues(alpha: 0.7),
           ],
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
@@ -66,12 +66,12 @@ class BackgroundComponent extends PositionComponent {
       final fadePaintV = Paint()
         ..shader = LinearGradient(
           colors: [
-            Colors.black.withValues(alpha: 0.6),
-            Colors.black.withValues(alpha: 0.2),
+            Colors.black.withValues(alpha: 0.25),
+            Colors.black.withValues(alpha: 0.05),
             Colors.transparent,
             Colors.transparent,
-            Colors.black.withValues(alpha: 0.2),
-            Colors.black.withValues(alpha: 0.6),
+            Colors.black.withValues(alpha: 0.05),
+            Colors.black.withValues(alpha: 0.25),
           ],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
