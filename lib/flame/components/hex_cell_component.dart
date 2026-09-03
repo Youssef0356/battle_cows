@@ -16,6 +16,7 @@ class HexCellComponent extends PositionComponent with TapCallbacks {
   final int flipMode;
   final ui.Image? texture;
   final void Function()? onTapCallback;
+  PlayerColor? territoryOwner;
 
   HexCellComponent({
     required this.cell,
@@ -28,6 +29,7 @@ class HexCellComponent extends PositionComponent with TapCallbacks {
     this.flipMode = 0,
     this.texture,
     this.onTapCallback,
+    this.territoryOwner,
   }) : super(anchor: Anchor.center);
 
   @override
@@ -153,6 +155,11 @@ class HexCellComponent extends PositionComponent with TapCallbacks {
         const Color(0xFF558B2F),
       ];
       canvas.drawPath(path, Paint()..color = grassShades[cell.position.q.abs() % 3]);
+    }
+
+    if (territoryOwner != null && (herd == null || herd!.size == 0)) {
+      final tint = AppColors.getPlayerPrimary(territoryOwner!).withValues(alpha: 0.15);
+      canvas.drawPath(path, Paint()..color = tint);
     }
 
     if (herd != null && herd!.size > 0) {

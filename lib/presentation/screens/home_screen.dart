@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/colors.dart';
+import '../../data/services/progress_service.dart';
 import '../../game/models/player.dart';
+import '../dialogs/daily_reward_dialog.dart';
+import '../dialogs/daily_quests_dialog.dart';
+import '../dialogs/shop_dialog.dart';
 import '../router/app_router.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -17,6 +21,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   int _tilesPerPlayer = 4;
   late AnimationController _animController;
   late Animation<double> _titleScale;
+  ProgressService? _progressService;
 
   @override
   void initState() {
@@ -30,6 +35,33 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       CurvedAnimation(parent: _animController, curve: Curves.elasticOut),
     );
     _animController.forward();
+    _initProgress();
+  }
+
+  Future<void> _initProgress() async {
+    _progressService = await ProgressService.getInstance();
+    _progressService!.checkDailyLogin();
+    _progressService!.refreshDailyQuests();
+    if (mounted) {
+      setState(() {});
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showDailyRewardIfNeeded();
+      });
+    }
+  }
+
+  void _showDailyRewardIfNeeded() {
+    if (_progressService == null) return;
+    final today = DateTime.now().toIso8601String().substring(0, 10);
+    final lastClaim = _progressService!.progress.lastLoginDate;
+    if (lastClaim == today) {
+      final reward = _progressService!.claimDailyReward();
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => DailyRewardDialog(progress: _progressService!, rewardAmount: reward),
+      ).then((_) => setState(() {}));
+    }
   }
 
   @override
@@ -57,10 +89,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final players = _createPlayers(count: playerCount, isMultiplayer: isMultiplayer);
     Navigator.pushNamed(
       context,
-      AppRouter.tilePlacement,
+      AppRouter.game,
       arguments: {
         'players': players,
-        'tilesPerPlayer': tilesPerPlayer,
+        'herdSize': 16,
       },
     );
   }
@@ -285,6 +317,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   void _showStatsDialog() {
+    final p = _progressService?.progress;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -301,11 +334,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildStatRow('🏆 Trophies', '1,250'),
-            _buildStatRow('⚔️ Matches Played', '48'),
-            _buildStatRow('🥇 Victories', '34 (71%)'),
-            _buildStatRow('🌾 Pastures Captured', '482'),
-            _buildStatRow('⭐ Level', '12 (Master Cow)'),
+            _buildStatRow('⭐ Level', '${p?.level ?? 1} (${p?.levelTitle ?? "Farmhand"})'),
+            _buildStatRow('🎯 XP', '${p?.totalXp ?? 0}'),
+            _buildStatRow('💰 Coins', '${p?.coins ?? 0}'),
+            _buildStatRow('⚔️ Matches Played', '${p?.matchesPlayed ?? 0}'),
+            _buildStatRow('🥇 Victories', '${p?.matchesWon ?? 0} (${(p?.winRate ?? 0 * 100).toStringAsFixed(0)}%)'),
+            _buildStatRow('🌾 Tiles Captured', '${p?.totalCaptures ?? 0}'),
+            _buildStatRow('🔥 Daily Streak', '${p?.dailyStreak ?? 0}'),
           ],
         ),
         actions: [
@@ -332,6 +367,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   void _showShopDialog() {
+    if (_progressService == null) return;
+    showDialog(
+      context: context,
+      builder: (_) => ShopDialog(progress: _progressService!),
+    ).then((_) => setState(() {}));
+  }
+
+  void _showSettingsDialog() {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -341,21 +384,100 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           side: const BorderSide(color: Color(0xFFFFD54F), width: 2),
         ),
         title: Text(
-          'COW BARN SHOP',
+          'SETTINGS',
           style: GoogleFonts.bangers(fontSize: 24, color: const Color(0xFFFFD54F), letterSpacing: 2),
           textAlign: TextAlign.center,
         ),
-        content: Text(
-          '🐮 New Cow Hats, Wooden Board Skins, and Custom Horns coming in Season 2!',
-          style: GoogleFonts.bangers(fontSize: 16, color: Colors.white),
-          textAlign: TextAlign.center,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildSettingsRow('🔊 Sound Effects', true),
+            _buildSettingsRow('🎵 Music', true),
+            _buildSettingsRow('📳 Haptic Feedback', true),
+            const SizedBox(height: 12),
+            Text(
+              'CPU Difficulty',
+              style: GoogleFonts.bangers(fontSize: 14, color: Colors.white70),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildDifficultyBtn('EASY', const Color(0xFF689F38)),
+                const SizedBox(width: 8),
+                _buildDifficultyBtn('MEDIUM', const Color(0xFFFFA000)),
+                const SizedBox(width: 8),
+                _buildDifficultyBtn('HARD', const Color(0xFFD32F2F)),
+              ],
+            ),
+          ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('AWESOME', style: GoogleFonts.bangers(fontSize: 16, color: Colors.white)),
+            child: Text('CLOSE', style: GoogleFonts.bangers(fontSize: 16, color: Colors.white)),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSettingsRow(String label, bool defaultValue) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: GoogleFonts.bangers(fontSize: 16, color: Colors.white70)),
+          StatefulBuilder(
+            builder: (context, setInnerState) {
+              bool value = defaultValue;
+              return GestureDetector(
+                onTap: () => setInnerState(() => value = !value),
+                child: Container(
+                  width: 48,
+                  height: 26,
+                  decoration: BoxDecoration(
+                    color: value ? const Color(0xFF689F38) : Colors.grey.shade800,
+                    borderRadius: BorderRadius.circular(13),
+                    border: Border.all(color: Colors.white24),
+                  ),
+                  child: AnimatedAlign(
+                    duration: const Duration(milliseconds: 200),
+                    alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 3),
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDifficultyBtn(String label, Color color) {
+    return GestureDetector(
+      onTap: () {},
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color, width: 1.5),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.bangers(fontSize: 12, color: color),
+        ),
       ),
     );
   }
@@ -369,11 +491,20 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           // Background pasture image
           Positioned.fill(
             child: Image.asset(
-              'assets/images/Background/MainMenu_Background.jpg',
+              'assets/images/Background/background.jpg',
               fit: BoxFit.cover,
               errorBuilder: (context, error, stack) => Image.asset(
-                'assets/images/Background/Background.jpg',
+                'assets/images/Background/MainMenu_Background.jpg',
                 fit: BoxFit.cover,
+                errorBuilder: (context, error, stack) => Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF2E7D32), Color(0xFF1B5E20), Color(0xFF2E7D32)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
@@ -441,6 +572,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildProfilePlaque() {
+    final p = _progressService?.progress;
+    final level = p?.level ?? 1;
+    final xpPercent = p?.xpPercent ?? 0.0;
+    final coins = p?.coins ?? 0;
+
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
@@ -484,7 +620,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     border: Border.all(color: Colors.white, width: 1),
                   ),
                   child: Text(
-                    '12',
+                    '$level',
                     style: GoogleFonts.bangers(
                       fontSize: 11,
                       color: Colors.white,
@@ -510,9 +646,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     ),
                   ),
                   const SizedBox(width: 8),
-                  const Text('🏆', style: TextStyle(fontSize: 12)),
+                  const Text('💰', style: TextStyle(fontSize: 12)),
                   Text(
-                    ' 1250',
+                    ' $coins',
                     style: GoogleFonts.bangers(
                       fontSize: 14,
                       color: const Color(0xFFFFD54F),
@@ -531,7 +667,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 ),
                 child: FractionallySizedBox(
                   alignment: Alignment.centerLeft,
-                  widthFactor: 0.65,
+                  widthFactor: xpPercent,
                   child: Container(
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
@@ -552,7 +688,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   Widget _buildSideToolButtons() {
     return Column(
       children: [
-        _buildWoodToolButton(icon: Icons.settings, label: 'SETTINGS', onTap: () {}),
+        _buildWoodToolButton(icon: Icons.settings, label: 'SETTINGS', onTap: _showSettingsDialog),
         const SizedBox(height: 6),
         _buildWoodToolButton(icon: Icons.bar_chart, label: 'STATS', onTap: _showStatsDialog),
         const SizedBox(height: 6),
@@ -632,29 +768,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     return Column(
       children: [
         _buildPillButton(
-          label: 'PLAY',
+          label: 'PLAY VS AI',
           icon: Icons.play_arrow_rounded,
           gradientColors: const [Color(0xFFFFE082), Color(0xFFFFB300), Color(0xFFFF8F00)],
           borderColor: const Color(0xFFFFF8E1),
           height: 58,
           fontSize: 26,
-          onTap: () => _showGameSetupDialog(title: 'QUICK MATCH', isMultiplayer: false),
-        ),
-        const SizedBox(height: 10),
-        _buildPillButton(
-          label: 'MULTIPLAYER',
-          icon: Icons.people_alt_rounded,
-          gradientColors: const [Color(0xFF64B5F6), Color(0xFF1E88E5), Color(0xFF1565C0)],
-          borderColor: const Color(0xFFBBDEFB),
-          onTap: () => _showGameSetupDialog(title: 'PASS & PLAY', isMultiplayer: true),
-        ),
-        const SizedBox(height: 10),
-        _buildPillButton(
-          label: 'VS AI',
-          icon: Icons.smart_toy_rounded,
-          gradientColors: const [Color(0xFF81C784), Color(0xFF43A047), Color(0xFF2E7D32)],
-          borderColor: const Color(0xFFC8E6C9),
-          onTap: () => _showGameSetupDialog(title: 'SOLO VS AI', isMultiplayer: false),
+          onTap: () => _showGameSetupDialog(title: 'PLAY VS AI', isMultiplayer: false),
         ),
         const SizedBox(height: 10),
         _buildPillButton(
@@ -671,6 +791,48 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           gradientColors: const [Color(0xFFA1887F), Color(0xFF6D4C41), Color(0xFF4E342E)],
           borderColor: const Color(0xFFD7CCC8),
           onTap: () => _showGameSetupDialog(title: 'DAILY CHALLENGE', isMultiplayer: false),
+        ),
+        const SizedBox(height: 10),
+        _buildPillButton(
+          label: 'EXIT',
+          icon: Icons.exit_to_app_rounded,
+          gradientColors: const [Color(0xFFEF5350), Color(0xFFC62828), Color(0xFFB71C1C)],
+          borderColor: const Color(0xFFFFCDD2),
+          onTap: () {
+            showDialog(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                backgroundColor: const Color(0xFF2E1C0C),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: const BorderSide(color: Color(0xFFFFD54F), width: 2),
+                ),
+                title: Text(
+                  'EXIT GAME?',
+                  style: GoogleFonts.bangers(fontSize: 24, color: const Color(0xFFFFD54F)),
+                  textAlign: TextAlign.center,
+                ),
+                content: Text(
+                  'Are you sure you want to exit?',
+                  style: GoogleFonts.bangers(fontSize: 16, color: Colors.white70),
+                  textAlign: TextAlign.center,
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: Text('CANCEL', style: GoogleFonts.bangers(fontSize: 14, color: Colors.white70)),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      SystemNavigator.pop();
+                    },
+                    child: Text('EXIT', style: GoogleFonts.bangers(fontSize: 14, color: const Color(0xFFEF5350))),
+                  ),
+                ],
+              ),
+            );
+          },
         ),
       ],
     );
@@ -733,6 +895,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildBottomRusticBar() {
+    final p = _progressService?.progress;
+    final readyQuests = p?.dailyQuests.where((q) => q.isComplete && !q.claimed).length ?? 0;
+    final streak = p?.dailyStreak ?? 0;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -751,20 +917,40 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildBottomItem(
-            iconText: '🎁',
-            title: 'DAILY REWARD',
-            subtitle: '07:45:12',
-            color: const Color(0xFFFFD54F),
+          GestureDetector(
+            onTap: () {
+              if (_progressService == null) return;
+              final reward = _progressService!.claimDailyReward();
+              setState(() {});
+              showDialog(
+                context: context,
+                builder: (_) => DailyRewardDialog(progress: _progressService!, rewardAmount: reward),
+              ).then((_) => setState(() {}));
+            },
+            child: _buildBottomItem(
+              iconText: '🎁',
+              title: 'DAILY REWARD',
+              subtitle: '🔥 Day $streak',
+              color: const Color(0xFFFFD54F),
+            ),
           ),
           Container(width: 1, height: 32, color: Colors.white24),
           _buildSeasonPassBadge(),
           Container(width: 1, height: 32, color: Colors.white24),
-          _buildBottomItem(
-            iconText: '📅',
-            title: 'DAILY QUESTS',
-            subtitle: '2 READY',
-            color: const Color(0xFF81C784),
+          GestureDetector(
+            onTap: () {
+              if (_progressService == null) return;
+              showDialog(
+                context: context,
+                builder: (_) => DailyQuestsDialog(progress: _progressService!),
+              ).then((_) => setState(() {}));
+            },
+            child: _buildBottomItem(
+              iconText: '📅',
+              title: 'DAILY QUESTS',
+              subtitle: readyQuests > 0 ? '$readyQuests READY' : 'PLAY MORE',
+              color: readyQuests > 0 ? const Color(0xFF81C784) : Colors.white54,
+            ),
           ),
         ],
       ),
@@ -808,6 +994,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildSeasonPassBadge() {
+    final p = _progressService?.progress;
+    final level = p?.level ?? 1;
+    final xpPercent = (p?.xpProgress ?? 0) / (p?.xpNeeded ?? 100);
     return Row(
       children: [
         const Text('🛡️', style: TextStyle(fontSize: 18)),
@@ -819,11 +1008,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             Row(
               children: [
                 Text(
-                  'Season 1',
+                  'Level $level',
                   style: GoogleFonts.bangers(fontSize: 10, color: Colors.white70),
                 ),
                 const SizedBox(width: 4),
-                const Text('👑', style: TextStyle(fontSize: 9)),
+                const Text('⭐', style: TextStyle(fontSize: 9)),
               ],
             ),
             const SizedBox(height: 2),
@@ -836,7 +1025,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ),
               child: FractionallySizedBox(
                 alignment: Alignment.centerLeft,
-                widthFactor: 0.35,
+                widthFactor: xpPercent.clamp(0.0, 1.0),
                 child: Container(
                   decoration: BoxDecoration(
                     color: const Color(0xFF42A5F5),
@@ -846,7 +1035,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ),
             ),
             Text(
-              '350 / 1000',
+              '${p?.xpProgress ?? 0} / ${p?.xpNeeded ?? 100}',
               style: GoogleFonts.bangers(fontSize: 8, color: Colors.white60),
             ),
           ],

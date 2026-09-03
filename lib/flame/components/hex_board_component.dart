@@ -85,6 +85,7 @@ class HexBoardComponent extends PositionComponent {
       final pos = entry.key;
       final herd = newBoard.getHerdAt(pos);
       entry.value.herd = herd;
+      entry.value.territoryOwner = herd?.owner;
     }
   }
 

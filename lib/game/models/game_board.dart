@@ -49,13 +49,17 @@ class GameBoard {
     final reachable = <HexPosition>[];
     for (final dir in HexPosition.directions) {
       var current = from;
+      HexPosition? lastValid;
       for (var i = 0; i < maxDistance; i++) {
         final next = current + dir;
         if (!isValidPosition(next)) break;
         if (isHole(next)) break;
         if (hasHerdAt(next)) break;
-        reachable.add(next);
+        lastValid = next;
         current = next;
+      }
+      if (lastValid != null) {
+        reachable.add(lastValid);
       }
     }
     return reachable;

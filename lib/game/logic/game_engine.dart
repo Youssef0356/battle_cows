@@ -1,3 +1,4 @@
+import 'dart:math';
 import '../models/game_board.dart';
 import '../models/herd.dart';
 import '../models/move.dart';
@@ -10,12 +11,17 @@ class GameEngine {
   int _currentPlayerIndex = 0;
   int _turnCount = 0;
   bool _gameOver = false;
+  int _lastCaptureCount = 0;
+  final Map<PlayerColor, int> _hearts = {};
+  final Random _random = Random();
 
   GameBoard? get board => _board;
   List<Player> get players => _players;
   Player get currentPlayer => _players[_currentPlayerIndex];
   int get turnCount => _turnCount;
   bool get gameOver => _gameOver;
+  int get lastCaptureCount => _lastCaptureCount;
+  Map<PlayerColor, int> get hearts => Map.unmodifiable(_hearts);
 
   void initializeGame(GameBoard board, List<Player> players) {
     _board = board;
@@ -23,6 +29,10 @@ class GameEngine {
     _currentPlayerIndex = 0;
     _turnCount = 0;
     _gameOver = false;
+    _hearts.clear();
+    for (final player in players) {
+      _hearts[player.color] = 3;
+    }
   }
 
   List<Move> getValidMoves(PlayerColor playerColor) {
@@ -68,8 +78,23 @@ class GameEngine {
 
     if (herdIndex == -1) return false;
 
+    // Check if there's an enemy herd at the target position
+    final targetHerd = herds.firstWhere(
+      (h) => h.position == move.to,
+      orElse: () => Herd(position: move.to, owner: move.player, size: 0),
+    );
+
+    _lastCaptureCount = 0;
+    if (targetHerd.owner != move.player && targetHerd.size > 0) {
+      _lastCaptureCount = targetHerd.size;
+    }
+
     final originalHerd = herds[herdIndex];
     herds[herdIndex] = originalHerd.copyWith(size: move.stayCount);
+
+    // Remove the enemy herd at target if it exists
+    herds.removeWhere((h) => h.position == move.to);
+
     herds.add(Herd(position: move.to, owner: move.player, size: move.splitCount));
 
     _board = GameBoard(
@@ -100,6 +125,78 @@ class GameEngine {
 
   bool hasLegalMoves(PlayerColor playerColor) {
     return getValidMoves(playerColor).isNotEmpty;
+  }
+
+  bool currentPlayerHasNoMoves() {
+    return getValidMoves(currentPlayer.color).isEmpty;
+  }
+
+  bool allPlayersHaveNoMoves() {
+    for (final player in _players) {
+      if (getValidMoves(player.color).isNotEmpty) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  void advanceTurn() {
+    _currentPlayerIndex = (_currentPlayerIndex + 1) % _players.length;
+    _turnCount++;
+  }
+
+  int loseHeart() {
+    if (_board == null) return 0;
+    
+    final player = currentPlayer;
+    final currentHearts = _hearts[player.color] ?? 3;
+    if (currentHearts <= 0) return 0;
+    
+    _hearts[player.color] = currentHearts - 1;
+    
+    // Check if player lost all hearts
+    if (_hearts[player.color]! <= 0) {
+      _gameOver = true;
+      return currentHearts - 1;
+    }
+    
+    // Random cow movement for the current player
+    _performRandomMove(player.color);
+    
+    return currentHearts - 1;
+  }
+
+  void _performRandomMove(PlayerColor playerColor) {
+    if (_board == null) return;
+    
+    final playerHerds = _board!.herds.where((h) => h.owner == playerColor).toList();
+    if (playerHerds.isEmpty) return;
+    
+    // Try to find a herd that can move (size >= 2)
+    final movableHerds = playerHerds.where((h) => h.size >= 2).toList();
+    if (movableHerds.isEmpty) return;
+    
+    // Pick a random herd
+    final herd = movableHerds[_random.nextInt(movableHerds.length)];
+    
+    // Get reachable positions
+    final reachable = _board!.getReachablePositions(herd.position, herd.size);
+    if (reachable.isEmpty) return;
+    
+    // Pick a random destination
+    final destination = reachable[_random.nextInt(reachable.length)];
+    
+    // Execute a random split move
+    final splitCount = 1 + _random.nextInt(herd.size - 1);
+    final move = Move(
+      from: herd.position,
+      to: destination,
+      splitCount: splitCount,
+      stayCount: herd.size - splitCount,
+      player: playerColor,
+    );
+    
+    executeMove(move);
   }
 
   Map<PlayerColor, int> getTerritoryCount() {

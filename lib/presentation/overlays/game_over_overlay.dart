@@ -5,6 +5,7 @@ import '../../flame/battle_cows_game.dart';
 import '../../game/models/player.dart';
 import '../../core/constants/colors.dart';
 import '../../ads/ad_manager.dart';
+import '../widgets/wood_button.dart';
 
 class GameOverOverlay extends StatefulWidget {
   final BattleCowsGame game;
@@ -146,14 +147,19 @@ class _GameOverOverlayState extends State<GameOverOverlay>
                     ),
                   ),
                   const SizedBox(height: 20),
+                  _buildStatsSection(),
+                  const SizedBox(height: 20),
                   _buildSecondChanceButton(),
                   const SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(
-                        child: _buildButton(
+                        child: WoodButton(
                           label: 'MENU',
-                          color: AppColors.secondaryAction,
+                          width: double.infinity,
+                          height: 50,
+                          fontSize: 18,
+                          baseColor: AppColors.secondaryAction,
                           onPressed: () {
                             AdManager().showInterstitialAd(
                               onAdDismissed: () {
@@ -166,9 +172,12 @@ class _GameOverOverlayState extends State<GameOverOverlay>
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: _buildButton(
+                        child: WoodButton(
                           label: 'REMATCH',
-                          color: AppColors.primaryAction,
+                          width: double.infinity,
+                          height: 50,
+                          fontSize: 18,
+                          baseColor: AppColors.primaryAction,
                           onPressed: () {
                             AdManager().showInterstitialAd(
                               onAdDismissed: () {
@@ -195,94 +204,89 @@ class _GameOverOverlayState extends State<GameOverOverlay>
     return player.name.toUpperCase();
   }
 
-  Widget _buildButton({
-    required String label,
-    required Color color,
-    required VoidCallback onPressed,
-  }) {
+  Widget _buildSecondChanceButton() {
+    return WoodButton(
+      label: 'WATCH AD FOR SECOND CHANCE',
+      icon: Icons.play_arrow,
+      width: double.infinity,
+      height: 44,
+      fontSize: 14,
+      baseColor: AppColors.yellow,
+      onPressed: () {
+        AdManager().showRewardedAd(
+          onUserEarnedReward: (reward) {
+            Navigator.of(context).pop();
+            widget.game.overlays.remove('GameOver');
+            widget.game.rematch();
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildStatsSection() {
+    final game = widget.game;
     return Container(
-      height: 50,
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [color, color.withValues(alpha: 0.7)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
+        color: Colors.white.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white, width: 2),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.15),
+        ),
       ),
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-          padding: EdgeInsets.zero,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+      child: Column(
+        children: [
+          Text(
+            'GAME STATS',
+            style: GoogleFonts.bangers(
+              fontSize: 12,
+              color: Colors.white.withValues(alpha: 0.6),
+              letterSpacing: 1.5,
+            ),
           ),
-        ),
-        child: Text(
-          label,
-          style: GoogleFonts.bangers(
-            fontSize: 18,
-            color: Colors.white,
-            letterSpacing: 2,
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildStatItem('TURNS', '${game.totalMoves}'),
+              _buildStatItem('YOUR COWS', '${game.cowCounts[widget.players.isNotEmpty ? widget.players[0].color : null] ?? 0}'),
+              _buildStatItem('CPU COWS', '${game.cowCounts[widget.players.length > 1 ? widget.players[1].color : null] ?? 0}'),
+            ],
           ),
-        ),
+          const SizedBox(height: 6),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildStatItem('YOUR CAPTURES', '${game.capturesPerPlayer[widget.players.isNotEmpty ? widget.players[0].color : null] ?? 0}'),
+              _buildStatItem('CPU CAPTURES', '${game.capturesPerPlayer[widget.players.length > 1 ? widget.players[1].color : null] ?? 0}'),
+            ],
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildSecondChanceButton() {
-    return Container(
-      width: double.infinity,
-      height: 44,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.yellow,
-            AppColors.yellow.withValues(alpha: 0.7),
-          ],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white, width: 2),
-      ),
-      child: ElevatedButton(
-        onPressed: () {
-          AdManager().showRewardedAd(
-            onUserEarnedReward: (reward) {
-              Navigator.of(context).pop();
-              widget.game.overlays.remove('GameOver');
-              widget.game.rematch();
-            },
-          );
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-          padding: EdgeInsets.zero,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+  Widget _buildStatItem(String label, String value) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          value,
+          style: GoogleFonts.bangers(
+            fontSize: 20,
+            color: const Color(0xFFFFD54F),
           ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.play_arrow, color: Colors.black, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              'WATCH AD FOR SECOND CHANCE',
-              style: GoogleFonts.bangers(
-                fontSize: 14,
-                color: Colors.black,
-                letterSpacing: 1.5,
-              ),
-            ),
-          ],
+        Text(
+          label,
+          style: GoogleFonts.bangers(
+            fontSize: 9,
+            color: Colors.white.withValues(alpha: 0.6),
+            letterSpacing: 0.5,
+          ),
         ),
-      ),
+      ],
     );
   }
 

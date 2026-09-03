@@ -20,6 +20,8 @@ class HudOverlay extends StatelessWidget {
     final turnCount = game.engine.turnCount + 1;
     final p1 = players.isNotEmpty ? players[0] : null;
     final p2 = players.length > 1 ? players[1] : null;
+    final p1Hearts = p1 != null ? (game.playerHearts[p1.color] ?? 3) : 3;
+    final p2Hearts = p2 != null ? (game.playerHearts[p2.color] ?? 3) : 3;
 
     return SafeArea(
       child: Padding(
@@ -35,7 +37,7 @@ class HudOverlay extends StatelessWidget {
                     player: p1,
                     isLeft: true,
                     isActive: currentPlayer.color == p1.color,
-                    trophies: 1250,
+                    hearts: p1Hearts,
                   ),
                 const Spacer(),
                 _buildCenterLogoPlaque(),
@@ -45,15 +47,16 @@ class HudOverlay extends StatelessWidget {
                     player: p2,
                     isLeft: false,
                     isActive: currentPlayer.color == p2.color,
-                    trophies: 1180,
+                    hearts: p2Hearts,
                   ),
               ],
             ),
             const SizedBox(height: 8),
-            // Secondary row: Turn Counter (Left) & Settings Button (Right)
+            // Secondary row: Timer & Turn Counter & Settings
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                _buildTimerBox(),
                 _buildTurnCounterBox(turnCount),
                 _buildSettingsButton(context),
               ],
@@ -101,7 +104,7 @@ class HudOverlay extends StatelessWidget {
     required Player player,
     required bool isLeft,
     required bool isActive,
-    required int trophies,
+    required int hearts,
   }) {
     final color = AppColors.getPlayerPrimary(player.color);
     final darkColor = AppColors.getPlayerDark(player.color);
@@ -145,28 +148,41 @@ class HudOverlay extends StatelessWidget {
                 ? [
                     _buildAvatarCircle(),
                     const SizedBox(width: 6),
-                    _buildPlayerDetails(player.name, trophies),
+                    _buildPlayerDetails(player.name),
                   ]
                 : [
-                    _buildPlayerDetails(player.name, trophies),
+                    _buildPlayerDetails(player.name),
                     const SizedBox(width: 6),
                     _buildAvatarCircle(),
                   ],
           ),
         ),
         const SizedBox(height: 4),
-        // Turn dot indicators
+        // Hearts display
         Row(
           mainAxisSize: MainAxisSize.min,
-          children: List.generate(4, (i) {
+          children: List.generate(3, (i) {
+            final isLost = i >= hearts;
             return Container(
               margin: const EdgeInsets.symmetric(horizontal: 2),
-              width: 7,
-              height: 7,
+              width: 14,
+              height: 14,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: isActive ? color : Colors.white24,
-                border: Border.all(color: Colors.white, width: 0.8),
+                color: isLost ? Colors.grey.shade700 : const Color(0xFFD32F2F),
+                border: Border.all(
+                  color: isLost ? Colors.grey.shade600 : const Color(0xFFFF5252),
+                  width: 1,
+                ),
+              ),
+              child: Center(
+                child: Text(
+                  '❤️',
+                  style: TextStyle(
+                    fontSize: 8,
+                    color: isLost ? Colors.grey.shade600 : Colors.white,
+                  ),
+                ),
               ),
             );
           }),
@@ -190,7 +206,7 @@ class HudOverlay extends StatelessWidget {
     );
   }
 
-  Widget _buildPlayerDetails(String name, int trophies) {
+  Widget _buildPlayerDetails(String name) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -203,19 +219,60 @@ class HudOverlay extends StatelessWidget {
             letterSpacing: 1,
           ),
         ),
-        Row(
-          children: [
-            const Text('🏆', style: TextStyle(fontSize: 10)),
-            Text(
-              ' $trophies',
-              style: GoogleFonts.bangers(
-                fontSize: 11,
-                color: const Color(0xFFFFECB3),
-              ),
-            ),
-          ],
-        ),
       ],
+    );
+  }
+
+  Widget _buildTimerBox() {
+    final timeRemaining = game.timeRemaining;
+    final isLowTime = timeRemaining <= 10;
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isLowTime
+              ? [const Color(0xFF8B0000), const Color(0xFF4E0000)]
+              : [const Color(0xFF4E342E), const Color(0xFF2E1C0C)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: isLowTime ? const Color(0xFFFF5252) : const Color(0xFF8D6E63),
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: isLowTime
+                ? const Color(0xFFD32F2F).withValues(alpha: 0.4)
+                : Colors.black.withValues(alpha: 0.4),
+            offset: const Offset(0, 2),
+            blurRadius: 4,
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '⏱️ TIME',
+            style: GoogleFonts.bangers(
+              fontSize: 10,
+              color: Colors.white70,
+              letterSpacing: 1,
+            ),
+          ),
+          Text(
+            '$timeRemaining',
+            style: GoogleFonts.bangers(
+              fontSize: 20,
+              color: isLowTime ? const Color(0xFFFF5252) : const Color(0xFFFFD54F),
+              letterSpacing: 1,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -250,7 +307,7 @@ class HudOverlay extends StatelessWidget {
             ),
           ),
           Text(
-            '$turn / 30',
+            '$turn',
             style: GoogleFonts.bangers(
               fontSize: 16,
               color: const Color(0xFFFFD54F),
@@ -281,22 +338,32 @@ class HudOverlay extends StatelessWidget {
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF5D4037)),
+                _buildPauseButton(
+                  label: 'RESTART MATCH',
+                  icon: Icons.refresh_rounded,
                   onPressed: () {
                     Navigator.pop(ctx);
                     game.rematch();
                   },
-                  child: Text('RESTART MATCH', style: GoogleFonts.bangers(color: Colors.white)),
                 ),
-                const SizedBox(height: 8),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFB71C1C)),
+                const SizedBox(height: 12),
+                _buildPauseButton(
+                  label: 'RESET BOARD',
+                  icon: Icons.restart_alt_rounded,
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    game.resetBoard();
+                  },
+                ),
+                const SizedBox(height: 12),
+                _buildPauseButton(
+                  label: 'EXIT TO MAIN MENU',
+                  icon: Icons.exit_to_app_rounded,
+                  baseColor: const Color(0xFF8B2500),
                   onPressed: () {
                     Navigator.pop(ctx);
                     Navigator.pop(context);
                   },
-                  child: Text('EXIT TO MAIN MENU', style: GoogleFonts.bangers(color: Colors.white)),
                 ),
               ],
             ),
@@ -313,17 +380,54 @@ class HudOverlay extends StatelessWidget {
             end: Alignment.bottomCenter,
           ),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFF8D6E63), width: 2),
+          border: Border.all(color: const Color(0xFF8D6E63), width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.4),
+              color: Colors.black.withValues(alpha: 0.3),
               offset: const Offset(0, 2),
-              blurRadius: 4,
+              blurRadius: 3,
             ),
           ],
         ),
         child: const Center(
-          child: Icon(Icons.settings, color: Colors.white, size: 20),
+          child: Icon(Icons.settings, color: Colors.white, size: 18),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPauseButton({
+    required String label,
+    required IconData icon,
+    required VoidCallback onPressed,
+    Color baseColor = const Color(0xFF5D4037),
+  }) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        width: 200,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [baseColor, baseColor.withValues(alpha: 0.7)],
+          ),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFF8D6E63), width: 1.5),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: Colors.white, size: 18),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: GoogleFonts.bangers(
+                fontSize: 14,
+                color: Colors.white,
+                letterSpacing: 1,
+              ),
+            ),
+          ],
         ),
       ),
     );
