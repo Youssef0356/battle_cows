@@ -14,6 +14,7 @@ import '../overlays/game_over_overlay.dart';
 import '../overlays/turn_banner.dart';
 import '../overlays/scoreboard_overlay.dart';
 import '../overlays/placement_overlay.dart';
+import '../overlays/herd_placement_overlay.dart';
 import '../widgets/capture_toast.dart';
 
 class FlameGameScreen extends StatefulWidget {
@@ -71,19 +72,30 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
       },
       onPlacementComplete: () {
         if (mounted) {
-          _game.overlays.remove('Placement');
+          _game.overlays.remove('HerdPlacement');
+          _game.overlays.add('HUD');
           _game.overlays.add('GameControls');
           _game.overlays.add('Scoreboard');
         }
       },
+      onTilePlacementComplete: () {
+        if (mounted) {
+          _game.overlays.remove('HUD');
+          _game.overlays.remove('Placement');
+          _game.overlays.add('HerdPlacement');
+        }
+      },
     );
     // Start with placement overlay if no tiles provided
-    if (widget.tiles == null || widget.tiles!.isEmpty) {
-      _game.overlays.add('Placement');
-    } else {
-      _game.overlays.add('GameControls');
-      _game.overlays.add('Scoreboard');
-    }
+    // Defer to after first frame so overlayBuilderMap is registered
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (widget.tiles == null || widget.tiles!.isEmpty) {
+        _game.overlays.add('Placement');
+      } else {
+        _game.overlays.add('HerdPlacement');
+      }
+    });
   }
 
   Future<void> _initProgress() async {
@@ -100,6 +112,7 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
 
   @override
   void dispose() {
+    _game.disableCallbacks();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     _turnBannerEntry?.remove();
     _captureToastEntry?.remove();
@@ -205,29 +218,37 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
       body: SafeArea(
         child: Stack(
           children: [
-            GameWidget(
-              game: _game,
-              backgroundBuilder: (context) => Container(color: Colors.black),
-              overlayBuilderMap: {
-                'HUD': (context, game) => HudOverlay(
-                  game: game as BattleCowsGame,
-                  players: widget.players,
-                ),
-                'Placement': (context, game) => PlacementOverlay(
-                  game: game as BattleCowsGame,
-                ),
-                'GameControls': (context, game) => GameControlsOverlay(
-                  game: game as BattleCowsGame,
-                ),
-                'Scoreboard': (context, game) => ScoreboardOverlay(
-                  game: game as BattleCowsGame,
-                ),
-                'GameOver': (context, game) => GameOverOverlay(
-                  game: game as BattleCowsGame,
-                  players: widget.players,
-                ),
+            GestureDetector(
+              onTapUp: (details) {
+                _game.onTapDownFromScreen(details);
               },
-              initialActiveOverlays: const ['HUD'],
+              child: GameWidget(
+                game: _game,
+                backgroundBuilder: (context) => Container(color: Colors.black),
+                overlayBuilderMap: {
+                  'HUD': (context, game) => HudOverlay(
+                    game: game as BattleCowsGame,
+                    players: widget.players,
+                  ),
+                  'Placement': (context, game) => PlacementOverlay(
+                    game: game as BattleCowsGame,
+                  ),
+                  'HerdPlacement': (context, game) => HerdPlacementOverlay(
+                    game: game as BattleCowsGame,
+                  ),
+                  'GameControls': (context, game) => GameControlsOverlay(
+                    game: game as BattleCowsGame,
+                  ),
+                  'Scoreboard': (context, game) => ScoreboardOverlay(
+                    game: game as BattleCowsGame,
+                  ),
+                  'GameOver': (context, game) => GameOverOverlay(
+                    game: game as BattleCowsGame,
+                    players: widget.players,
+                  ),
+                },
+                initialActiveOverlays: const [],
+              ),
             ),
           ],
         ),

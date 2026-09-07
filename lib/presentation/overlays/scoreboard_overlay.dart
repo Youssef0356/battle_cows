@@ -24,9 +24,10 @@ class _ScoreboardOverlayState extends State<ScoreboardOverlay> {
   @override
   Widget build(BuildContext context) {
     final players = widget.game.players;
+    if (players.isEmpty) return const SizedBox.shrink();
     final cowCounts = widget.game.cowCounts;
     final territoryCounts = widget.game.territoryCounts;
-    final currentColor = widget.game.engine.currentPlayer.color;
+    final currentColor = widget.game.engine.players.isEmpty ? players.first.color : widget.game.engine.currentPlayer.color;
 
     return SafeArea(
       child: Align(

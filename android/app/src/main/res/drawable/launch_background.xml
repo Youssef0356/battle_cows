@@ -1,11 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Solid dark background matching app theme -->
     <item>
-        <color android:color="#1A2E12" />
+        <shape android:shape="rectangle">
+            <solid android:color="#1A1A1A" />
+        </shape>
     </item>
+
+    <!-- Subtle warm glow behind logo -->
+    <item>
+        <shape android:shape="oval">
+            <gradient
+                android:type="radial"
+                android:gradientRadius="200"
+                android:centerX="0.5"
+                android:centerY="0.5"
+                android:startColor="#4A3728"
+                android:endColor="#1A1A1A00" />
+        </shape>
+    </item>
+
+    <!-- Logo on top -->
     <item>
         <bitmap
             android:gravity="center"
             android:src="@drawable/splash_logo" />
     </item>
+
 </layer-list>

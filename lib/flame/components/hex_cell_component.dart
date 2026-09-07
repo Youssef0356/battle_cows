@@ -1,13 +1,12 @@
 import 'dart:math';
 import 'dart:ui' as ui;
 import 'package:flame/components.dart';
-import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
 import '../../game/models/hex_cell.dart';
 import '../../game/models/herd.dart';
 import '../../core/constants/colors.dart';
 
-class HexCellComponent extends PositionComponent with TapCallbacks {
+class HexCellComponent extends PositionComponent {
   final HexCell cell;
   Herd? herd;
   bool isSelected;
@@ -15,7 +14,6 @@ class HexCellComponent extends PositionComponent with TapCallbacks {
   double pulseValue;
   final int flipMode;
   final ui.Image? texture;
-  final void Function()? onTapCallback;
   PlayerColor? territoryOwner;
 
   HexCellComponent({
@@ -28,7 +26,6 @@ class HexCellComponent extends PositionComponent with TapCallbacks {
     required super.size,
     this.flipMode = 0,
     this.texture,
-    this.onTapCallback,
     this.territoryOwner,
   }) : super(anchor: Anchor.center);
 
@@ -404,11 +401,6 @@ class HexCellComponent extends PositionComponent with TapCallbacks {
   Color _darkenColor(Color color, double amount) {
     final hsl = HSLColor.fromColor(color);
     return hsl.withLightness((hsl.lightness - amount).clamp(0.0, 1.0)).toColor();
-  }
-
-  @override
-  void onTapDown(TapDownEvent event) {
-    onTapCallback?.call();
   }
 
   static int getFlipMode(int q, int r) {

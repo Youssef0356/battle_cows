@@ -16,6 +16,7 @@ class HudOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (game.engine.players.isEmpty) return const SizedBox.shrink();
     final currentPlayer = game.engine.currentPlayer;
     final turnCount = game.engine.turnCount + 1;
     final p1 = players.isNotEmpty ? players[0] : null;
