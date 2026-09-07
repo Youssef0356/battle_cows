@@ -1,23 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Solid dark background matching app theme -->
+    <!-- White to light green gradient -->
     <item>
         <shape android:shape="rectangle">
-            <solid android:color="#1A1A1A" />
+            <gradient
+                android:type="linear"
+                android:angle="180"
+                android:startColor="#FFFFFF"
+                android:endColor="#C8E6C9" />
         </shape>
     </item>
 
-    <!-- Subtle warm glow behind logo -->
+    <!-- Very subtle warm glow behind logo -->
     <item>
         <shape android:shape="oval">
             <gradient
                 android:type="radial"
-                android:gradientRadius="200"
+                android:gradientRadius="160"
                 android:centerX="0.5"
                 android:centerY="0.5"
-                android:startColor="#4A3728"
-                android:endColor="#1A1A1A00" />
+                android:startColor="#8BC34A18"
+                android:endColor="#00000000" />
         </shape>
     </item>
 
