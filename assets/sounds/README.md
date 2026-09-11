@@ -7,6 +7,8 @@ Place the following files in this directory:
 - `confirm.wav` - Action confirmation sound
 - `game_over.wav` - Game over fanfare
 - `tick.wav` - Timer countdown tick
+- `capture.wav` - Territory capture impact
+- `hay.wav` - Hay bale bonus sound
 - `bg_music.mp3` - Background music loop
 
 ## Recommended Sources

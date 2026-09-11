@@ -117,6 +117,7 @@ class _ShopDialogState extends State<ShopDialog> {
           ShopCategory.themes: '🎨',
           ShopCategory.emojis: '💬',
           ShopCategory.boards: '🐮',
+          ShopCategory.cows: '🐄',
         };
         return GestureDetector(
           onTap: () => setState(() => _selectedCategory = cat),

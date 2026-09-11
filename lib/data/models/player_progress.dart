@@ -80,7 +80,7 @@ class PlayerProgress {
       totalCaptures: json['totalCaptures'] ?? 0,
       dailyStreak: json['dailyStreak'] ?? 0,
       lastLoginDate: json['lastLoginDate'],
-      lastDailyRewardClaimed: json['lastDailyRewardClaimed'],
+      lastDailyRewardClaimed: json['lastDailyRewardClaimed'] ?? json['lastRewardClaimDate'],
       ownedItems: List<String>.from(json['ownedItems'] ?? []),
       dailyQuests: (json['dailyQuests'] as List?)
               ?.map((q) => QuestProgress.fromJson(q))

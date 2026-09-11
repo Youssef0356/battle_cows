@@ -57,7 +57,13 @@ class ProgressService {
     _save();
   }
 
+  bool get canClaimDailyReward {
+    final today = DateTime.now().toIso8601String().substring(0, 10);
+    return progress.lastDailyRewardClaimed != today;
+  }
+
   int claimDailyReward() {
+    if (!canClaimDailyReward) return 0;
     final streak = progress.dailyStreak;
     final baseReward = 50;
     final bonus = min(streak, 7) * 25;
@@ -75,11 +81,8 @@ class ProgressService {
     final rng = DateTime.now().millisecondsSinceEpoch;
     final random = Random(rng);
 
-    final allQuests = [
-      _questPool[0],
-      _questPool[1 + random.nextInt(2)],
-      _questPool[3 + random.nextInt(2)],
-    ];
+    final shuffledPool = List<_QuestDef>.from(_questPool)..shuffle(random);
+    final allQuests = shuffledPool.take(3).toList();
 
     progress.dailyQuests = allQuests.map((q) {
       final quest = QuestProgress(
@@ -152,6 +155,8 @@ class ProgressService {
     _QuestDef('play3', 'Busy Day', 'Play 3 matches', '🐄', QuestType.playMatches, 3, 120, 35),
     _QuestDef('cap5', 'Land Grab', 'Capture 5 tiles', '🌾', QuestType.captureTiles, 5, 80, 25),
     _QuestDef('cap10', 'Conquest', 'Capture 10 tiles', '⚔️', QuestType.captureTiles, 10, 150, 40),
+    _QuestDef('cap3', 'Quick Hooves', 'Capture 3 tiles in your matches', '💨', QuestType.captureTiles, 3, 60, 15),
+    _QuestDef('play1', 'Warm Up', 'Play 1 match today', '🌞', QuestType.playMatches, 1, 40, 10),
   ];
 }
 

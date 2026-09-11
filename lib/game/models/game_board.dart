@@ -12,12 +12,19 @@ class GameBoard {
     required this.herds,
   });
 
-  factory GameBoard.fromTiles(List<PastureTile> tiles, List<Herd> initialHerds) {
+  factory GameBoard.fromTiles(
+    List<PastureTile> tiles,
+    List<Herd> initialHerds, {
+    Map<HexPosition, SpecialTileType> specialTiles = const {},
+  }) {
     final cells = <HexPosition, HexCell>{};
 
     for (final tile in tiles) {
       for (final hex in tile.hexes) {
-        cells[hex] = HexCell(position: hex);
+        cells[hex] = HexCell(
+          position: hex,
+          specialType: specialTiles[hex] ?? SpecialTileType.none,
+        );
       }
     }
 
@@ -27,6 +34,8 @@ class GameBoard {
   HexCell? getCell(HexPosition pos) => cells[pos];
 
   bool isValidPosition(HexPosition pos) => cells.containsKey(pos);
+
+  SpecialTileType specialAt(HexPosition pos) => cells[pos]?.specialType ?? SpecialTileType.none;
 
   bool isEmpty(HexPosition pos) {
     final cell = cells[pos];
@@ -50,13 +59,18 @@ class GameBoard {
     for (final dir in HexPosition.directions) {
       var current = from;
       HexPosition? lastValid;
-      for (var i = 0; i < maxDistance; i++) {
+      var distanceUsed = 0;
+      while (distanceUsed < maxDistance) {
         final next = current + dir;
         if (!isValidPosition(next)) break;
         if (isHole(next)) break;
+        if (specialAt(next) == SpecialTileType.waterPond) break;
         if (hasHerdAt(next)) break;
+        final stepCost = specialAt(next) == SpecialTileType.mud ? 2 : 1;
+        if (distanceUsed + stepCost > maxDistance) break;
         lastValid = next;
         current = next;
+        distanceUsed += stepCost;
       }
       if (lastValid != null) {
         reachable.add(lastValid);

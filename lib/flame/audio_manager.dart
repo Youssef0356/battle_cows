@@ -56,6 +56,7 @@ class AudioManager {
   void playGameOver() => _playSfx('game_over.wav', volume: 0.6);
   void playTick() => _playSfx('tick.wav', volume: 0.3);
   void playCapture() => _playSfx('capture.wav', volume: 0.6);
+  void playHay() => _playSfx('hay.wav', volume: 0.55);
 
   void startMusic() {
     if (!_musicEnabled || !_assetsAvailable) return;

@@ -6,9 +6,10 @@ import '../screens/result_screen.dart';
 import '../screens/tile_placement_screen.dart';
 import '../../game/models/player.dart';
 import '../../game/models/pasture_tile.dart';
+import '../../game/models/challenge_mode.dart';
 
 class AppRouter {
-  static const String home = '/';
+  static const String home = '/home';
   static const String game = '/game';
   static const String tutorial = '/tutorial';
   static const String result = '/result';
@@ -22,12 +23,16 @@ class AppRouter {
         final tiles = args?['tiles'] as List<PastureTile>?;
         final herdSize = args?['herdSize'] as int? ?? 16;
         final boardSize = args?['boardSize'] as int? ?? 7;
+        final tilesPerPlayer = args?['tilesPerPlayer'] as int? ?? 5;
+        final challengeMode = args?['challengeMode'] as ChallengeMode? ?? ChallengeMode.standard;
         return MaterialPageRoute(
           builder: (_) => FlameGameScreen(
             players: players,
             tiles: tiles,
             herdSize: herdSize,
             boardSize: boardSize,
+            tilesPerPlayer: tilesPerPlayer,
+            challengeMode: challengeMode,
           ),
         );
       case '/tile-placement':
@@ -53,6 +58,7 @@ class AppRouter {
           ),
         );
       case '/':
+      case '/home':
       default:
         return MaterialPageRoute(builder: (_) => const HomeScreen());
     }

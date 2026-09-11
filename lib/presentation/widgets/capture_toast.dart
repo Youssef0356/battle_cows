@@ -69,6 +69,11 @@ class _CaptureToastState extends State<CaptureToast>
 
   @override
   Widget build(BuildContext context) {
+    final message = widget.count >= 5
+        ? 'STAMPede! +${widget.count}'
+        : widget.count >= 3
+            ? 'MOO-VELOUS! +${widget.count}'
+            : 'PASTURE RAID! +${widget.count}';
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
@@ -108,8 +113,8 @@ class _CaptureToastState extends State<CaptureToast>
                       height: 34,
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      '+${widget.count} CAPTURED!',
+                     Text(
+                       message,
                       style: GoogleFonts.bangers(
                         fontSize: 18,
                         color: Colors.white,

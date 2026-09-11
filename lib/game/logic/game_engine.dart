@@ -4,6 +4,8 @@ import '../models/herd.dart';
 import '../models/move.dart';
 import '../models/player.dart';
 import '../models/player_color.dart';
+import '../models/hex_cell.dart';
+import '../models/hex_position.dart';
 import '../models/challenge_mode.dart';
 
 class GameEngine {
@@ -13,6 +15,7 @@ class GameEngine {
   int _turnCount = 0;
   bool _gameOver = false;
   int _lastCaptureCount = 0;
+  ChallengeMode _challengeMode = ChallengeMode.standard;
   final Map<PlayerColor, int> _hearts = {};
   final Random _random = Random();
 
@@ -30,21 +33,11 @@ class GameEngine {
     _currentPlayerIndex = 0;
     _turnCount = 0;
     _gameOver = false;
+    _challengeMode = challengeMode;
     _hearts.clear();
     for (final player in players) {
       _hearts[player.color] = 3;
     }
-  }
-
-  Map<PlayerColor, int> getChallengeScores() {
-    final scores = <PlayerColor, int>{};
-    for (final player in _players) {
-      scores[player.color] = 0;
-    }
-    for (final herd in _board?.herds ?? const <Herd>[]) {
-      scores[herd.owner] = (scores[herd.owner] ?? 0) + herd.size;
-    }
-    return scores;
   }
 
   List<Move> getValidMoves(PlayerColor playerColor) {
@@ -107,10 +100,20 @@ class GameEngine {
     // Remove the enemy herd at target if it exists
     herds.removeWhere((h) => h.position == move.to);
 
-    herds.add(Herd(position: move.to, owner: move.player, size: move.splitCount));
+    var movedCows = move.splitCount;
+    final targetCell = _board!.getCell(move.to);
+    if (targetCell?.specialType == SpecialTileType.hayBale) {
+      movedCows++;
+    }
+    herds.add(Herd(position: move.to, owner: move.player, size: movedCows));
+
+    final updatedCells = Map<HexPosition, HexCell>.from(_board!.cells);
+    if (targetCell?.specialType == SpecialTileType.hayBale) {
+      updatedCells[move.to] = targetCell!.copyWith(specialType: SpecialTileType.none);
+    }
 
     _board = GameBoard(
-      cells: _board!.cells,
+      cells: updatedCells,
       herds: herds,
     );
 
@@ -226,10 +229,27 @@ class GameEngine {
     return counts;
   }
 
+  Map<PlayerColor, int> getChallengeScores() {
+    final scores = getTerritoryCount();
+    if (_board == null) return scores;
+    final objective = _challengeMode == ChallengeMode.goldenPasture
+        ? SpecialTileType.goldenPasture
+        : _challengeMode == ChallengeMode.kingOfTheHill
+            ? SpecialTileType.hill
+            : SpecialTileType.none;
+    if (objective == SpecialTileType.none) return scores;
+    for (final entry in _board!.cells.entries) {
+      if (entry.value.specialType != objective) continue;
+      final herd = _board!.getHerdAt(entry.key);
+      if (herd != null) scores[herd.owner] = (scores[herd.owner] ?? 0) + 3;
+    }
+    return scores;
+  }
+
   PlayerColor? determineWinner() {
     if (!_gameOver) return null;
 
-    final territoryCounts = getTerritoryCount();
+    final territoryCounts = getChallengeScores();
     PlayerColor? winner;
     int maxTerritory = -1;
     int tieCount = 0;

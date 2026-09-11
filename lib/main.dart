@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'presentation/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'presentation/screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,7 +27,7 @@ class BattleCowsApp extends StatelessWidget {
       title: 'Battle Cows',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
-      initialRoute: AppRouter.home,
+      home: const SplashScreen(),
       onGenerateRoute: AppRouter.generateRoute,
     );
   }

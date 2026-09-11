@@ -15,15 +15,32 @@ assets/
     fence.glb
     flower.glb
     rock.glb
-  images/
-    Background/
+    images/
+      Background/
       Background.jpg
       Logo.png
       Table image.jpg
       Title Text.png
-    Tile Image/
-      Grass Texture.jpg
-      Tile Texture.png
+      Tile Image/
+        Grass Texture.jpg
+        Tile Texture.png
+      Cows/
+        cow_cowboy.png
+        cow_disco.png
+        cow_farmer.png
+        cow_viking.png
+      Board Tiles/
+        tile_fence_gate.png
+        tile_golden_pasture.png
+        tile_hay_bale.png
+        tile_hill.png
+        tile_mud.png
+        tile_rocket_pad.png
+        tile_water_pond.png
+      Effects/
+        capture_burst.png
+        stampede_dust.png
+        victory_badge.png
   sounds/
     README.md
 ```

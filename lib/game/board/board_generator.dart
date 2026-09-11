@@ -5,47 +5,45 @@ import '../models/pasture_tile.dart';
 import '../models/game_board.dart';
 import '../models/player.dart';
 import '../models/challenge_mode.dart';
+import '../models/hex_cell.dart';
 
 class BoardGenerator {
-  static GameBoard generateFromTiles(List<PastureTile> tiles, List<Player> players, int herdSize) {
+  static GameBoard generateFromTiles(
+    List<PastureTile> tiles,
+    List<Player> players,
+    int herdSize, {
+    ChallengeMode mode = ChallengeMode.standard,
+  }) {
     final herds = _placeStartingHerds(tiles, players, herdSize);
-    return _decorate(GameBoard.fromTiles(tiles, herds), ChallengeMode.standard);
+    return GameBoard.fromTiles(tiles, herds, specialTiles: _specialTiles(tiles, mode));
   }
 
   static GameBoard generateEmptyBoard(List<PastureTile> tiles, {ChallengeMode mode = ChallengeMode.standard}) {
-    return _decorate(GameBoard.fromTiles(tiles, []), mode);
+    return GameBoard.fromTiles(tiles, [], specialTiles: _specialTiles(tiles, mode));
   }
 
-  static GameBoard _decorate(GameBoard board, ChallengeMode mode) {
-    // Special terrain is kept implemented but disabled until the board art is
-    // fully matched to the base pasture tiles.
-    return board;
-
-    /*
-    final cells = <HexPosition, HexCell>{};
-    final specialTiles = mode == ChallengeMode.noTimer
-        ? const [
-            SpecialTileType.mud,
-            SpecialTileType.waterPond,
-            SpecialTileType.hayBale,
-            SpecialTileType.goldenPasture,
-            SpecialTileType.hill,
-          ]
-        : const [
-            SpecialTileType.hayBale,
-            SpecialTileType.goldenPasture,
-            SpecialTileType.hill,
-          ];
-
-    for (final entry in board.cells.entries) {
-      final hash = (entry.key.q * 31 + entry.key.r * 17).abs();
-      final specialType = hash % 8 == 0
-          ? specialTiles[hash % specialTiles.length]
-          : SpecialTileType.none;
-      cells[entry.key] = entry.value.copyWith(specialType: specialType);
+  static Map<HexPosition, SpecialTileType> _specialTiles(
+    List<PastureTile> tiles,
+    ChallengeMode mode,
+  ) {
+    if (mode == ChallengeMode.standard || tiles.isEmpty) return {};
+    final cells = <HexPosition>{};
+    for (final tile in tiles) {
+      cells.addAll(tile.hexes);
     }
-    return GameBoard(cells: cells, herds: board.herds);
-    */
+    final sorted = cells.toList()..sort((a, b) => a.distanceTo(const HexPosition(0, 0)).compareTo(b.distanceTo(const HexPosition(0, 0))));
+    if (sorted.isEmpty) return {};
+    final specials = <HexPosition, SpecialTileType>{};
+    if (mode == ChallengeMode.goldenPasture) {
+      specials[sorted.first] = SpecialTileType.goldenPasture;
+      if (sorted.length > 4) specials[sorted[sorted.length ~/ 2]] = SpecialTileType.hayBale;
+    } else if (mode == ChallengeMode.kingOfTheHill) {
+      specials[sorted.first] = SpecialTileType.hill;
+      if (sorted.length > 6) specials[sorted[sorted.length ~/ 2]] = SpecialTileType.mud;
+    } else if (mode == ChallengeMode.noTimer) {
+      if (sorted.length > 3) specials[sorted[sorted.length ~/ 3]] = SpecialTileType.hayBale;
+    }
+    return specials;
   }
 
   static List<Herd> _placeStartingHerds(

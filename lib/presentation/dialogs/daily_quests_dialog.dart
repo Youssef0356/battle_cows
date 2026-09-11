@@ -43,7 +43,17 @@ class _DailyQuestsDialogState extends State<DailyQuestsDialog> {
         width: 320,
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: quests.map((quest) => _buildQuestTile(quest)).toList(),
+          children: [
+            Text(
+              'Complete tactics, claim coins, and level up your herd.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.bangers(fontSize: 12, color: Colors.white54),
+            ),
+            const SizedBox(height: 10),
+            _buildProgressSummary(quests),
+            const SizedBox(height: 12),
+            ...quests.map((quest) => _buildQuestTile(quest)),
+          ],
         ),
       ),
       actions: [
@@ -52,6 +62,26 @@ class _DailyQuestsDialogState extends State<DailyQuestsDialog> {
           child: Text('CLOSE', style: GoogleFonts.bangers(fontSize: 16, color: Colors.white70)),
         ),
       ],
+    );
+  }
+
+  Widget _buildProgressSummary(List<QuestProgress> quests) {
+    final complete = quests.where((quest) => quest.isComplete).length;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(colors: [Color(0xFF385C2B), Color(0xFF1E3319)]),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF81C784)),
+      ),
+      child: Row(
+        children: [
+          const Text('🐮', style: TextStyle(fontSize: 26)),
+          const SizedBox(width: 10),
+          Expanded(child: Text('$complete/${quests.length} tactics ready', style: GoogleFonts.bangers(fontSize: 16, color: Colors.white))),
+          Text('TODAY', style: GoogleFonts.bangers(fontSize: 12, color: const Color(0xFFFFD54F), letterSpacing: 1)),
+        ],
+      ),
     );
   }
 

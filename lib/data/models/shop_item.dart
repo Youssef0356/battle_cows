@@ -18,7 +18,7 @@ class ShopItem {
   });
 }
 
-enum ShopCategory { skins, hats, themes, emojis, boards }
+enum ShopCategory { skins, hats, themes, emojis, boards, cows }
 
 const List<ShopItem> shopItems = [
   ShopItem(
@@ -152,5 +152,53 @@ const List<ShopItem> shopItems = [
     icon: '💎',
     price: 800,
     category: ShopCategory.boards,
+  ),
+  ShopItem(
+    id: 'cow_cowboy',
+    name: 'Cowboy Cow',
+    description: 'A lasso-swinging pasture legend',
+    icon: '🤠',
+    price: 350,
+    category: ShopCategory.cows,
+  ),
+  ShopItem(
+    id: 'cow_viking',
+    name: 'Viking Cow',
+    description: 'Brave enough to raid any pasture',
+    icon: '⚔️',
+    price: 500,
+    category: ShopCategory.cows,
+  ),
+  ShopItem(
+    id: 'cow_disco',
+    name: 'Disco Cow',
+    description: 'Brings the moo-sic to every match',
+    icon: '🪩',
+    price: 450,
+    category: ShopCategory.cows,
+  ),
+  ShopItem(
+    id: 'cow_ninja',
+    name: 'Ninja Cow',
+    description: 'Quiet hooves, loud captures',
+    icon: '🥷',
+    price: 650,
+    category: ShopCategory.cows,
+  ),
+  ShopItem(
+    id: 'cow_farmer',
+    name: 'Farmer Cow',
+    description: 'Knows every trick in the field',
+    icon: '👨‍🌾',
+    price: 300,
+    category: ShopCategory.cows,
+  ),
+  ShopItem(
+    id: 'cow_robot',
+    name: 'Robot Cow',
+    description: 'Calculates the perfect moo-ve',
+    icon: '🤖',
+    price: 800,
+    category: ShopCategory.cows,
   ),
 ];

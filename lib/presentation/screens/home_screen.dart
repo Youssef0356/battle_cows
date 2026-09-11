@@ -9,6 +9,8 @@ import '../dialogs/daily_quests_dialog.dart';
 import '../dialogs/shop_dialog.dart';
 import '../router/app_router.dart';
 import '../widgets/wood_button.dart';
+import '../widgets/rustic_decor.dart';
+import '../../game/models/challenge_mode.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -53,10 +55,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   void _showDailyRewardIfNeeded() {
     if (_progressService == null) return;
-    final today = DateTime.now().toIso8601String().substring(0, 10);
-    final lastClaim = _progressService!.progress.lastDailyRewardClaimed;
-    if (lastClaim != today) {
+    if (_progressService!.canClaimDailyReward) {
       final reward = _progressService!.claimDailyReward();
+      if (reward == 0) return;
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -86,7 +87,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     return players;
   }
 
-  void _launchGame({required int playerCount, required int tilesPerPlayer, required bool isMultiplayer}) {
+  void _launchGame({required int playerCount, required int tilesPerPlayer, required bool isMultiplayer, ChallengeMode challengeMode = ChallengeMode.standard}) {
     final players = _createPlayers(count: playerCount, isMultiplayer: isMultiplayer);
     Navigator.pushNamed(
       context,
@@ -94,12 +95,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       arguments: {
         'players': players,
         'herdSize': 16,
-        // No tiles passed → triggers placement phase in FlameGameScreen
+        'tilesPerPlayer': tilesPerPlayer,
+        'boardSize': 7 + (tilesPerPlayer - 3) * 2,
+        'challengeMode': challengeMode,
       },
     );
   }
 
-  void _showGameSetupDialog({required String title, required bool isMultiplayer}) {
+  void _showGameSetupDialog({required String title, required bool isMultiplayer, ChallengeMode challengeMode = ChallengeMode.standard}) {
     int selectedPlayers = _playerCount;
     int selectedTiles = _tilesPerPlayer;
 
@@ -265,11 +268,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             _playerCount = selectedPlayers;
                             _tilesPerPlayer = selectedTiles;
                           });
-                          _launchGame(
-                            playerCount: selectedPlayers,
-                            tilesPerPlayer: selectedTiles,
-                            isMultiplayer: isMultiplayer,
-                          );
+                            _launchGame(
+                              playerCount: selectedPlayers,
+                              tilesPerPlayer: selectedTiles,
+                              isMultiplayer: isMultiplayer,
+                              challengeMode: challengeMode,
+                            );
                         },
                       ),
                     ),
@@ -277,6 +281,64 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showChallengePicker() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF2E1C0C),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: Color(0xFFFFD54F), width: 2),
+        ),
+        title: Text(
+          'CHOOSE YOUR CHALLENGE',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.bangers(fontSize: 22, color: const Color(0xFFFFD54F), letterSpacing: 1.5),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: ChallengeMode.values
+                .where((mode) => mode != ChallengeMode.standard)
+                .map((mode) => GestureDetector(
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _showGameSetupDialog(title: mode.title, isMultiplayer: false, challengeMode: mode);
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: .08),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: Colors.white24),
+                        ),
+                        child: Row(
+                          children: [
+                            Text(mode.icon, style: const TextStyle(fontSize: 28)),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(mode.title, style: GoogleFonts.bangers(fontSize: 16, color: Colors.white)),
+                                  const SizedBox(height: 2),
+                                  Text(mode.description, style: GoogleFonts.bangers(fontSize: 11, color: Colors.white60)),
+                                ],
+                              ),
+                            ),
+                            const Icon(Icons.chevron_right, color: Color(0xFFFFD54F)),
+                          ],
+                        ),
+                      ),
+                    ))
+                .toList(),
           ),
         ),
       ),
@@ -495,16 +557,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             child: Image.asset(
               'assets/images/Background/Background.jpg',
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stack) => Image.asset(
-                'assets/images/Background/MainMenu_Background.jpg',
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stack) => Container(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Color(0xFF2E7D32), Color(0xFF1B5E20), Color(0xFF2E7D32)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+              errorBuilder: (context, error, stack) => Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF2E7D32), Color(0xFF1B5E20), Color(0xFF2E7D32)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
                 ),
               ),
@@ -554,6 +612,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ],
             ),
           ),
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: Stack(
+                children: [
+                  Positioned(top: 12, left: -30, child: RopeStrap(alignment: Alignment.topLeft, width: 190)),
+                  Positioned(bottom: 70, right: -36, child: RopeStrap(alignment: Alignment.bottomRight, width: 210)),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -579,20 +647,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final xpPercent = p?.xpPercent ?? 0.0;
     final coins = p?.coins ?? 0;
 
-    return Container(
+    return RusticPlank(
+      color: const Color(0xFF4E342E),
+      seed: 17,
       padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: const Color(0xFF332011).withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF6D4C41), width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.5),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -808,7 +866,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           fontSize: 22,
           baseColor: const Color(0xFF5D4037),
           borderColor: const Color(0xFFD7CCC8),
-          onPressed: () => _showGameSetupDialog(title: 'DAILY CHALLENGE', isMultiplayer: false),
+          onPressed: _showChallengePicker,
         ),
         const SizedBox(height: 12),
         WoodButton.red(
@@ -866,26 +924,18 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2D1809).withValues(alpha: 0.95),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF8D6E63), width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.6),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: Row(
+      child: RusticPlank(
+        color: const Color(0xFF3E2723),
+        seed: 29,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           GestureDetector(
             onTap: () {
               if (_progressService == null) return;
-              final reward = _progressService!.claimDailyReward();
+               if (!_progressService!.canClaimDailyReward) return;
+               final reward = _progressService!.claimDailyReward();
               setState(() {});
               showDialog(
                 context: context,
@@ -918,6 +968,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
           ),
         ],
+        ),
       ),
     );
   }
