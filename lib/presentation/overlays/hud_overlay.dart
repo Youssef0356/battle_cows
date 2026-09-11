@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../flame/battle_cows_game.dart';
 import '../../game/models/player.dart';
 import '../../core/constants/colors.dart';
+import '../widgets/rustic_decor.dart';
 
 class HudOverlay extends StatelessWidget {
   final BattleCowsGame game;
@@ -69,20 +70,10 @@ class HudOverlay extends StatelessWidget {
   }
 
   Widget _buildCenterLogoPlaque() {
-    return Container(
+    return RusticPlank(
+      color: const Color(0xFF4E342E),
+      seed: 41,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: const Color(0xFF3E2723),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFFFD54F), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.5),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -256,16 +247,16 @@ class HudOverlay extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            '⏱️ TIME',
+           Text(
+             game.timeRemaining == 0 ? '🧠 NO TIMER' : '⏱️ TIME',
             style: GoogleFonts.bangers(
               fontSize: 10,
               color: Colors.white70,
               letterSpacing: 1,
             ),
           ),
-          Text(
-            '$timeRemaining',
+           Text(
+             timeRemaining == 0 ? '∞' : '$timeRemaining',
             style: GoogleFonts.bangers(
               fontSize: 20,
               color: isLowTime ? const Color(0xFFFF5252) : const Color(0xFFFFD54F),
@@ -366,6 +357,28 @@ class HudOverlay extends StatelessWidget {
                     Navigator.pop(context);
                   },
                 ),
+                const SizedBox(height: 16),
+                Text(
+                  'TABLE BACKGROUND',
+                  style: GoogleFonts.bangers(fontSize: 12, color: Colors.white70, letterSpacing: 1),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildBackgroundButton(
+                      ctx,
+                      'WOOD',
+                      'assets/images/Background/Table_Gameplay_Background.jpg',
+                    ),
+                    const SizedBox(width: 8),
+                    _buildBackgroundButton(
+                      ctx,
+                      'FARM',
+                      'assets/images/Background/background.jpg',
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -393,6 +406,24 @@ class HudOverlay extends StatelessWidget {
         child: const Center(
           child: Icon(Icons.settings, color: Colors.white, size: 18),
         ),
+      ),
+    );
+  }
+
+  Widget _buildBackgroundButton(BuildContext context, String label, String asset) {
+    return GestureDetector(
+      onTap: () {
+        game.setBackgroundAsset(asset);
+        Navigator.pop(context);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFF5D4037),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFF8D6E63)),
+        ),
+        child: Text(label, style: GoogleFonts.bangers(fontSize: 12, color: Colors.white)),
       ),
     );
   }

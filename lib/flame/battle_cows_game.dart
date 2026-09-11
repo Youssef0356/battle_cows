@@ -11,6 +11,7 @@ import '../game/models/player.dart';
 import '../game/models/herd.dart';
 import '../game/models/pasture_tile.dart';
 import '../game/models/game_board.dart';
+import '../game/models/challenge_mode.dart';
 import '../game/logic/game_engine.dart';
 import '../game/board/board_generator.dart';
 import '../game/board/board_builder.dart';
@@ -27,11 +28,14 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
   final List<PastureTile>? tiles;
   final int herdSize;
   final int boardSize;
+  final ChallengeMode challengeMode;
+  String backgroundAsset;
 
   late GameEngine _engine;
   late AiPlayer _aiPlayer;
   HexBoardComponent? _boardComponent;
   PlacementPreviewComponent? _previewComponent;
+  BackgroundComponent? _backgroundComponent;
 
   HexPosition? selectedPosition;
   List<HexPosition> validMoves = [];
@@ -40,6 +44,8 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
   bool _timerRunning = false;
   async.Timer? _gameTimer;
   bool _isAnimating = false;
+  double _shakeTime = 0;
+  double _shakeStrength = 0;
 
   PlayerColor? winner;
   Map<PlayerColor, int> territoryCounts = {};
@@ -65,6 +71,14 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
   PastureTile? _currentTile;
   HexPosition _tileOffset = const HexPosition(0, 0);
   final BoardBuilder _boardBuilder = BoardBuilder();
+  final List<void Function()> _stateListeners = [];
+  int _sessionId = 0;
+
+  double get _hexSize {
+    final shortestSide = min(size.x, size.y);
+    final density = max(14, boardSize + _tilesPerPlayer);
+    return shortestSide > 0 ? shortestSide * .9 / density : 30.0;
+  }
 
   void Function()? onStateChanged;
   final void Function(PlayerColor? winner, Map<PlayerColor, int> scores)? onGameOver;
@@ -76,8 +90,16 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
   final void Function()? onTilePlacementComplete;
 
   void notifyStateChanged() {
-    if (_callbacksEnabled) notifyStateChanged();
+    if (!_callbacksEnabled) return;
+    onStateChanged?.call();
+    for (final listener in List<void Function()>.from(_stateListeners)) {
+      listener();
+    }
   }
+
+  void addStateListener(void Function() listener) => _stateListeners.add(listener);
+
+  void removeStateListener(void Function() listener) => _stateListeners.remove(listener);
 
   bool _callbacksEnabled = true;
 
@@ -93,6 +115,8 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
     this.herdSize = 16,
     this.boardSize = 7,
     int tilesPerPlayer = 5,
+    this.challengeMode = ChallengeMode.standard,
+    this.backgroundAsset = 'assets/images/Background/Table_Gameplay_Background.jpg',
     this.onStateChanged,
     this.onGameOver,
     this.onTimeUp,
@@ -125,13 +149,16 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
     final bg = BackgroundComponent(
       position: Vector2.zero(),
       size: Vector2(size.x, size.y),
+      assetPath: backgroundAsset,
     );
+    _backgroundComponent = bg;
     camera.backdrop.add(bg);
 
     _initializeGame();
   }
 
   void _initializeGame() {
+    _sessionId++;
     _engine = GameEngine();
     isGameOver = false;
     winner = null;
@@ -156,8 +183,8 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
 
     if (tiles != null && tiles!.isNotEmpty) {
       _isPlacementPhase = false;
-      final board = BoardGenerator.generateEmptyBoard(tiles!);
-      _engine.initializeGame(board, players);
+      final board = BoardGenerator.generateEmptyBoard(tiles!, mode: challengeMode);
+      _engine.initializeGame(board, players, challengeMode: challengeMode);
       _setupBoardComponent();
       _startHerdPlacement();
       onTilePlacementComplete?.call();
@@ -183,7 +210,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
 
     if (_isPlacementPhase) {
       final board = GameBoard(cells: {}, herds: []);
-      final fixedSize = 30.0 * 14;
+        final fixedSize = _hexSize * 14;
       _boardComponent = HexBoardComponent(
         board: board,
         position: Vector2.zero(),
@@ -193,13 +220,14 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
 
       _previewComponent = PlacementPreviewComponent(
         position: Vector2.zero(),
+        hexSize: _hexSize,
       );
       world.add(_previewComponent!);
 
       _rebuildPlacementCells();
       _updatePreview();
     } else {
-      final boardSize = 30.0 * 14;
+        final boardSize = _hexSize * 14;
       _boardComponent = HexBoardComponent(
         board: _engine.board!,
         position: Vector2.zero(),
@@ -240,20 +268,28 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
   }
 
   bool _isTileWithinBounds(PastureTile tile) {
-    const hexSize = 30.0;
-    const marginFraction = 0.15;
+    final hexSize = _hexSize;
+    const horizontalMarginFraction = 0.23;
+    const topMarginFraction = 0.34;
+    const bottomMarginFraction = 0.23;
     final halfW = size.x / 2;
     final halfH = size.y / 2;
-    final marginX = halfW * marginFraction;
-    final marginY = halfH * marginFraction;
+    final marginX = halfW * horizontalMarginFraction;
+    final topMargin = halfH * topMarginFraction;
+    final bottomMargin = halfH * bottomMarginFraction;
 
     for (final pos in tile.hexes) {
       final px = hexSize * (sqrt(3) * pos.q + sqrt(3) / 2 * pos.r);
       final py = hexSize * (3.0 / 2 * pos.r);
       if (px < -halfW + marginX || px > halfW - marginX) return false;
-      if (py < -halfH + marginY || py > halfH - marginY) return false;
+      if (py < -halfH + topMargin || py > halfH - bottomMargin) return false;
     }
     return true;
+  }
+
+  Future<void> setBackgroundAsset(String assetPath) async {
+    backgroundAsset = assetPath;
+    await _backgroundComponent?.setAsset(assetPath);
   }
 
   void _generateNewTile() {
@@ -330,8 +366,9 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
   }
 
   void _performAiTilePlacement() {
+    final session = _sessionId;
     Future.delayed(const Duration(milliseconds: 500), () {
-      if (_allTilesPlaced || !_currentPlacementPlayer.isAi) return;
+      if (session != _sessionId || !_callbacksEnabled || _allTilesPlaced || !_currentPlacementPlayer.isAi) return;
 
       final existing = _boardBuilder.placedHexes;
       if (existing.isEmpty) {
@@ -373,8 +410,8 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
   void _finishPlacement() {
     _isPlacementPhase = false;
 
-    final board = BoardGenerator.generateEmptyBoard(_boardBuilder.placedTiles);
-    _engine.initializeGame(board, players);
+    final board = BoardGenerator.generateEmptyBoard(_boardBuilder.placedTiles, mode: challengeMode);
+    _engine.initializeGame(board, players, challengeMode: challengeMode);
 
     if (_boardComponent != null) {
       _boardComponent!.removeFromParent();
@@ -384,7 +421,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
       _previewComponent!.removeFromParent();
       _previewComponent = null;
     }
-    final boardSize = 30.0 * 14;
+    final boardSize = _hexSize * 14;
     _boardComponent = HexBoardComponent(
       board: _engine.board!,
       position: Vector2.zero(),
@@ -405,7 +442,28 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
     _isHerdPlacementPhase = true;
     _herdPlacementPlayerIndex = 0;
     _computeValidHerdPositions();
+    _performAiHerdPlacementIfNeeded();
     notifyStateChanged();
+  }
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    if (_shakeTime <= 0) {
+      camera.viewfinder.position = Vector2.zero();
+      return;
+    }
+    _shakeTime -= dt;
+    final strength = _shakeStrength * (_shakeTime / .22).clamp(0.0, 1.0);
+    camera.viewfinder.position = Vector2(
+      sin(_shakeTime * 95) * strength,
+      cos(_shakeTime * 83) * strength,
+    );
+  }
+
+  void shakeCamera({double strength = 3.0}) {
+    _shakeTime = .22;
+    _shakeStrength = strength;
   }
 
   void _computeValidHerdPositions() {
@@ -442,8 +500,19 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
       _finishHerdPlacement();
     } else {
       _computeValidHerdPositions();
+      _performAiHerdPlacementIfNeeded();
     }
     notifyStateChanged();
+  }
+
+  void _performAiHerdPlacementIfNeeded() {
+    if (!_isHerdPlacementPhase || _herdPlacementPlayerIndex >= players.length) return;
+    if (!players[_herdPlacementPlayerIndex].isAi || _validHerdPositions.isEmpty) return;
+    final session = _sessionId;
+    Future.delayed(const Duration(milliseconds: 450), () {
+      if (session != _sessionId || !_callbacksEnabled || !_isHerdPlacementPhase || _validHerdPositions.isEmpty) return;
+      placeHerdAt(_validHerdPositions[Random().nextInt(_validHerdPositions.length)]);
+    });
   }
 
   void _finishHerdPlacement() {
@@ -469,10 +538,30 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
   bool _isDragging = false;
 
   HexPosition _screenToHex(Vector2 screenPos) {
-    final worldPos = camera.viewfinder.globalToLocal(screenPos);
-    final hexSize = 30.0;
-    final q = ((sqrt(3) / 3 * worldPos.x - 1.0 / 3 * worldPos.y) / hexSize).round();
-    final r = ((2.0 / 3 * worldPos.y) / hexSize).round();
+    return _worldToHex(camera.globalToLocal(screenPos));
+  }
+
+  HexPosition _worldToHex(Vector2 worldPos) {
+    final hexSize = _hexSize;
+    if (hexSize <= 0) return const HexPosition(0, 0);
+    final q = (sqrt(3) / 3 * worldPos.x - 1.0 / 3 * worldPos.y) / hexSize;
+    final r = (2.0 / 3 * worldPos.y) / hexSize;
+    return _cubeRound(q, r);
+  }
+
+  HexPosition _cubeRound(double fq, double fr) {
+    final fs = -fq - fr;
+    var q = fq.round();
+    var r = fr.round();
+    var s = fs.round();
+    final qDiff = (q - fq).abs();
+    final rDiff = (r - fr).abs();
+    final sDiff = (s - fs).abs();
+    if (qDiff > rDiff && qDiff > sDiff) {
+      q = -r - s;
+    } else if (rDiff > sDiff) {
+      r = -q - s;
+    }
     return HexPosition(q, r);
   }
 
@@ -513,13 +602,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
   }
 
   void onTapDownFromScreen(TapUpDetails details) {
-    final screenPos = details.localPosition;
-    final worldPos = camera.viewfinder.globalToLocal(Vector2(screenPos.dx, screenPos.dy));
-    final hexSize = 30.0;
-    final hexPos = HexPosition(
-      ((sqrt(3) / 3 * worldPos.x - 1.0 / 3 * worldPos.y) / hexSize).round(),
-      ((2.0 / 3 * worldPos.y) / hexSize).round(),
-    );
+    final hexPos = _screenToHex(Vector2(details.localPosition.dx, details.localPosition.dy));
 
     if (_isHerdPlacementPhase) {
       if (_validHerdPositions.contains(hexPos)) {
@@ -541,6 +624,13 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
   }
 
   void _startTimer() {
+    if (challengeMode == ChallengeMode.noTimer) {
+      _timerRunning = false;
+      _gameTimer?.cancel();
+      timeRemaining = 0;
+      notifyStateChanged();
+      return;
+    }
     _timerRunning = true;
     timeRemaining = 60;
     _gameTimer?.cancel();
@@ -564,18 +654,19 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
     _timerRunning = false;
     _gameTimer?.cancel();
 
-    // Lose a heart and perform random move
+    final timedOutPlayer = _engine.currentPlayer;
     final heartsLeft = _engine.loseHeart();
-    playerHearts[_engine.currentPlayer.color] = heartsLeft;
+    playerHearts[timedOutPlayer.color] = heartsLeft;
     onHeartLost?.call(heartsLeft);
 
-    // Check if game over due to heart loss
+    _boardComponent?.updateBoard(_engine.board!);
+    _updateCounts();
+
     if (_engine.gameOver) {
       _handleGameOver();
       return;
     }
 
-    // Move to next turn
     nextTurn();
   }
 
@@ -636,8 +727,9 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
   }
 
   void _performAiMove() {
+    final session = _sessionId;
     Future.delayed(const Duration(milliseconds: 500), () {
-      if (isGameOver) return;
+      if (session != _sessionId || !_callbacksEnabled || isGameOver) return;
       final move = _aiPlayer.calculateMove(_engine, _engine.currentPlayer.color);
       if (move != null) {
         _executeWithAnimation(move);
@@ -661,7 +753,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
     if (selectedPosition == null) {
       if (herd != null && herd.owner == _engine.currentPlayer.color && herd.size >= 2) {
         selectedPosition = position;
-        selectedSplitCount = max(1, herd.size - 1);
+        selectedSplitCount = 1;
         validMoves = _engine.board!.getReachablePositions(position, herd.size)
             .where((p) => _engine.board!.isEmpty(p))
             .toList();
@@ -721,7 +813,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
       return;
     }
 
-    final hexSize = _boardComponent!.size.x / 20;
+    final hexSize = _hexSize;
     final fromPixel = _boardComponent!.hexToPixel(fromPos, hexSize);
     final toPixel = _boardComponent!.hexToPixel(toPos, hexSize);
 
@@ -750,6 +842,8 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
 
     final captureCount = _engine.lastCaptureCount;
     if (captureCount > 0) {
+      AudioManager().playCapture();
+      shakeCamera(strength: min(8.0, 2.5 + captureCount));
       capturesPerPlayer[move.player] = (capturesPerPlayer[move.player] ?? 0) + captureCount;
       onCapture?.call(captureCount, move.player);
     }
@@ -771,7 +865,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
   }
 
   void _updateCounts() {
-    territoryCounts = _engine.getTerritoryCount();
+    territoryCounts = _engine.getChallengeScores();
     cowCounts = {};
     for (final player in players) {
       cowCounts[player.color] = 0;
@@ -792,11 +886,24 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
   }
 
   void rematch() {
+    _resetOverlaysForNewMatch();
     _initializeGame();
+    if (tiles == null || tiles!.isEmpty) {
+      overlays.add('Placement');
+    }
   }
 
   void resetBoard() {
-    _initializeGame();
+    rematch();
+  }
+
+  void _resetOverlaysForNewMatch() {
+    overlays.remove('GameOver');
+    overlays.remove('HUD');
+    overlays.remove('GameControls');
+    overlays.remove('Scoreboard');
+    overlays.remove('HerdPlacement');
+    overlays.remove('Placement');
   }
 
   @override

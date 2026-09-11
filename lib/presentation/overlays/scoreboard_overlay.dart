@@ -13,12 +13,21 @@ class ScoreboardOverlay extends StatefulWidget {
 }
 
 class _ScoreboardOverlayState extends State<ScoreboardOverlay> {
+  late final void Function() _stateListener;
+
   @override
   void initState() {
     super.initState();
-    widget.game.onStateChanged = () {
+    _stateListener = () {
       if (mounted) setState(() {});
     };
+    widget.game.addStateListener(_stateListener);
+  }
+
+  @override
+  void dispose() {
+    widget.game.removeStateListener(_stateListener);
+    super.dispose();
   }
 
   @override
@@ -33,7 +42,7 @@ class _ScoreboardOverlayState extends State<ScoreboardOverlay> {
       child: Align(
         alignment: Alignment.topCenter,
         child: Padding(
-          padding: const EdgeInsets.only(top: 72, left: 12, right: 12),
+          padding: const EdgeInsets.only(top: 128, left: 12, right: 12),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(

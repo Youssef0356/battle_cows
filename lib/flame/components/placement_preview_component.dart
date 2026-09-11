@@ -7,11 +7,12 @@ import '../../game/models/pasture_tile.dart';
 class PlacementPreviewComponent extends PositionComponent {
   List<HexPosition> _previewHexes = [];
   bool _isValid = false;
-
-  static const double hexSize = 30;
+  double hexSize;
+  double _pulse = 0;
 
   PlacementPreviewComponent({
     super.position,
+    this.hexSize = 30,
   });
 
   void updatePreview({
@@ -26,6 +27,12 @@ class PlacementPreviewComponent extends PositionComponent {
     }
     final translated = tile.translate(offset);
     _previewHexes = List.from(translated.hexes);
+  }
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    _pulse += dt;
   }
 
   @override
@@ -56,8 +63,9 @@ class PlacementPreviewComponent extends PositionComponent {
     }
     path.close();
 
+    final glow = _isValid ? (sin(_pulse * 4) + 1) / 2 : 0.0;
     final fillColor = _isValid
-        ? const Color(0xFF66BB6A).withValues(alpha: 0.45)
+        ? const Color(0xFF66BB6A).withValues(alpha: 0.32 + glow * 0.18)
         : const Color(0xFFEF5350).withValues(alpha: 0.35);
 
     canvas.drawPath(path, Paint()..color = fillColor);
@@ -71,7 +79,7 @@ class PlacementPreviewComponent extends PositionComponent {
       Paint()
         ..color = borderColor
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.5,
+        ..strokeWidth = _isValid ? 2.5 + glow * 1.5 : 2.5,
     );
   }
 }

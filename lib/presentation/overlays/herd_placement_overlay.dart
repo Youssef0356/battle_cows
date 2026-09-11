@@ -17,12 +17,21 @@ class HerdPlacementOverlay extends StatefulWidget {
 }
 
 class _HerdPlacementOverlayState extends State<HerdPlacementOverlay> {
+  late final void Function() _stateListener;
+
   @override
   void initState() {
     super.initState();
-    widget.game.onStateChanged = () {
+    _stateListener = () {
       if (mounted) setState(() {});
     };
+    widget.game.addStateListener(_stateListener);
+  }
+
+  @override
+  void dispose() {
+    widget.game.removeStateListener(_stateListener);
+    super.dispose();
   }
 
   @override
@@ -39,7 +48,7 @@ class _HerdPlacementOverlayState extends State<HerdPlacementOverlay> {
       child: Column(
         children: [
           _buildTopBar(playerIndex, players),
-          const Spacer(),
+          const Expanded(child: IgnorePointer(child: SizedBox.expand())),
           _buildInstructions(currentPlayer),
         ],
       ),

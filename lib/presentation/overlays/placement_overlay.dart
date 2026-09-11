@@ -17,12 +17,21 @@ class PlacementOverlay extends StatefulWidget {
 }
 
 class _PlacementOverlayState extends State<PlacementOverlay> {
+  late final void Function() _stateListener;
+
   @override
   void initState() {
     super.initState();
-    widget.game.onStateChanged = () {
+    _stateListener = () {
       if (mounted) setState(() {});
     };
+    widget.game.addStateListener(_stateListener);
+  }
+
+  @override
+  void dispose() {
+    widget.game.removeStateListener(_stateListener);
+    super.dispose();
   }
 
   @override
@@ -40,8 +49,7 @@ class _PlacementOverlayState extends State<PlacementOverlay> {
         children: [
           // Top bar with player info
           _buildTopBar(currentPlayerIndex, players, tilesRemaining),
-          const Spacer(),
-          // Bottom controls
+          const Expanded(child: IgnorePointer(child: SizedBox.expand())),
           if (!isAi && currentTile != null)
             _buildBottomControls(canPlace),
         ],

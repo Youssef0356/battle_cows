@@ -48,6 +48,7 @@ class HexBoardComponent extends PositionComponent {
         size: Vector2.all(hexSize * 2),
         flipMode: HexCellComponent.getFlipMode(pos.q, pos.r),
         texture: _texture,
+        territoryOwner: herd?.owner,
       );
 
       _cells[pos] = cellComponent;
@@ -82,7 +83,7 @@ class HexBoardComponent extends PositionComponent {
     for (final entry in _cells.entries) {
       final pos = entry.key;
       final herd = newBoard.getHerdAt(pos);
-      entry.value.herd = herd;
+      entry.value.setHerd(herd);
       entry.value.territoryOwner = herd?.owner;
     }
   }
@@ -90,7 +91,7 @@ class HexBoardComponent extends PositionComponent {
   void addCell(HexPosition pos, {bool isSelected = false, bool isPreview = false}) {
     if (_cells.containsKey(pos)) return;
     final hexSize = size.x / 14;
-    final cell = board.cells[pos] ?? const HexCell(position: HexPosition(0, 0));
+    final cell = board.cells[pos] ?? HexCell(position: pos);
     final pixelPos = hexToPixel(pos, hexSize);
     final cellComponent = HexCellComponent(
       cell: cell,

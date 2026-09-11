@@ -6,6 +6,7 @@ import '../../flame/battle_cows_game.dart';
 import '../../data/services/progress_service.dart';
 import '../../game/models/player.dart';
 import '../../game/models/pasture_tile.dart';
+import '../../game/models/challenge_mode.dart';
 import '../../core/constants/colors.dart';
 import '../../ads/ad_manager.dart';
 import '../overlays/hud_overlay.dart';
@@ -22,6 +23,8 @@ class FlameGameScreen extends StatefulWidget {
   final List<PastureTile>? tiles;
   final int herdSize;
   final int boardSize;
+  final int tilesPerPlayer;
+  final ChallengeMode challengeMode;
 
   const FlameGameScreen({
     super.key,
@@ -29,6 +32,8 @@ class FlameGameScreen extends StatefulWidget {
     this.tiles,
     this.herdSize = 16,
     this.boardSize = 7,
+    this.tilesPerPlayer = 5,
+    this.challengeMode = ChallengeMode.standard,
   });
 
   @override
@@ -52,6 +57,8 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
       tiles: widget.tiles,
       herdSize: widget.herdSize,
       boardSize: widget.boardSize,
+      tilesPerPlayer: widget.tilesPerPlayer,
+      challengeMode: widget.challengeMode,
       onStateChanged: () {
         if (mounted) setState(() {});
       },
@@ -219,6 +226,7 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
         child: Stack(
           children: [
             GestureDetector(
+              behavior: HitTestBehavior.translucent,
               onTapUp: (details) {
                 _game.onTapDownFromScreen(details);
               },

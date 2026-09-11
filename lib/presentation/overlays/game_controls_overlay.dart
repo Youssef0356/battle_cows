@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../flame/battle_cows_game.dart';
 import '../../core/constants/colors.dart';
+import '../widgets/rustic_decor.dart';
 
 class GameControlsOverlay extends StatefulWidget {
   final BattleCowsGame game;
@@ -17,12 +18,21 @@ class GameControlsOverlay extends StatefulWidget {
 }
 
 class _GameControlsOverlayState extends State<GameControlsOverlay> {
+  late final void Function() _stateListener;
+
   @override
   void initState() {
     super.initState();
-    widget.game.onStateChanged = () {
+    _stateListener = () {
       if (mounted) setState(() {});
     };
+    widget.game.addStateListener(_stateListener);
+  }
+
+  @override
+  void dispose() {
+    widget.game.removeStateListener(_stateListener);
+    super.dispose();
   }
 
   @override
@@ -35,27 +45,32 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
     final movingCount = game.selectedSplitCount.clamp(0, max(maxMoving, 1)).toInt();
     final playerColor = herd?.owner ?? game.engine.currentPlayer.color;
     final currentPlayer = game.engine.players.isEmpty ? null : game.engine.currentPlayer;
-    final hearts = currentPlayer != null ? (game.playerHearts[currentPlayer.color] ?? 3) : 3;
 
     if (currentPlayer == null) return const SizedBox.shrink();
 
     return SafeArea(
-      child: Column(
+      child: Stack(
         children: [
-          _buildTopBar(currentPlayer, hearts),
-          const Spacer(),
-          _buildRightPanel(
-            herd: herd,
-            totalCows: totalCows,
-            maxMoving: maxMoving,
-            movingCount: movingCount,
-            playerColor: playerColor,
+          Column(
+            children: [
+              const Expanded(child: IgnorePointer(child: SizedBox.expand())),
+              _buildRightPanel(
+                herd: herd,
+                totalCows: totalCows,
+                maxMoving: maxMoving,
+                movingCount: movingCount,
+                playerColor: playerColor,
+              ),
+            ],
           ),
+          const Positioned(top: 18, right: 0, child: RopeStrap(alignment: Alignment.topRight, width: 145, height: 24)),
         ],
       ),
     );
   }
 
+  // Kept for the compact control layout used by older saved sessions.
+  // ignore: unused_element
   Widget _buildTopBar(dynamic currentPlayer, int hearts) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -151,7 +166,7 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
     return Align(
       alignment: Alignment.centerRight,
       child: Container(
-        width: 80,
+        width: 104,
         margin: const EdgeInsets.only(right: 12),
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
         decoration: BoxDecoration(
@@ -183,7 +198,7 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'SPLIT',
+              'MOVE COWS',
               style: GoogleFonts.bangers(
                 fontSize: 11,
                 color: const Color(0xFFFFD54F),
@@ -242,8 +257,8 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const Text('➡', style: TextStyle(fontSize: 14)),
-                    Text(
-                      '$movingCount',
+              Text(
+                '$movingCount / $maxMoving',
                       style: GoogleFonts.bangers(
                         fontSize: 16,
                         color: const Color(0xFF66BB6A),
@@ -255,12 +270,12 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
               const SizedBox(height: 10),
               // + button
               _buildAdjustButton(Icons.add, () {
-                widget.game.setSplitCount(movingCount + 1);
+                if (movingCount < maxMoving) widget.game.setSplitCount(movingCount + 1);
               }),
               const SizedBox(height: 6),
               // - button
               _buildAdjustButton(Icons.remove, () {
-                widget.game.setSplitCount(movingCount - 1);
+                if (movingCount > 1) widget.game.setSplitCount(movingCount - 1);
               }),
               const SizedBox(height: 10),
               // Stay count label
