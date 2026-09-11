@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../flame/battle_cows_game.dart';
 import '../../game/models/player.dart';
 import '../../core/constants/colors.dart';
+import 'hud_overlay.dart';
 
 class PlacementOverlay extends StatefulWidget {
   final BattleCowsGame game;
@@ -62,6 +63,8 @@ class _PlacementOverlayState extends State<PlacementOverlay> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
+          HudOverlay(game: widget.game, players: players).buildSettingsButton(context),
+          const SizedBox(width: 10),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(

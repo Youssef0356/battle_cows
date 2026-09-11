@@ -33,7 +33,7 @@ class HexBoardComponent extends PositionComponent {
       _texture = frame.image;
     } catch (_) {}
 
-    final hexSize = size.x / 14;
+    final hexSize = size.x / 15;
 
     for (final entry in board.cells.entries) {
       final pos = entry.key;
@@ -90,7 +90,7 @@ class HexBoardComponent extends PositionComponent {
 
   void addCell(HexPosition pos, {bool isSelected = false, bool isPreview = false}) {
     if (_cells.containsKey(pos)) return;
-    final hexSize = size.x / 14;
+    final hexSize = size.x / 15;
     final cell = board.cells[pos] ?? HexCell(position: pos);
     final pixelPos = hexToPixel(pos, hexSize);
     final cellComponent = HexCellComponent(

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../flame/battle_cows_game.dart';
 import '../../core/constants/colors.dart';
-import '../widgets/rustic_decor.dart';
 
 class GameControlsOverlay extends StatefulWidget {
   final BattleCowsGame game;
@@ -63,7 +62,6 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
               ),
             ],
           ),
-          const Positioned(top: 18, right: 0, child: RopeStrap(alignment: Alignment.topRight, width: 145, height: 24)),
         ],
       ),
     );

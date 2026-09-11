@@ -42,7 +42,7 @@ class _ScoreboardOverlayState extends State<ScoreboardOverlay> {
       child: Align(
         alignment: Alignment.topCenter,
         child: Padding(
-          padding: const EdgeInsets.only(top: 128, left: 12, right: 12),
+          padding: const EdgeInsets.only(top: 72, left: 16, right: 16),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
@@ -66,7 +66,7 @@ class _ScoreboardOverlayState extends State<ScoreboardOverlay> {
               ],
             ),
             child: Row(
-              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: players.map((player) {
                 final isActive = currentColor == player.color;
                 final cows = cowCounts[player.color] ?? 0;
@@ -110,6 +110,14 @@ class _ScoreboardOverlayState extends State<ScoreboardOverlay> {
                                 color: isActive
                                     ? const Color(0xFFFFD54F)
                                     : Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '♥ ${widget.game.playerHearts[player.color] ?? 3}',
+                              style: GoogleFonts.bangers(
+                                fontSize: 12,
+                                color: const Color(0xFFFF8A80),
                               ),
                             ),
                             const SizedBox(width: 8),

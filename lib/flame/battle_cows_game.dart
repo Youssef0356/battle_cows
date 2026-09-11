@@ -77,7 +77,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
   double get _hexSize {
     final shortestSide = min(size.x, size.y);
     final density = max(14, boardSize + _tilesPerPlayer);
-    return shortestSide > 0 ? shortestSide * .9 / density : 30.0;
+    return shortestSide > 0 ? shortestSide * .94 / density : 30.0;
   }
 
   void Function()? onStateChanged;
@@ -116,7 +116,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
     this.boardSize = 7,
     int tilesPerPlayer = 5,
     this.challengeMode = ChallengeMode.standard,
-    this.backgroundAsset = 'assets/images/Background/Table_Gameplay_Background.jpg',
+    this.backgroundAsset = 'assets/images/Background/Table image.jpg',
     this.onStateChanged,
     this.onGameOver,
     this.onTimeUp,
@@ -210,7 +210,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
 
     if (_isPlacementPhase) {
       final board = GameBoard(cells: {}, herds: []);
-        final fixedSize = _hexSize * 14;
+        final fixedSize = _hexSize * 15;
       _boardComponent = HexBoardComponent(
         board: board,
         position: Vector2.zero(),
@@ -227,7 +227,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
       _rebuildPlacementCells();
       _updatePreview();
     } else {
-        final boardSize = _hexSize * 14;
+        final boardSize = _hexSize * 15;
       _boardComponent = HexBoardComponent(
         board: _engine.board!,
         position: Vector2.zero(),
@@ -290,6 +290,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
   Future<void> setBackgroundAsset(String assetPath) async {
     backgroundAsset = assetPath;
     await _backgroundComponent?.setAsset(assetPath);
+    notifyStateChanged();
   }
 
   void _generateNewTile() {
@@ -421,7 +422,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
       _previewComponent!.removeFromParent();
       _previewComponent = null;
     }
-    final boardSize = _hexSize * 14;
+    final boardSize = _hexSize * 15;
     _boardComponent = HexBoardComponent(
       board: _engine.board!,
       position: Vector2.zero(),

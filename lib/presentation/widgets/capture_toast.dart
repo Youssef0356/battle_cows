@@ -102,7 +102,11 @@ class _CaptureToastState extends State<CaptureToast>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text('⚔️', style: TextStyle(fontSize: 20)),
+                    Image.asset(
+                      'assets/images/Effects/capture_burst.png',
+                      width: 34,
+                      height: 34,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       '+${widget.count} CAPTURED!',

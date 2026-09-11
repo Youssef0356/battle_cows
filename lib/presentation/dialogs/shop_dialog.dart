@@ -105,12 +105,15 @@ class _ShopDialogState extends State<ShopDialog> {
   }
 
   Widget _buildCategoryTabs() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: ShopCategory.values.map((cat) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: ShopCategory.values.map((cat) {
         final isSelected = _selectedCategory == cat;
         final labels = {
           ShopCategory.hats: '🤠',
+          ShopCategory.skins: '🐄',
           ShopCategory.themes: '🎨',
           ShopCategory.emojis: '💬',
           ShopCategory.boards: '🐮',
@@ -129,7 +132,8 @@ class _ShopDialogState extends State<ShopDialog> {
             child: Text(labels[cat]!, style: const TextStyle(fontSize: 20)),
           ),
         );
-      }).toList(),
+        }).toList(),
+      ),
     );
   }
 
@@ -157,7 +161,13 @@ class _ShopDialogState extends State<ShopDialog> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(item.icon, style: const TextStyle(fontSize: 22)),
+             SizedBox(
+               width: 54,
+               height: 54,
+               child: item.imageAsset != null
+                   ? Image.asset(item.imageAsset!, fit: BoxFit.contain)
+                   : Center(child: Text(item.icon, style: const TextStyle(fontSize: 22))),
+             ),
             const SizedBox(height: 2),
             Text(
               item.name,

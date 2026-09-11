@@ -1,6 +1,8 @@
 import 'dart:math';
+import 'dart:ui' as ui;
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class MoveAnimationComponent extends PositionComponent {
   final Vector2 from;
@@ -10,6 +12,7 @@ class MoveAnimationComponent extends PositionComponent {
   final VoidCallback onComplete;
 
   double _progress = 0;
+  ui.Image? _dustImage;
   static const double duration = 0.4;
 
   MoveAnimationComponent({
@@ -22,7 +25,16 @@ class MoveAnimationComponent extends PositionComponent {
           position: from,
           size: Vector2(40, 40),
           anchor: Anchor.center,
-        );
+          );
+
+  @override
+  Future<void> onLoad() async {
+    try {
+      final data = await rootBundle.load('assets/images/Effects/stampede_dust.png');
+      final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+      _dustImage = (await codec.getNextFrame()).image;
+    } catch (_) {}
+  }
 
   @override
   void update(double dt) {
@@ -45,6 +57,15 @@ class MoveAnimationComponent extends PositionComponent {
   @override
   void render(Canvas canvas) {
     super.render(canvas);
+    if (_dustImage != null) {
+      final src = Rect.fromLTWH(0, 0, _dustImage!.width.toDouble(), _dustImage!.height.toDouble());
+      final dst = Rect.fromCenter(
+        center: Offset(size.x / 2, size.y / 2 + 8),
+        width: size.x * 1.8,
+        height: size.y * 0.9,
+      );
+      canvas.drawImageRect(_dustImage!, src, dst, Paint()..filterQuality = FilterQuality.medium);
+    }
     final radius = 10.0;
     final darkColor = _darkenColor(color, 0.3);
 

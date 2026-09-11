@@ -99,7 +99,10 @@ class HexCellComponent extends PositionComponent {
 
     _draw3DDepth(canvas, path, center, hexRadius);
     _drawHexFill(canvas, path, center, hexRadius);
-    _drawHexBorder(canvas, path);
+    final hasSpecialTile = cell.specialType != SpecialTileType.none && _specialImage != null;
+    if (!hasSpecialTile) {
+      _drawHexBorder(canvas, path);
+    }
 
     if (cell.isObstacle) {
       _drawObstacleFenceOrRock(canvas, center, hexRadius);
@@ -113,14 +116,17 @@ class HexCellComponent extends PositionComponent {
       _drawValidMoveDashedOutline(canvas, center, hexRadius);
     }
 
-    if (cell.specialType != SpecialTileType.none) {
-      _drawSpecialTile(canvas, center, hexRadius);
-    }
-
     if (herd != null && herd!.size > 0) {
       final bob = sin(_lifeTime * 2.2 + cell.position.q * 0.8 + cell.position.r * 0.45) * 2.2;
       if (_cowImage != null) {
         _drawAsset(canvas, _cowImage!, center, hexRadius * 0.78, bob);
+        _drawCowCountBadge(
+          canvas,
+          Offset(center.x + hexRadius * 0.32, center.y + bob + hexRadius * 0.28),
+          hexRadius * 0.7,
+          herd!.size,
+          AppColors.getPlayerPrimary(herd!.owner),
+        );
       } else {
         _drawCowPieceWithShield(canvas, Vector2(center.x, center.y + bob), hexRadius);
       }
@@ -208,7 +214,9 @@ class HexCellComponent extends PositionComponent {
     canvas.save();
     canvas.clipPath(path);
 
-    if (texture != null && !cell.isObstacle) {
+    if (cell.specialType != SpecialTileType.none && _specialImage != null) {
+      _drawFullTileAsset(canvas, _specialImage!, center, radius);
+    } else if (texture != null && !cell.isObstacle) {
       _drawTexture(canvas, center, radius);
     } else if (cell.isObstacle) {
       canvas.drawPath(path, Paint()..color = const Color(0xFF4E342E));
@@ -267,9 +275,9 @@ class HexCellComponent extends PositionComponent {
 
   void _drawHexBorder(Canvas canvas, Path path) {
     final borderPaint = Paint()
-      ..color = const Color(0xFF33691E).withValues(alpha: 0.8)
+      ..color = const Color(0xFF3F642D).withValues(alpha: 0.95)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5;
+      ..strokeWidth = 2.5;
 
     canvas.drawPath(path, borderPaint);
   }
@@ -412,36 +420,22 @@ class HexCellComponent extends PositionComponent {
     _drawShieldBadge(canvas, shieldCenter, shieldWidth, shieldHeight, herdSize, primaryColor);
   }
 
-  void _drawSpecialTile(Canvas canvas, Vector2 center, double radius) {
-    if (_specialImage != null) {
-      _drawAsset(canvas, _specialImage!, center, radius * 0.78, 0);
-      return;
-    }
-    final details = switch (cell.specialType) {
-      SpecialTileType.mud => ('MUD', const Color(0xFF6D4C41)),
-      SpecialTileType.hayBale => ('HAY', const Color(0xFFFFC107)),
-      SpecialTileType.waterPond => ('💧', const Color(0xFF29B6F6)),
-      SpecialTileType.goldenPasture => ('★', const Color(0xFFFFD54F)),
-      SpecialTileType.hill => ('▲', const Color(0xFFBDBDBD)),
-      SpecialTileType.none => ('', Colors.transparent),
-    };
-    canvas.drawCircle(
-      Offset(center.x, center.y),
-      radius * .34,
-      Paint()..color = details.$2.withValues(alpha: .78),
+  void _drawFullTileAsset(Canvas canvas, ui.Image image, Vector2 center, double radius) {
+    final src = Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble());
+    final dst = Rect.fromLTWH(
+      center.x - radius,
+      center.y - radius,
+      radius * 2,
+      radius * 2,
     );
-    final painter = TextPainter(
-      text: TextSpan(
-        text: details.$1,
-        style: TextStyle(
-          fontSize: radius * (details.$1.length > 2 ? .24 : .46),
-          fontWeight: FontWeight.w900,
-          color: Colors.white,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    painter.paint(canvas, Offset(center.x - painter.width / 2, center.y - painter.height / 2));
+    canvas.drawImageRect(
+      image,
+      src,
+      dst,
+      Paint()
+        ..filterQuality = FilterQuality.medium
+        ..color = Colors.white,
+    );
   }
 
   void _drawAsset(Canvas canvas, ui.Image image, Vector2 center, double radius, double yOffset) {
@@ -491,6 +485,36 @@ class HexCellComponent extends PositionComponent {
       textDirection: TextDirection.ltr,
     );
     textPainter.layout();
+    textPainter.paint(
+      canvas,
+      Offset(center.dx - textPainter.width / 2, center.dy - textPainter.height / 2 - 1),
+    );
+  }
+
+  void _drawCowCountBadge(Canvas canvas, Offset center, double diameter, int count, Color teamColor) {
+    final radius = diameter / 2;
+    canvas.drawCircle(center, radius + 2, Paint()..color = Colors.white);
+    canvas.drawCircle(center, radius, Paint()..color = const Color(0xFF1B0000));
+    canvas.drawCircle(
+      center,
+      radius,
+      Paint()
+        ..color = teamColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5,
+    );
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: '$count',
+        style: TextStyle(
+          fontSize: diameter * 0.68,
+          fontWeight: FontWeight.w900,
+          color: Colors.white,
+          fontFamily: 'Bangers',
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
     textPainter.paint(
       canvas,
       Offset(center.dx - textPainter.width / 2, center.dy - textPainter.height / 2 - 1),

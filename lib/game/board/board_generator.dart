@@ -9,11 +9,43 @@ import '../models/challenge_mode.dart';
 class BoardGenerator {
   static GameBoard generateFromTiles(List<PastureTile> tiles, List<Player> players, int herdSize) {
     final herds = _placeStartingHerds(tiles, players, herdSize);
-    return GameBoard.fromTiles(tiles, herds);
+    return _decorate(GameBoard.fromTiles(tiles, herds), ChallengeMode.standard);
   }
 
   static GameBoard generateEmptyBoard(List<PastureTile> tiles, {ChallengeMode mode = ChallengeMode.standard}) {
-    return GameBoard.fromTiles(tiles, []);
+    return _decorate(GameBoard.fromTiles(tiles, []), mode);
+  }
+
+  static GameBoard _decorate(GameBoard board, ChallengeMode mode) {
+    // Special terrain is kept implemented but disabled until the board art is
+    // fully matched to the base pasture tiles.
+    return board;
+
+    /*
+    final cells = <HexPosition, HexCell>{};
+    final specialTiles = mode == ChallengeMode.noTimer
+        ? const [
+            SpecialTileType.mud,
+            SpecialTileType.waterPond,
+            SpecialTileType.hayBale,
+            SpecialTileType.goldenPasture,
+            SpecialTileType.hill,
+          ]
+        : const [
+            SpecialTileType.hayBale,
+            SpecialTileType.goldenPasture,
+            SpecialTileType.hill,
+          ];
+
+    for (final entry in board.cells.entries) {
+      final hash = (entry.key.q * 31 + entry.key.r * 17).abs();
+      final specialType = hash % 8 == 0
+          ? specialTiles[hash % specialTiles.length]
+          : SpecialTileType.none;
+      cells[entry.key] = entry.value.copyWith(specialType: specialType);
+    }
+    return GameBoard(cells: cells, herds: board.herds);
+    */
   }
 
   static List<Herd> _placeStartingHerds(

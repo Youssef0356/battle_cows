@@ -80,7 +80,11 @@ class _GameOverOverlayState extends State<GameOverOverlay>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   _buildConfetti(),
-                  const Text('\ud83c\udfc6', style: TextStyle(fontSize: 64)),
+                   Image.asset(
+                     'assets/images/Effects/victory_badge.png',
+                     width: 96,
+                     height: 96,
+                   ),
                   const SizedBox(height: 12),
                   Text(
                     winner != null

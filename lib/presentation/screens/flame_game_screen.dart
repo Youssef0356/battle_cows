@@ -17,6 +17,7 @@ import '../overlays/scoreboard_overlay.dart';
 import '../overlays/placement_overlay.dart';
 import '../overlays/herd_placement_overlay.dart';
 import '../widgets/capture_toast.dart';
+import '../widgets/parallax_dust_layer.dart';
 
 class FlameGameScreen extends StatefulWidget {
   final List<Player> players;
@@ -222,21 +223,36 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            GestureDetector(
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Image.asset(
+              _game.backgroundAsset,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stack) => Container(color: const Color(0xFF1B3A1B)),
+            ),
+          ),
+          Positioned.fill(
+            child: ColoredBox(color: Colors.black26),
+          ),
+          Positioned.fill(
+            child: GestureDetector(
               behavior: HitTestBehavior.translucent,
               onTapUp: (details) {
                 _game.onTapDownFromScreen(details);
               },
               child: GameWidget(
                 game: _game,
-                backgroundBuilder: (context) => Container(color: Colors.black),
+                backgroundBuilder: (context) => const SizedBox.expand(),
                 overlayBuilderMap: {
-                  'HUD': (context, game) => HudOverlay(
-                    game: game as BattleCowsGame,
-                    players: widget.players,
+                  'HUD': (context, game) => Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: HudOverlay(
+                      game: game as BattleCowsGame,
+                      players: widget.players,
+                    ),
                   ),
                   'Placement': (context, game) => PlacementOverlay(
                     game: game as BattleCowsGame,
@@ -258,8 +274,11 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
                 initialActiveOverlays: const [],
               ),
             ),
-          ],
-        ),
+          ),
+          const Positioned.fill(
+            child: ParallaxDustLayer(),
+          ),
+        ],
       ),
     );
   }

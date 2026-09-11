@@ -11,7 +11,7 @@ class BackgroundComponent extends PositionComponent {
   BackgroundComponent({
     required super.position,
     required super.size,
-    this.assetPath = 'assets/images/Background/Table_Gameplay_Background.jpg',
+    this.assetPath = 'assets/images/Background/Table image.jpg',
   });
 
   @override

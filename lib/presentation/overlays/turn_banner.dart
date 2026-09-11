@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:icony/icony_gameicons.dart';
 
 class TurnBanner extends StatefulWidget {
   final String playerName;
@@ -105,11 +104,11 @@ class _TurnBannerState extends State<TurnBanner>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    GameIcons(
-                      GameIcons.cow,
-                      width: 28,
-                      height: 28,
-                      color: Colors.white,
+                    Image.asset(
+                      'assets/images/Cows/cow_viking.png',
+                      width: 34,
+                      height: 34,
+                      fit: BoxFit.contain,
                     ),
                     const SizedBox(width: 12),
                     Column(
