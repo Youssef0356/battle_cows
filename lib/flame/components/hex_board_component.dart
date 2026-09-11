@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flame/components.dart';
 import '../../game/models/hex_position.dart';
 import '../../game/models/game_board.dart';
+import '../../game/models/hex_cell.dart';
 import 'hex_cell_component.dart';
 
 class HexBoardComponent extends PositionComponent {
@@ -13,13 +14,11 @@ class HexBoardComponent extends PositionComponent {
   List<HexPosition> _validMoves = [];
   double _pulseTime = 0;
   ui.Image? _texture;
-  final void Function(HexPosition)? onCellTap;
 
   HexBoardComponent({
     required this.board,
     required super.position,
     required super.size,
-    this.onCellTap,
   });
 
   Map<HexPosition, HexCellComponent> get cells => _cells;
@@ -49,7 +48,7 @@ class HexBoardComponent extends PositionComponent {
         size: Vector2.all(hexSize * 2),
         flipMode: HexCellComponent.getFlipMode(pos.q, pos.r),
         texture: _texture,
-        onTapCallback: () => onCellTap?.call(pos),
+        territoryOwner: herd?.owner,
       );
 
       _cells[pos] = cellComponent;
@@ -84,8 +83,32 @@ class HexBoardComponent extends PositionComponent {
     for (final entry in _cells.entries) {
       final pos = entry.key;
       final herd = newBoard.getHerdAt(pos);
-      entry.value.herd = herd;
+      entry.value.setHerd(herd);
       entry.value.territoryOwner = herd?.owner;
+    }
+  }
+
+  void addCell(HexPosition pos, {bool isSelected = false, bool isPreview = false}) {
+    if (_cells.containsKey(pos)) return;
+    final hexSize = size.x / 14;
+    final cell = board.cells[pos] ?? HexCell(position: pos);
+    final pixelPos = hexToPixel(pos, hexSize);
+    final cellComponent = HexCellComponent(
+      cell: cell,
+      position: pixelPos,
+      size: Vector2.all(hexSize * 2),
+      flipMode: HexCellComponent.getFlipMode(pos.q, pos.r),
+      texture: _texture,
+      isValidMove: isPreview,
+    );
+    _cells[pos] = cellComponent;
+    add(cellComponent);
+  }
+
+  void removeCell(HexPosition pos) {
+    final cell = _cells.remove(pos);
+    if (cell != null) {
+      cell.removeFromParent();
     }
   }
 

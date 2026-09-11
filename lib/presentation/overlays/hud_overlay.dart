@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:icony/icony_gameicons.dart';
 import '../../flame/battle_cows_game.dart';
 import '../../game/models/player.dart';
 import '../../core/constants/colors.dart';
-import '../widgets/wood_button.dart';
+import '../widgets/rustic_decor.dart';
 
 class HudOverlay extends StatelessWidget {
   final BattleCowsGame game;
@@ -25,15 +24,10 @@ class HudOverlay extends StatelessWidget {
     final p2 = players.length > 1 ? players[1] : null;
     final p1Hearts = p1 != null ? (game.playerHearts[p1.color] ?? 3) : 3;
     final p2Hearts = p2 != null ? (game.playerHearts[p2.color] ?? 3) : 3;
-    final screenW = MediaQuery.of(context).size.width;
-    final isTablet = screenW > 600;
 
     return SafeArea(
       child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: isTablet ? 20 : 12,
-          vertical: isTablet ? 10 : 6,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         child: Column(
           children: [
             // Top Row: P1 Banner, Center Logo Plaque, P2 Banner
@@ -46,10 +40,9 @@ class HudOverlay extends StatelessWidget {
                     isLeft: true,
                     isActive: currentPlayer.color == p1.color,
                     hearts: p1Hearts,
-                    isTablet: isTablet,
                   ),
                 const Spacer(),
-                _buildCenterLogoPlaque(isTablet),
+                _buildCenterLogoPlaque(),
                 const Spacer(),
                 if (p2 != null)
                   _buildPlayerBanner(
@@ -57,17 +50,16 @@ class HudOverlay extends StatelessWidget {
                     isLeft: false,
                     isActive: currentPlayer.color == p2.color,
                     hearts: p2Hearts,
-                    isTablet: isTablet,
                   ),
               ],
             ),
-            SizedBox(height: isTablet ? 12 : 8),
+            const SizedBox(height: 8),
             // Secondary row: Timer & Turn Counter & Settings
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildTimerBox(isTablet),
-                _buildTurnCounterBox(turnCount, isTablet),
+                _buildTimerBox(),
+                _buildTurnCounterBox(turnCount),
                 _buildSettingsButton(context),
               ],
             ),
@@ -77,38 +69,20 @@ class HudOverlay extends StatelessWidget {
     );
   }
 
-  Widget _buildCenterLogoPlaque(bool isTablet) {
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: isTablet ? 16 : 10,
-        vertical: isTablet ? 6 : 4,
-      ),
-      decoration: BoxDecoration(
-        color: const Color(0xFF3E2723),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFFFD54F), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.5),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+  Widget _buildCenterLogoPlaque() {
+    return RusticPlank(
+      color: const Color(0xFF4E342E),
+      seed: 41,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          GameIcons(
-            GameIcons.cow,
-            width: isTablet ? 22 : 16,
-            height: isTablet ? 22 : 16,
-            color: const Color(0xFFFFD54F),
-          ),
+          const Text('🐮', style: TextStyle(fontSize: 16)),
           const SizedBox(width: 4),
           Text(
             'BATTLE COWS',
             style: GoogleFonts.bangers(
-              fontSize: isTablet ? 18 : 13,
+              fontSize: 13,
               color: const Color(0xFFFFD54F),
               letterSpacing: 1.5,
             ),
@@ -123,7 +97,6 @@ class HudOverlay extends StatelessWidget {
     required bool isLeft,
     required bool isActive,
     required int hearts,
-    bool isTablet = false,
   }) {
     final color = AppColors.getPlayerPrimary(player.color);
     final darkColor = AppColors.getPlayerDark(player.color);
@@ -195,11 +168,12 @@ class HudOverlay extends StatelessWidget {
                 ),
               ),
               child: Center(
-                child: GameIcons(
-                  GameIcons.heart_beats,
-                  width: 8,
-                  height: 8,
-                  color: isLost ? Colors.grey.shade600 : Colors.white,
+                child: Text(
+                  '❤️',
+                  style: TextStyle(
+                    fontSize: 8,
+                    color: isLost ? Colors.grey.shade600 : Colors.white,
+                  ),
                 ),
               ),
             );
@@ -218,13 +192,8 @@ class HudOverlay extends StatelessWidget {
         color: Colors.white.withValues(alpha: 0.2),
         border: Border.all(color: Colors.white, width: 1.5),
       ),
-      child: Center(
-        child: GameIcons(
-          GameIcons.cow,
-          width: 18,
-          height: 18,
-          color: Colors.white,
-        ),
+      child: const Center(
+        child: Text('🐮', style: TextStyle(fontSize: 18)),
       ),
     );
   }
@@ -246,10 +215,9 @@ class HudOverlay extends StatelessWidget {
     );
   }
 
-  Widget _buildTimerBox(bool isTablet) {
+  Widget _buildTimerBox() {
     final timeRemaining = game.timeRemaining;
     final isLowTime = timeRemaining <= 10;
-    final fs = isTablet ? 26.0 : 20.0;
     
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -279,18 +247,18 @@ class HudOverlay extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            '⏱️ TIME',
+           Text(
+             game.timeRemaining == 0 ? '🧠 NO TIMER' : '⏱️ TIME',
             style: GoogleFonts.bangers(
               fontSize: 10,
               color: Colors.white70,
               letterSpacing: 1,
             ),
           ),
-          Text(
-            '$timeRemaining',
+           Text(
+             timeRemaining == 0 ? '∞' : '$timeRemaining',
             style: GoogleFonts.bangers(
-              fontSize: fs,
+              fontSize: 20,
               color: isLowTime ? const Color(0xFFFF5252) : const Color(0xFFFFD54F),
               letterSpacing: 1,
             ),
@@ -300,7 +268,7 @@ class HudOverlay extends StatelessWidget {
     );
   }
 
-  Widget _buildTurnCounterBox(int turn, bool isTablet) {
+  Widget _buildTurnCounterBox(int turn) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
@@ -389,6 +357,28 @@ class HudOverlay extends StatelessWidget {
                     Navigator.pop(context);
                   },
                 ),
+                const SizedBox(height: 16),
+                Text(
+                  'TABLE BACKGROUND',
+                  style: GoogleFonts.bangers(fontSize: 12, color: Colors.white70, letterSpacing: 1),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildBackgroundButton(
+                      ctx,
+                      'WOOD',
+                      'assets/images/Background/Table_Gameplay_Background.jpg',
+                    ),
+                    const SizedBox(width: 8),
+                    _buildBackgroundButton(
+                      ctx,
+                      'FARM',
+                      'assets/images/Background/background.jpg',
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -420,23 +410,58 @@ class HudOverlay extends StatelessWidget {
     );
   }
 
+  Widget _buildBackgroundButton(BuildContext context, String label, String asset) {
+    return GestureDetector(
+      onTap: () {
+        game.setBackgroundAsset(asset);
+        Navigator.pop(context);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFF5D4037),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFF8D6E63)),
+        ),
+        child: Text(label, style: GoogleFonts.bangers(fontSize: 12, color: Colors.white)),
+      ),
+    );
+  }
+
   Widget _buildPauseButton({
     required String label,
     required IconData icon,
     required VoidCallback onPressed,
     Color baseColor = const Color(0xFF5D4037),
   }) {
-    return WoodButton(
-      label: label,
-      icon: icon,
-      width: 220,
-      height: 48,
-      fontSize: 15,
-      baseColor: baseColor,
-      borderColor: baseColor == const Color(0xFF8B2500)
-          ? const Color(0xFFFFCDD2)
-          : const Color(0xFFBCAAA4),
-      onPressed: onPressed,
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        width: 200,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [baseColor, baseColor.withValues(alpha: 0.7)],
+          ),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFF8D6E63), width: 1.5),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: Colors.white, size: 18),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: GoogleFonts.bangers(
+                fontSize: 14,
+                color: Colors.white,
+                letterSpacing: 1,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

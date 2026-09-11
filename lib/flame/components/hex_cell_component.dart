@@ -1,13 +1,13 @@
 import 'dart:math';
 import 'dart:ui' as ui;
 import 'package:flame/components.dart';
-import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../game/models/hex_cell.dart';
 import '../../game/models/herd.dart';
 import '../../core/constants/colors.dart';
 
-class HexCellComponent extends PositionComponent with TapCallbacks {
+class HexCellComponent extends PositionComponent {
   final HexCell cell;
   Herd? herd;
   bool isSelected;
@@ -15,8 +15,10 @@ class HexCellComponent extends PositionComponent with TapCallbacks {
   double pulseValue;
   final int flipMode;
   final ui.Image? texture;
-  final void Function()? onTapCallback;
   PlayerColor? territoryOwner;
+  ui.Image? _specialImage;
+  ui.Image? _cowImage;
+  double _lifeTime = 0;
 
   HexCellComponent({
     required this.cell,
@@ -28,15 +30,68 @@ class HexCellComponent extends PositionComponent with TapCallbacks {
     required super.size,
     this.flipMode = 0,
     this.texture,
-    this.onTapCallback,
     this.territoryOwner,
   }) : super(anchor: Anchor.center);
 
   @override
-  Future<void> onLoad() async {}
+  Future<void> onLoad() async {
+    _specialImage = await _loadImage(_specialAssetPath);
+    _cowImage = await _loadImage(_cowAssetPath);
+  }
+
+  String? get _specialAssetPath {
+    switch (cell.specialType) {
+      case SpecialTileType.mud:
+        return 'assets/images/Board Tiles/tile_mud.png';
+      case SpecialTileType.waterPond:
+        return 'assets/images/Board Tiles/tile_water_pond.png';
+      case SpecialTileType.hayBale:
+        return 'assets/images/Board Tiles/tile_hay_bale.png';
+      case SpecialTileType.goldenPasture:
+        return 'assets/images/Board Tiles/tile_golden_pasture.png';
+      case SpecialTileType.hill:
+        return 'assets/images/Board Tiles/tile_hill.png';
+      case SpecialTileType.none:
+        return null;
+    }
+  }
+
+  String? get _cowAssetPath {
+    if (herd == null) return null;
+    switch (herd!.owner) {
+      case PlayerColor.blue:
+        return 'assets/images/Cows/cow_viking.png';
+      case PlayerColor.red:
+        return 'assets/images/Cows/cow_cowboy.png';
+      case PlayerColor.yellow:
+        return 'assets/images/Cows/cow_farmer.png';
+      case PlayerColor.purple:
+        return 'assets/images/Cows/cow_disco.png';
+    }
+  }
+
+  Future<ui.Image?> _loadImage(String? path) async {
+    if (path == null) return null;
+    try {
+      final data = await rootBundle.load(path);
+      final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+      return (await codec.getNextFrame()).image;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  void setHerd(Herd? value) {
+    herd = value;
+    _cowImage = null;
+    _loadImage(_cowAssetPath).then((image) {
+      _cowImage = image;
+    });
+  }
 
   @override
   void render(Canvas canvas) {
+    _lifeTime += 0.016;
     final center = Vector2(size.x / 2, size.y / 2);
     final hexRadius = size.x / 2;
 
@@ -58,8 +113,17 @@ class HexCellComponent extends PositionComponent with TapCallbacks {
       _drawValidMoveDashedOutline(canvas, center, hexRadius);
     }
 
+    if (cell.specialType != SpecialTileType.none) {
+      _drawSpecialTile(canvas, center, hexRadius);
+    }
+
     if (herd != null && herd!.size > 0) {
-      _drawCowPieceWithShield(canvas, center, hexRadius);
+      final bob = sin(_lifeTime * 2.2 + cell.position.q * 0.8 + cell.position.r * 0.45) * 2.2;
+      if (_cowImage != null) {
+        _drawAsset(canvas, _cowImage!, center, hexRadius * 0.78, bob);
+      } else {
+        _drawCowPieceWithShield(canvas, Vector2(center.x, center.y + bob), hexRadius);
+      }
     }
   }
 
@@ -348,6 +412,44 @@ class HexCellComponent extends PositionComponent with TapCallbacks {
     _drawShieldBadge(canvas, shieldCenter, shieldWidth, shieldHeight, herdSize, primaryColor);
   }
 
+  void _drawSpecialTile(Canvas canvas, Vector2 center, double radius) {
+    if (_specialImage != null) {
+      _drawAsset(canvas, _specialImage!, center, radius * 0.78, 0);
+      return;
+    }
+    final details = switch (cell.specialType) {
+      SpecialTileType.mud => ('MUD', const Color(0xFF6D4C41)),
+      SpecialTileType.hayBale => ('HAY', const Color(0xFFFFC107)),
+      SpecialTileType.waterPond => ('💧', const Color(0xFF29B6F6)),
+      SpecialTileType.goldenPasture => ('★', const Color(0xFFFFD54F)),
+      SpecialTileType.hill => ('▲', const Color(0xFFBDBDBD)),
+      SpecialTileType.none => ('', Colors.transparent),
+    };
+    canvas.drawCircle(
+      Offset(center.x, center.y),
+      radius * .34,
+      Paint()..color = details.$2.withValues(alpha: .78),
+    );
+    final painter = TextPainter(
+      text: TextSpan(
+        text: details.$1,
+        style: TextStyle(
+          fontSize: radius * (details.$1.length > 2 ? .24 : .46),
+          fontWeight: FontWeight.w900,
+          color: Colors.white,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    painter.paint(canvas, Offset(center.x - painter.width / 2, center.y - painter.height / 2));
+  }
+
+  void _drawAsset(Canvas canvas, ui.Image image, Vector2 center, double radius, double yOffset) {
+    final src = Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble());
+    final dst = Rect.fromCircle(center: Offset(center.x, center.y + yOffset), radius: radius);
+    canvas.drawImageRect(image, src, dst, Paint()..filterQuality = FilterQuality.medium);
+  }
+
   void _drawShieldBadge(Canvas canvas, Offset center, double width, double height, int count, Color teamColor) {
     final hw = width / 2;
     final hh = height / 2;
@@ -404,11 +506,6 @@ class HexCellComponent extends PositionComponent with TapCallbacks {
   Color _darkenColor(Color color, double amount) {
     final hsl = HSLColor.fromColor(color);
     return hsl.withLightness((hsl.lightness - amount).clamp(0.0, 1.0)).toColor();
-  }
-
-  @override
-  void onTapDown(TapDownEvent event) {
-    onTapCallback?.call();
   }
 
   static int getFlipMode(int q, int r) {

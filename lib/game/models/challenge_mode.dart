@@ -1,0 +1,4 @@
+enum ChallengeMode {
+  standard,
+  noTimer,
+}

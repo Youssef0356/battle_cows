@@ -6,21 +6,18 @@ import 'package:flutter/services.dart';
 class BackgroundComponent extends PositionComponent {
   ui.Image? _bgImage;
   bool _loaded = false;
+  String assetPath;
 
   BackgroundComponent({
     required super.position,
     required super.size,
+    this.assetPath = 'assets/images/Background/Table_Gameplay_Background.jpg',
   });
 
   @override
   Future<void> onLoad() async {
     try {
-      ByteData data;
-      try {
-        data = await rootBundle.load('assets/images/Background/Table image.jpg');
-      } catch (_) {
-        data = await rootBundle.load('assets/images/Background/Background.jpg');
-      }
+      final data = await rootBundle.load(assetPath);
       final bytes = data.buffer.asUint8List();
       final codec = await ui.instantiateImageCodec(bytes);
       final frame = await codec.getNextFrame();
@@ -29,6 +26,13 @@ class BackgroundComponent extends PositionComponent {
     } catch (_) {
       _loaded = false;
     }
+  }
+
+  Future<void> setAsset(String path) async {
+    assetPath = path;
+    _loaded = false;
+    _bgImage = null;
+    await onLoad();
   }
 
   @override
@@ -51,12 +55,12 @@ class BackgroundComponent extends PositionComponent {
       final fadePaint = Paint()
         ..shader = LinearGradient(
           colors: [
+            Colors.black.withValues(alpha: 0.7),
             Colors.black.withValues(alpha: 0.3),
-            Colors.black.withValues(alpha: 0.05),
             Colors.transparent,
             Colors.transparent,
-            Colors.black.withValues(alpha: 0.05),
             Colors.black.withValues(alpha: 0.3),
+            Colors.black.withValues(alpha: 0.7),
           ],
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
@@ -66,12 +70,12 @@ class BackgroundComponent extends PositionComponent {
       final fadePaintV = Paint()
         ..shader = LinearGradient(
           colors: [
-            Colors.black.withValues(alpha: 0.25),
-            Colors.black.withValues(alpha: 0.05),
+            Colors.black.withValues(alpha: 0.6),
+            Colors.black.withValues(alpha: 0.2),
             Colors.transparent,
             Colors.transparent,
-            Colors.black.withValues(alpha: 0.05),
-            Colors.black.withValues(alpha: 0.25),
+            Colors.black.withValues(alpha: 0.2),
+            Colors.black.withValues(alpha: 0.6),
           ],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,

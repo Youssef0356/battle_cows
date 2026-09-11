@@ -4,6 +4,7 @@ import '../models/herd.dart';
 import '../models/move.dart';
 import '../models/player.dart';
 import '../models/player_color.dart';
+import '../models/challenge_mode.dart';
 
 class GameEngine {
   GameBoard? _board;
@@ -23,7 +24,7 @@ class GameEngine {
   int get lastCaptureCount => _lastCaptureCount;
   Map<PlayerColor, int> get hearts => Map.unmodifiable(_hearts);
 
-  void initializeGame(GameBoard board, List<Player> players) {
+  void initializeGame(GameBoard board, List<Player> players, {ChallengeMode challengeMode = ChallengeMode.standard}) {
     _board = board;
     _players = players;
     _currentPlayerIndex = 0;
@@ -33,6 +34,17 @@ class GameEngine {
     for (final player in players) {
       _hearts[player.color] = 3;
     }
+  }
+
+  Map<PlayerColor, int> getChallengeScores() {
+    final scores = <PlayerColor, int>{};
+    for (final player in _players) {
+      scores[player.color] = 0;
+    }
+    for (final herd in _board?.herds ?? const <Herd>[]) {
+      scores[herd.owner] = (scores[herd.owner] ?? 0) + herd.size;
+    }
+    return scores;
   }
 
   List<Move> getValidMoves(PlayerColor playerColor) {

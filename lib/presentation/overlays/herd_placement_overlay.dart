@@ -4,19 +4,19 @@ import '../../flame/battle_cows_game.dart';
 import '../../game/models/player.dart';
 import '../../core/constants/colors.dart';
 
-class PlacementOverlay extends StatefulWidget {
+class HerdPlacementOverlay extends StatefulWidget {
   final BattleCowsGame game;
 
-  const PlacementOverlay({
+  const HerdPlacementOverlay({
     super.key,
     required this.game,
   });
 
   @override
-  State<PlacementOverlay> createState() => _PlacementOverlayState();
+  State<HerdPlacementOverlay> createState() => _HerdPlacementOverlayState();
 }
 
-class _PlacementOverlayState extends State<PlacementOverlay> {
+class _HerdPlacementOverlayState extends State<HerdPlacementOverlay> {
   late final void Function() _stateListener;
 
   @override
@@ -37,27 +37,25 @@ class _PlacementOverlayState extends State<PlacementOverlay> {
   @override
   Widget build(BuildContext context) {
     final game = widget.game;
-    final currentPlayerIndex = game.currentPlayerIndex;
+    final playerIndex = game.herdPlacementPlayerIndex;
     final players = game.players;
-    final tilesRemaining = game.tilesRemaining;
-    final currentTile = game.currentTile;
-    final canPlace = game.canPlaceCurrentTile;
-    final isAi = players[currentPlayerIndex].isAi;
+
+    if (playerIndex >= players.length) return const SizedBox.shrink();
+
+    final currentPlayer = players[playerIndex];
 
     return SafeArea(
       child: Column(
         children: [
-          // Top bar with player info
-          _buildTopBar(currentPlayerIndex, players, tilesRemaining),
+          _buildTopBar(playerIndex, players),
           const Expanded(child: IgnorePointer(child: SizedBox.expand())),
-          if (!isAi && currentTile != null)
-            _buildBottomControls(canPlace),
+          _buildInstructions(currentPlayer),
         ],
       ),
     );
   }
 
-  Widget _buildTopBar(int currentPlayerIndex, List<Player> players, List<int> tilesRemaining) {
+  Widget _buildTopBar(int currentPlayerIndex, List<Player> players) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
@@ -72,7 +70,7 @@ class _PlacementOverlayState extends State<PlacementOverlay> {
               border: Border.all(color: const Color(0xFFFFD54F), width: 1.5),
             ),
             child: Text(
-              'BUILD THE PASTURE',
+              'PLACE YOUR HERD',
               style: GoogleFonts.bangers(
                 fontSize: 16,
                 color: const Color(0xFFFFD54F),
@@ -81,11 +79,10 @@ class _PlacementOverlayState extends State<PlacementOverlay> {
             ),
           ),
           const Spacer(),
-          // Player indicators
           ...List.generate(players.length, (index) {
             final player = players[index];
             final isCurrent = index == currentPlayerIndex;
-            final tilesLeft = tilesRemaining[index];
+            final isPlaced = index < currentPlayerIndex;
 
             return Container(
               margin: const EdgeInsets.only(left: 8),
@@ -93,7 +90,9 @@ class _PlacementOverlayState extends State<PlacementOverlay> {
               decoration: BoxDecoration(
                 color: isCurrent
                     ? AppColors.getPlayerPrimary(player.color).withValues(alpha: 0.35)
-                    : Colors.black45,
+                    : isPlaced
+                        ? AppColors.getPlayerPrimary(player.color).withValues(alpha: 0.15)
+                        : Colors.black45,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                   color: isCurrent
@@ -116,7 +115,7 @@ class _PlacementOverlayState extends State<PlacementOverlay> {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    '$tilesLeft',
+                    isPlaced ? '✓' : '',
                     style: GoogleFonts.bangers(
                       fontSize: 14,
                       color: isCurrent ? const Color(0xFFFFD54F) : Colors.white70,
@@ -131,7 +130,7 @@ class _PlacementOverlayState extends State<PlacementOverlay> {
     );
   }
 
-  Widget _buildBottomControls(bool canPlace) {
+  Widget _buildInstructions(Player currentPlayer) {
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -141,58 +140,29 @@ class _PlacementOverlayState extends State<PlacementOverlay> {
         border: Border.all(color: const Color(0xFF8D6E63), width: 2),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Rotate button
-          _buildControlButton(
-            label: 'ROTATE',
-            icon: Icons.rotate_right_rounded,
-            onTap: () => widget.game.rotateCurrentTile(),
+          Container(
+            width: 20,
+            height: 20,
+            decoration: BoxDecoration(
+              color: AppColors.getPlayerPrimary(currentPlayer.color),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 1.5),
+            ),
           ),
-          // Place button
-          _buildControlButton(
-            label: 'PLACE',
-            icon: Icons.add_circle_outline,
-            color: canPlace ? const Color(0xFF66BB6A) : Colors.grey,
-            onTap: canPlace ? () => widget.game.placeCurrentTile() : null,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildControlButton({
-    required String label,
-    required IconData icon,
-    Color color = const Color(0xFF5D4037),
-    VoidCallback? onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [color, color.withValues(alpha: 0.7)],
-          ),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF8D6E63), width: 1.5),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: Colors.white, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              label,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              '${currentPlayer.name}, tap a highlighted hex to place your herd',
               style: GoogleFonts.bangers(
                 fontSize: 14,
                 color: Colors.white,
                 letterSpacing: 1,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

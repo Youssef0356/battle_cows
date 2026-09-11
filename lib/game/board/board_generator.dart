@@ -4,6 +4,7 @@ import '../models/herd.dart';
 import '../models/pasture_tile.dart';
 import '../models/game_board.dart';
 import '../models/player.dart';
+import '../models/challenge_mode.dart';
 
 class BoardGenerator {
   static GameBoard generateFromTiles(List<PastureTile> tiles, List<Player> players, int herdSize) {
@@ -11,7 +12,7 @@ class BoardGenerator {
     return GameBoard.fromTiles(tiles, herds);
   }
 
-  static GameBoard generateEmptyBoard(List<PastureTile> tiles) {
+  static GameBoard generateEmptyBoard(List<PastureTile> tiles, {ChallengeMode mode = ChallengeMode.standard}) {
     return GameBoard.fromTiles(tiles, []);
   }
 

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:icony/icony_gameicons.dart';
 import '../../flame/battle_cows_game.dart';
 import '../../core/constants/colors.dart';
 
@@ -14,20 +13,20 @@ class ScoreboardOverlay extends StatefulWidget {
 }
 
 class _ScoreboardOverlayState extends State<ScoreboardOverlay> {
-  late final VoidCallback _updateListener;
+  late final void Function() _stateListener;
 
   @override
   void initState() {
     super.initState();
-    _updateListener = () {
+    _stateListener = () {
       if (mounted) setState(() {});
     };
-    widget.game.addStateListener(_updateListener);
+    widget.game.addStateListener(_stateListener);
   }
 
   @override
   void dispose() {
-    widget.game.removeStateListener(_updateListener);
+    widget.game.removeStateListener(_stateListener);
     super.dispose();
   }
 
@@ -37,13 +36,13 @@ class _ScoreboardOverlayState extends State<ScoreboardOverlay> {
     if (players.isEmpty) return const SizedBox.shrink();
     final cowCounts = widget.game.cowCounts;
     final territoryCounts = widget.game.territoryCounts;
-    final currentColor = widget.game.engine.currentPlayer.color;
+    final currentColor = widget.game.engine.players.isEmpty ? players.first.color : widget.game.engine.currentPlayer.color;
 
     return SafeArea(
       child: Align(
         alignment: Alignment.topCenter,
         child: Padding(
-          padding: const EdgeInsets.only(top: 72, left: 12, right: 12),
+          padding: const EdgeInsets.only(top: 128, left: 12, right: 12),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
@@ -102,12 +101,7 @@ class _ScoreboardOverlayState extends State<ScoreboardOverlay> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            GameIcons(
-                              GameIcons.cow,
-                              width: 12,
-                              height: 12,
-                              color: isActive ? const Color(0xFFFFD54F) : Colors.white,
-                            ),
+                            Text('🐮', style: TextStyle(fontSize: 12)),
                             const SizedBox(width: 2),
                             Text(
                               '$cows',
@@ -119,12 +113,7 @@ class _ScoreboardOverlayState extends State<ScoreboardOverlay> {
                               ),
                             ),
                             const SizedBox(width: 8),
-                            GameIcons(
-                              GameIcons.flag_objective,
-                              width: 12,
-                              height: 12,
-                              color: isActive ? const Color(0xFFFFD54F) : Colors.white,
-                            ),
+                            Text('🏴', style: TextStyle(fontSize: 12)),
                             const SizedBox(width: 2),
                             Text(
                               '$territory',

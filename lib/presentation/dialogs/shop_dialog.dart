@@ -109,7 +109,12 @@ class _ShopDialogState extends State<ShopDialog> {
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: ShopCategory.values.map((cat) {
         final isSelected = _selectedCategory == cat;
-        final labels = {ShopCategory.hats: '🤠', ShopCategory.themes: '🎨', ShopCategory.emojis: '💬', ShopCategory.boards: '🎮'};
+        final labels = {
+          ShopCategory.hats: '🤠',
+          ShopCategory.themes: '🎨',
+          ShopCategory.emojis: '💬',
+          ShopCategory.boards: '🐮',
+        };
         return GestureDetector(
           onTap: () => setState(() => _selectedCategory = cat),
           child: Container(
@@ -152,29 +157,29 @@ class _ShopDialogState extends State<ShopDialog> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(item.icon, style: const TextStyle(fontSize: 28)),
-            const SizedBox(height: 4),
+            Text(item.icon, style: const TextStyle(fontSize: 22)),
+            const SizedBox(height: 2),
             Text(
               item.name,
               style: GoogleFonts.bangers(
-                fontSize: 10,
+                fontSize: 9,
                 color: isOwned ? const Color(0xFF689F38) : Colors.white,
               ),
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 1),
             if (isOwned)
               Text(
                 'OWNED',
-                style: GoogleFonts.bangers(fontSize: 9, color: const Color(0xFF689F38)),
+                style: GoogleFonts.bangers(fontSize: 8, color: const Color(0xFF689F38)),
               )
             else
               Text(
                 '💰 ${item.price}',
                 style: GoogleFonts.bangers(
-                  fontSize: 11,
+                  fontSize: 9,
                   color: canBuy ? const Color(0xFFFFD54F) : Colors.white38,
                 ),
               ),
