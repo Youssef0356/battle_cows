@@ -51,6 +51,8 @@ class _GameOverOverlayState extends State<GameOverOverlay>
     final winner = widget.game.winner;
     final territoryCounts = widget.game.territoryCounts;
 
+    if (widget.players.isEmpty) return const SizedBox.shrink();
+
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
@@ -206,8 +208,8 @@ class _GameOverOverlayState extends State<GameOverOverlay>
   }
 
   String _getPlayerName(PlayerColor color) {
-    final player = widget.players.firstWhere((p) => p.color == color);
-    return player.name.toUpperCase();
+    final player = widget.players.where((p) => p.color == color).firstOrNull;
+    return (player?.name ?? 'UNKNOWN').toUpperCase();
   }
 
   Widget _buildSecondChanceButton() {

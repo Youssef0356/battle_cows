@@ -11,6 +11,10 @@ class BoardGenerator {
     return GameBoard.fromTiles(tiles, herds);
   }
 
+  static GameBoard generateEmptyBoard(List<PastureTile> tiles) {
+    return GameBoard.fromTiles(tiles, []);
+  }
+
   static List<Herd> _placeStartingHerds(
     List<PastureTile> tiles,
     List<Player> players,

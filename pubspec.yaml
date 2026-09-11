@@ -29,6 +29,9 @@ flutter:
   assets:
     - assets/images/
     - assets/images/Background/
+    - assets/images/Board Tiles/
+    - assets/images/Cows/
+    - assets/images/Effects/
     - assets/images/Tile Image/
     - assets/sounds/
     - assets/models/

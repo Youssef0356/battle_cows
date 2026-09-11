@@ -1,11 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- White to light green gradient -->
     <item>
-        <color android:color="#1A2E12" />
+        <shape android:shape="rectangle">
+            <gradient
+                android:type="linear"
+                android:angle="180"
+                android:startColor="#FFFFFF"
+                android:endColor="#C8E6C9" />
+        </shape>
     </item>
+
+    <!-- Very subtle warm glow behind logo -->
+    <item>
+        <shape android:shape="oval">
+            <gradient
+                android:type="radial"
+                android:gradientRadius="160"
+                android:centerX="0.5"
+                android:centerY="0.5"
+                android:startColor="#8BC34A18"
+                android:endColor="#00000000" />
+        </shape>
+    </item>
+
+    <!-- Logo on top -->
     <item>
         <bitmap
             android:gravity="center"
             android:src="@drawable/splash_logo" />
     </item>
+
 </layer-list>
