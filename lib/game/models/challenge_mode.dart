@@ -1,17 +1,22 @@
 enum ChallengeMode {
   standard,
-  noTimer,
+  timed,
   goldenPasture,
   kingOfTheHill,
 }
 
 extension ChallengeModeDetails on ChallengeMode {
+  bool get hasTimer => this == ChallengeMode.timed;
+
+  bool get hasObjective =>
+      this == ChallengeMode.goldenPasture || this == ChallengeMode.kingOfTheHill;
+
   String get title {
     switch (this) {
       case ChallengeMode.standard:
         return 'STANDARD PASTURE';
-      case ChallengeMode.noTimer:
-        return 'NO-TIMER STRATEGY';
+      case ChallengeMode.timed:
+        return 'TIMED STRATEGY';
       case ChallengeMode.goldenPasture:
         return 'GOLDEN PASTURE';
       case ChallengeMode.kingOfTheHill:
@@ -22,13 +27,13 @@ extension ChallengeModeDetails on ChallengeMode {
   String get description {
     switch (this) {
       case ChallengeMode.standard:
-        return 'Classic territory battle.';
-      case ChallengeMode.noTimer:
-        return 'Think as long as you need. No hearts lost.';
+        return 'Classic territory battle. No turn timer.';
+      case ChallengeMode.timed:
+        return 'Every turn is on the clock. Run out of time and lose a heart.';
       case ChallengeMode.goldenPasture:
-        return 'Capture the glowing pasture for bonus glory.';
+        return 'Hold the golden pasture each turn to bank gold. First to 5 wins.';
       case ChallengeMode.kingOfTheHill:
-        return 'Hold the center and control the hill.';
+        return 'Stay on the hill for 3 turns in a row to be crowned.';
     }
   }
 
@@ -36,8 +41,8 @@ extension ChallengeModeDetails on ChallengeMode {
     switch (this) {
       case ChallengeMode.standard:
         return '🌾';
-      case ChallengeMode.noTimer:
-        return '🧠';
+      case ChallengeMode.timed:
+        return '⏱️';
       case ChallengeMode.goldenPasture:
         return '👑';
       case ChallengeMode.kingOfTheHill:

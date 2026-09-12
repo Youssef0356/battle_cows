@@ -625,7 +625,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
   }
 
   void _startTimer() {
-    if (challengeMode == ChallengeMode.noTimer) {
+    if (!challengeMode.hasTimer) {
       _timerRunning = false;
       _gameTimer?.cancel();
       timeRemaining = 0;

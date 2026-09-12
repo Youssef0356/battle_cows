@@ -16,6 +16,8 @@ class GameEngine {
   bool _gameOver = false;
   int _lastCaptureCount = 0;
   ChallengeMode _challengeMode = ChallengeMode.standard;
+  final Map<PlayerColor, int> _objectiveScores = {};
+  PlayerColor? _objectiveWinner;
   final Map<PlayerColor, int> _hearts = {};
   final Random _random = Random();
 
@@ -27,6 +29,22 @@ class GameEngine {
   int get lastCaptureCount => _lastCaptureCount;
   Map<PlayerColor, int> get hearts => Map.unmodifiable(_hearts);
 
+  ChallengeMode get challengeMode => _challengeMode;
+  bool get hasObjective => _challengeMode.hasObjective;
+  PlayerColor? get objectiveWinner => _objectiveWinner;
+  Map<PlayerColor, int> get objectiveScores => Map.unmodifiable(_objectiveScores);
+
+  int get objectiveTarget {
+    switch (_challengeMode) {
+      case ChallengeMode.goldenPasture:
+        return 5;
+      case ChallengeMode.kingOfTheHill:
+        return 3;
+      default:
+        return 0;
+    }
+  }
+
   void initializeGame(GameBoard board, List<Player> players, {ChallengeMode challengeMode = ChallengeMode.standard}) {
     _board = board;
     _players = players;
@@ -34,9 +52,12 @@ class GameEngine {
     _turnCount = 0;
     _gameOver = false;
     _challengeMode = challengeMode;
+    _objectiveWinner = null;
+    _objectiveScores.clear();
     _hearts.clear();
     for (final player in players) {
       _hearts[player.color] = 3;
+      _objectiveScores[player.color] = 0;
     }
   }
 
@@ -121,8 +142,37 @@ class GameEngine {
     _currentPlayerIndex = (_currentPlayerIndex + 1) % _players.length;
 
     _checkGameOver();
+    _evaluateObjective(move.player);
 
     return true;
+  }
+
+  void _evaluateObjective(PlayerColor mover) {
+    if (_board == null || !_challengeMode.hasObjective) return;
+
+    final objective = _challengeMode == ChallengeMode.goldenPasture
+        ? SpecialTileType.goldenPasture
+        : SpecialTileType.hill;
+
+    final moverHoldsObjective = _board!.cells.entries.any((entry) {
+      if (entry.value.specialType != objective) return false;
+      return _board!.getHerdAt(entry.key)?.owner == mover;
+    });
+
+    if (_challengeMode == ChallengeMode.goldenPasture) {
+      if (moverHoldsObjective) {
+        _objectiveScores[mover] = (_objectiveScores[mover] ?? 0) + 1;
+      }
+    } else {
+      // King of the Hill requires a consecutive hold.
+      _objectiveScores[mover] = moverHoldsObjective ? (_objectiveScores[mover] ?? 0) + 1 : 0;
+    }
+
+    final target = objectiveTarget;
+    if (target > 0 && (_objectiveScores[mover] ?? 0) >= target) {
+      _objectiveWinner = mover;
+      _gameOver = true;
+    }
   }
 
   void _checkGameOver() {
@@ -248,6 +298,8 @@ class GameEngine {
 
   PlayerColor? determineWinner() {
     if (!_gameOver) return null;
+
+    if (_objectiveWinner != null) return _objectiveWinner;
 
     final territoryCounts = getChallengeScores();
     PlayerColor? winner;

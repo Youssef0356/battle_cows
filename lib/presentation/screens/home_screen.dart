@@ -555,7 +555,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           // Background pasture image
           Positioned.fill(
             child: Image.asset(
-              'assets/images/Background/Background.jpg',
+              'assets/images/Background/background.jpg',
               fit: BoxFit.cover,
               errorBuilder: (context, error, stack) => Container(
                 decoration: const BoxDecoration(

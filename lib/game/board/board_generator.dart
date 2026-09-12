@@ -40,7 +40,7 @@ class BoardGenerator {
     } else if (mode == ChallengeMode.kingOfTheHill) {
       specials[sorted.first] = SpecialTileType.hill;
       if (sorted.length > 6) specials[sorted[sorted.length ~/ 2]] = SpecialTileType.mud;
-    } else if (mode == ChallengeMode.noTimer) {
+    } else if (mode == ChallengeMode.timed) {
       if (sorted.length > 3) specials[sorted[sorted.length ~/ 3]] = SpecialTileType.hayBale;
     }
     return specials;

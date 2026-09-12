@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../flame/battle_cows_game.dart';
 import '../../game/models/player.dart';
+import '../../game/models/challenge_mode.dart';
+import '../../core/constants/colors.dart';
 
 class HudOverlay extends StatelessWidget {
   final BattleCowsGame game;
@@ -26,11 +28,20 @@ class HudOverlay extends StatelessWidget {
           width: double.infinity,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-            child: Row(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Expanded(child: Align(alignment: Alignment.centerLeft, child: _buildTimerBox())),
-                Expanded(child: Center(child: _buildTurnCounterBox(turnCount))),
-                Expanded(child: Align(alignment: Alignment.centerRight, child: buildSettingsButton(context))),
+                Row(
+                  children: [
+                    Expanded(child: Align(alignment: Alignment.centerLeft, child: _buildTimerBox())),
+                    Expanded(child: Center(child: _buildTurnCounterBox(turnCount))),
+                    Expanded(child: Align(alignment: Alignment.centerRight, child: buildSettingsButton(context))),
+                  ],
+                ),
+                if (game.engine.hasObjective) ...[
+                  const SizedBox(height: 6),
+                  _buildObjectiveBar(),
+                ],
               ],
             ),
           ),
@@ -39,9 +50,66 @@ class HudOverlay extends StatelessWidget {
     );
   }
 
+  Widget _buildObjectiveBar() {
+    final engine = game.engine;
+    final target = engine.objectiveTarget;
+    final icon = game.challengeMode.icon;
+    final isKing = game.challengeMode == ChallengeMode.kingOfTheHill;
+
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 10,
+      runSpacing: 6,
+      children: players.map((player) {
+        final score = engine.objectiveScores[player.color] ?? 0;
+        final color = AppColors.getPlayerPrimary(player.color);
+        final progress = target > 0 ? (score / target).clamp(0.0, 1.0) : 0.0;
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.55),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: color, width: 1.5),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(icon, style: const TextStyle(fontSize: 14)),
+              const SizedBox(width: 6),
+              Text(
+                isKing ? '${player.name} ⛰️' : player.name,
+                style: GoogleFonts.bangers(fontSize: 12, color: Colors.white, letterSpacing: 1),
+              ),
+              const SizedBox(width: 6),
+              SizedBox(
+                width: 46,
+                height: 8,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    backgroundColor: Colors.white24,
+                    valueColor: AlwaysStoppedAnimation<Color>(color),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '$score/$target',
+                style: GoogleFonts.bangers(fontSize: 12, color: const Color(0xFFFFD54F)),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
   Widget _buildTimerBox() {
     final timeRemaining = game.timeRemaining;
-    final isLowTime = timeRemaining <= 10;
+    final hasTimer = game.challengeMode.hasTimer;
+    final isLowTime = hasTimer && timeRemaining <= 10;
     
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -72,7 +140,7 @@ class HudOverlay extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
            Text(
-             game.timeRemaining == 0 ? '🧠 NO TIMER' : '⏱️ TIME',
+             hasTimer ? '⏱️ TIME' : '🎮 FREE PLAY',
             style: GoogleFonts.bangers(
               fontSize: 10,
               color: Colors.white70,
@@ -80,7 +148,7 @@ class HudOverlay extends StatelessWidget {
             ),
           ),
            Text(
-             timeRemaining == 0 ? '∞' : '$timeRemaining',
+             hasTimer ? '$timeRemaining' : '∞',
             style: GoogleFonts.bangers(
               fontSize: 20,
               color: isLowTime ? const Color(0xFFFF5252) : const Color(0xFFFFD54F),

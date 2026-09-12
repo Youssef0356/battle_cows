@@ -266,16 +266,32 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
                 ),
               ),
               const SizedBox(height: 10),
-              // + button
-              _buildAdjustButton(Icons.add, () {
-                if (movingCount < maxMoving) widget.game.setSplitCount(movingCount + 1);
-              }),
-              const SizedBox(height: 6),
-              // - button
-              _buildAdjustButton(Icons.remove, () {
-                if (movingCount > 1) widget.game.setSplitCount(movingCount - 1);
-              }),
-              const SizedBox(height: 10),
+              // Split slider (vertical)
+              SizedBox(
+                width: 44,
+                height: 132,
+                child: RotatedBox(
+                  quarterTurns: 3,
+                  child: SliderTheme(
+                    data: SliderThemeData(
+                      activeTrackColor: const Color(0xFF66BB6A),
+                      inactiveTrackColor: Colors.white24,
+                      thumbColor: const Color(0xFFFFD54F),
+                      overlayColor: const Color(0xFFFFD54F).withValues(alpha: 0.25),
+                      trackHeight: 6,
+                      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 9),
+                    ),
+                    child: Slider(
+                      value: movingCount.toDouble(),
+                      min: 1,
+                      max: maxMoving.toDouble(),
+                      divisions: maxMoving > 1 ? maxMoving - 1 : null,
+                      onChanged: (value) => widget.game.setSplitCount(value.round()),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
               // Stay count label
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
@@ -320,33 +336,6 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
               ),
             ],
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAdjustButton(IconData icon, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: const Color(0xFF5D4037),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFF8D6E63), width: 1.5),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.3),
-              offset: const Offset(0, 2),
-              blurRadius: 3,
-            ),
-          ],
-        ),
-        child: Icon(
-          icon,
-          color: const Color(0xFFFFD54F),
-          size: 20,
         ),
       ),
     );
