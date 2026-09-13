@@ -864,6 +864,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
     _updateCounts();
     _boardComponent?.updateBoard(_engine.board!);
     AudioManager().playMove();
+    shakeCamera(strength: 1.5);
 
     totalMoves++;
 

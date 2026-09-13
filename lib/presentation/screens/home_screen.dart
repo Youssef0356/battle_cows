@@ -52,11 +52,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     if (mounted) {
       setState(() {});
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!_progressService!.tutorialCompleted) {
-          Navigator.pushNamed(context, AppRouter.tutorial);
-        } else {
-          _showDailyRewardIfNeeded();
-        }
+        _showDailyRewardIfNeeded();
       });
     }
   }
@@ -97,6 +93,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   void _launchGame({required int playerCount, required int tilesPerPlayer, required bool isMultiplayer, ChallengeMode challengeMode = ChallengeMode.standard}) {
     final players = _createPlayers(count: playerCount, isMultiplayer: isMultiplayer);
+
+    if (_progressService != null && !_progressService!.tutorialCompleted) {
+      Navigator.pushNamed(context, AppRouter.tutorial);
+      return;
+    }
+
     Navigator.pushNamed(
       context,
       AppRouter.game,
@@ -137,10 +139,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 ),
               ],
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
                   title,
                   style: GoogleFonts.bangers(
                     fontSize: 28,
@@ -397,17 +400,18 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         ),
                       ),
                     ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+                   ],
+                 ),
+               ],
+               ),
+             ),
+           ),
+         ),
+       ),
+     );
+   }
 
-  void _showChallengePicker() {
+   void _showChallengePicker() {
     CartoonDialog.show(
       context: context,
       title: 'CHOOSE YOUR CHALLENGE',

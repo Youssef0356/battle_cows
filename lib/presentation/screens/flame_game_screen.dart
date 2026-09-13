@@ -19,6 +19,7 @@ import '../overlays/herd_placement_overlay.dart';
 import '../overlays/tutorial_overlay.dart';
 import '../../game/tutorial/tutorial_data.dart';
 import '../widgets/capture_toast.dart';
+import '../widgets/banner_ad_widget.dart';
 import '../widgets/parallax_dust_layer.dart';
 
 class FlameGameScreen extends StatefulWidget {
@@ -51,11 +52,19 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
   OverlayEntry? _captureToastEntry;
   ProgressService? _progressService;
 
+  static const double _minZoom = 0.5;
+  static const double _maxZoom = 3.0;
+  double _baseZoom = 1.0;
+  Offset _lastFocalPoint = Offset.zero;
+
   @override
   void initState() {
     super.initState();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    if (!widget.isTutorial) AdManager().loadRewardedAd();
+    if (!widget.isTutorial) {
+      AdManager().loadRewardedAd();
+      AdManager().loadBannerAd();
+    }
     _initProgress();
     _game = BattleCowsGame(
       players: widget.players,
@@ -240,35 +249,51 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
   }
 
   void _onTutorialStepChanged(int stepIndex, TutorialStep step) {
-    if (!mounted) return;
-    final activeOverlays = _game.overlays.activeOverlays;
-    // Manage game overlays based on tutorial phase
-    switch (step.phase) {
-      case TutorialPhase.tilePlacement:
-        if (!activeOverlays.contains('Placement')) {
-          _game.overlays.remove('HerdPlacement');
-          _game.overlays.remove('HUD');
-          _game.overlays.remove('GameControls');
-          _game.overlays.remove('Scoreboard');
-          _game.overlays.add('Placement');
-        }
-        break;
-      case TutorialPhase.herdPlacement:
-        if (!activeOverlays.contains('HerdPlacement')) {
-          _game.overlays.remove('Placement');
-          _game.overlays.add('HerdPlacement');
-        }
-        break;
-      case TutorialPhase.gameplay:
-        if (!activeOverlays.contains('HUD')) {
-          _game.overlays.remove('Placement');
-          _game.overlays.remove('HerdPlacement');
-          _game.overlays.add('HUD');
-          _game.overlays.add('GameControls');
-          _game.overlays.add('Scoreboard');
-        }
-        break;
+    // Tutorial no longer manages game overlays — the game progresses naturally
+  }
+
+  void _onScaleStart(ScaleStartDetails details) {
+    _lastFocalPoint = details.focalPoint;
+    _baseZoom = _game.camera.viewfinder.zoom;
+  }
+
+  void _onScaleUpdate(ScaleUpdateDetails details) {
+    if (details.pointerCount == 2) {
+      // Pinch-to-zoom
+      final newZoom = (_baseZoom * details.scale).clamp(_minZoom, _maxZoom);
+      final camera = _game.camera.viewfinder;
+
+      final screenFocal = Vector2(details.focalPoint.dx, details.focalPoint.dy);
+      final worldFocalBefore = camera.globalToLocal(screenFocal);
+
+      camera.zoom = newZoom;
+
+      final worldFocalAfter = camera.globalToLocal(screenFocal);
+      camera.position += worldFocalBefore - worldFocalAfter;
+
+      _clampCameraPosition();
+      _game.notifyStateChanged();
+    } else if (details.pointerCount == 1 && !_game.isPlacementDragActive) {
+      // Pan camera
+      final delta = details.focalPoint - _lastFocalPoint;
+      final zoom = _game.camera.viewfinder.zoom;
+      _game.camera.viewfinder.position -= Vector2(delta.dx, delta.dy) / zoom;
+      _clampCameraPosition();
+      _game.notifyStateChanged();
     }
+    _lastFocalPoint = details.focalPoint;
+  }
+
+  void _onScaleEnd(ScaleEndDetails details) {}
+
+  void _clampCameraPosition() {
+    final pos = _game.camera.viewfinder.position;
+    final zoom = _game.camera.viewfinder.zoom;
+    final maxOffset = 300.0 * zoom;
+    _game.camera.viewfinder.position = Vector2(
+      pos.x.clamp(-maxOffset, maxOffset),
+      pos.y.clamp(-maxOffset, maxOffset),
+    );
   }
 
   @override
@@ -293,6 +318,9 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
               onTapUp: (details) {
                 _game.onTapDownFromScreen(details);
               },
+              onScaleStart: _onScaleStart,
+              onScaleUpdate: _onScaleUpdate,
+              onScaleEnd: _onScaleEnd,
               child: GameWidget(
                 game: _game,
                 backgroundBuilder: (context) => const SizedBox.expand(),
@@ -336,6 +364,16 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
           const Positioned.fill(
             child: ParallaxDustLayer(),
           ),
+          if (!widget.isTutorial)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: SafeArea(
+                bottom: false,
+                child: Center(child: BannerAdWidget()),
+              ),
+            ),
         ],
       ),
     );
