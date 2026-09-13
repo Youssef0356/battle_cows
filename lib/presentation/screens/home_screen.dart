@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:in_app_review/in_app_review.dart';
 import '../../core/constants/colors.dart';
 import '../../data/services/progress_service.dart';
 import '../../game/models/player.dart';
@@ -11,6 +13,7 @@ import '../router/app_router.dart';
 import '../widgets/wood_button.dart';
 import '../widgets/rustic_decor.dart';
 import '../../game/models/challenge_mode.dart';
+import '../widgets/cartoon_dialog.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -62,10 +65,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     if (_progressService!.canClaimDailyReward) {
       final reward = _progressService!.claimDailyReward();
       if (reward == 0) return;
-      showDialog(
+      DailyRewardDialog.show(
         context: context,
-        barrierDismissible: false,
-        builder: (_) => DailyRewardDialog(progress: _progressService!, rewardAmount: reward),
+        progress: _progressService!,
+        rewardAmount: reward,
       ).then((_) => setState(() {}));
     }
   }
@@ -147,7 +150,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
                 Text(
                   'NUMBER OF PLAYERS',
                   style: GoogleFonts.bangers(
@@ -156,17 +159,27 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     letterSpacing: 1.5,
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 4),
+                Text(
+                  'More players = more chaos!',
+                  style: GoogleFonts.bangers(
+                    fontSize: 11,
+                    color: Colors.white38,
+                    letterSpacing: 1,
+                  ),
+                ),
+                const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [2, 3, 4].map((count) {
                     final isSel = selectedPlayers == count;
                     return GestureDetector(
                       onTap: () => setDialogState(() => selectedPlayers = count),
-                      child: Container(
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
                         margin: const EdgeInsets.symmetric(horizontal: 6),
-                        width: 54,
-                        height: 54,
+                        width: 80,
+                        height: 80,
                         decoration: BoxDecoration(
                           gradient: isSel
                               ? const LinearGradient(
@@ -176,30 +189,47 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                 )
                               : LinearGradient(
                                   colors: [
-                                    Colors.white.withValues(alpha: 0.15),
-                                    Colors.white.withValues(alpha: 0.05),
+                                    Colors.white.withValues(alpha: 0.12),
+                                    Colors.white.withValues(alpha: 0.04),
                                   ],
                                 ),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: isSel ? Colors.white : Colors.white24,
-                            width: 2,
+                            color: isSel ? const Color(0xFFFFD54F) : Colors.white24,
+                            width: isSel ? 2.5 : 1.5,
                           ),
+                          boxShadow: isSel
+                              ? [
+                                  BoxShadow(
+                                    color: const Color(0xFFFFD54F).withValues(alpha: 0.3),
+                                    blurRadius: 12,
+                                    spreadRadius: 1,
+                                  ),
+                                ]
+                              : null,
                         ),
-                        child: Center(
-                          child: Text(
-                            '$count',
-                            style: GoogleFonts.bangers(
-                              fontSize: 24,
-                              color: isSel ? Colors.black : Colors.white,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              '\uD83D\uDC2E',
+                              style: TextStyle(fontSize: count == 2 ? 22 : 18),
                             ),
-                          ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '$count',
+                              style: GoogleFonts.bangers(
+                                fontSize: 22,
+                                color: isSel ? Colors.black : Colors.white,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     );
                   }).toList(),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
                 Text(
                   'PASTURE TILES PER PLAYER',
                   style: GoogleFonts.bangers(
@@ -208,17 +238,32 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     letterSpacing: 1.5,
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 4),
+                Text(
+                  'More tiles = bigger battlefield!',
+                  style: GoogleFonts.bangers(
+                    fontSize: 11,
+                    color: Colors.white38,
+                    letterSpacing: 1,
+                  ),
+                ),
+                const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: [3, 4, 5].map((tiles) {
+                  children: [
+                    (3, 'SMALL'),
+                    (4, 'MEDIUM'),
+                    (5, 'LARGE'),
+                  ].map((entry) {
+                    final (tiles, label) = entry;
                     final isSel = selectedTiles == tiles;
                     return GestureDetector(
                       onTap: () => setDialogState(() => selectedTiles = tiles),
-                      child: Container(
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
                         margin: const EdgeInsets.symmetric(horizontal: 6),
-                        width: 54,
-                        height: 54,
+                        width: 80,
+                        height: 80,
                         decoration: BoxDecoration(
                           gradient: isSel
                               ? const LinearGradient(
@@ -228,57 +273,127 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                 )
                               : LinearGradient(
                                   colors: [
-                                    Colors.white.withValues(alpha: 0.15),
-                                    Colors.white.withValues(alpha: 0.05),
+                                    Colors.white.withValues(alpha: 0.12),
+                                    Colors.white.withValues(alpha: 0.04),
                                   ],
                                 ),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: isSel ? Colors.white : Colors.white24,
-                            width: 2,
+                            color: isSel ? const Color(0xFF66BB6A) : Colors.white24,
+                            width: isSel ? 2.5 : 1.5,
                           ),
+                          boxShadow: isSel
+                              ? [
+                                  BoxShadow(
+                                    color: const Color(0xFF66BB6A).withValues(alpha: 0.3),
+                                    blurRadius: 12,
+                                    spreadRadius: 1,
+                                  ),
+                                ]
+                              : null,
                         ),
-                        child: Center(
-                          child: Text(
-                            '$tiles',
-                            style: GoogleFonts.bangers(
-                              fontSize: 24,
-                              color: Colors.white,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              '\u2B21',
+                              style: TextStyle(
+                                fontSize: 22,
+                                color: isSel ? Colors.white : Colors.white70,
+                              ),
                             ),
-                          ),
+                            const SizedBox(height: 2),
+                            Text(
+                              label,
+                              style: GoogleFonts.bangers(
+                                fontSize: 11,
+                                color: isSel ? Colors.white : Colors.white60,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     );
                   }).toList(),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 28),
                 Row(
                   children: [
                     Expanded(
-                      child: _buildDialogButton(
-                        label: 'CANCEL',
-                        color: Colors.grey.shade700,
+                      child: GestureDetector(
                         onTap: () => Navigator.pop(ctx),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade800,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: Colors.white24, width: 1.5),
+                          ),
+                          child: Center(
+                            child: Text(
+                              'CANCEL',
+                              style: GoogleFonts.bangers(
+                                fontSize: 18,
+                                color: Colors.white70,
+                                letterSpacing: 1.5,
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: _buildDialogButton(
-                        label: 'START',
-                        color: const Color(0xFFFF8F00),
+                      flex: 2,
+                      child: GestureDetector(
                         onTap: () {
                           Navigator.pop(ctx);
                           setState(() {
                             _playerCount = selectedPlayers;
                             _tilesPerPlayer = selectedTiles;
                           });
-                            _launchGame(
-                              playerCount: selectedPlayers,
-                              tilesPerPlayer: selectedTiles,
-                              isMultiplayer: isMultiplayer,
-                              challengeMode: challengeMode,
-                            );
+                          _launchGame(
+                            playerCount: selectedPlayers,
+                            tilesPerPlayer: selectedTiles,
+                            isMultiplayer: isMultiplayer,
+                            challengeMode: challengeMode,
+                          );
                         },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFFF8F00), Color(0xFFE65100)],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                            ),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0xFFFFD54F), width: 2),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFFFF8F00).withValues(alpha: 0.4),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 24),
+                              const SizedBox(width: 4),
+                              Text(
+                                'START',
+                                style: GoogleFonts.bangers(
+                                  fontSize: 22,
+                                  color: Colors.white,
+                                  letterSpacing: 2,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -292,93 +407,47 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   void _showChallengePicker() {
-    showDialog(
+    CartoonDialog.show(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF2E1C0C),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: Color(0xFFFFD54F), width: 2),
-        ),
-        title: Text(
-          'CHOOSE YOUR CHALLENGE',
-          textAlign: TextAlign.center,
-          style: GoogleFonts.bangers(fontSize: 22, color: const Color(0xFFFFD54F), letterSpacing: 1.5),
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: ChallengeMode.values
-                .where((mode) => mode != ChallengeMode.standard)
-                .map((mode) => GestureDetector(
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        _showGameSetupDialog(title: mode.title, isMultiplayer: false, challengeMode: mode);
-                      },
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: .08),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: Colors.white24),
-                        ),
-                        child: Row(
-                          children: [
-                            Text(mode.icon, style: const TextStyle(fontSize: 28)),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(mode.title, style: GoogleFonts.bangers(fontSize: 16, color: Colors.white)),
-                                  const SizedBox(height: 2),
-                                  Text(mode.description, style: GoogleFonts.bangers(fontSize: 11, color: Colors.white60)),
-                                ],
-                              ),
-                            ),
-                            const Icon(Icons.chevron_right, color: Color(0xFFFFD54F)),
-                          ],
-                        ),
+      title: 'CHOOSE YOUR CHALLENGE',
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: ChallengeMode.values
+              .where((mode) => mode != ChallengeMode.standard)
+              .map((mode) => GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context);
+                      _showGameSetupDialog(title: mode.title, isMultiplayer: false, challengeMode: mode);
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: .08),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: Colors.white24),
                       ),
-                    ))
-                .toList(),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDialogButton({
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 1.5),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.5),
-              offset: const Offset(0, 3),
-              blurRadius: 4,
-            ),
-          ],
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: GoogleFonts.bangers(
-              fontSize: 18,
-              color: Colors.white,
-              letterSpacing: 1.5,
-            ),
-          ),
+                      child: Row(
+                        children: [
+                          Text(mode.icon, style: const TextStyle(fontSize: 28)),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(mode.title, style: GoogleFonts.bangers(fontSize: 16, color: Colors.white)),
+                                const SizedBox(height: 2),
+                                Text(mode.description, style: GoogleFonts.bangers(fontSize: 11, color: Colors.white60)),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right, color: Color(0xFFFFD54F)),
+                        ],
+                      ),
+                    ),
+                  ))
+              .toList(),
         ),
       ),
     );
@@ -386,35 +455,24 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   void _showStatsDialog() {
     final p = _progressService?.progress;
-    showDialog(
+    CartoonDialog.show(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF2E1C0C),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Color(0xFFFFD54F), width: 2),
-        ),
-        title: Text(
-          'PLAYER STATS',
-          style: GoogleFonts.bangers(fontSize: 24, color: const Color(0xFFFFD54F), letterSpacing: 2),
-          textAlign: TextAlign.center,
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildStatRow('⭐ Level', '${p?.level ?? 1} (${p?.levelTitle ?? "Farmhand"})'),
-            _buildStatRow('🎯 XP', '${p?.totalXp ?? 0}'),
-            _buildStatRow('💰 Coins', '${p?.coins ?? 0}'),
-            _buildStatRow('⚔️ Matches Played', '${p?.matchesPlayed ?? 0}'),
-            _buildStatRow('🥇 Victories', '${p?.matchesWon ?? 0} (${(p?.winRate ?? 0 * 100).toStringAsFixed(0)}%)'),
-            _buildStatRow('🌾 Tiles Captured', '${p?.totalCaptures ?? 0}'),
-            _buildStatRow('🔥 Daily Streak', '${p?.dailyStreak ?? 0}'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('CLOSE', style: GoogleFonts.bangers(fontSize: 16, color: Colors.white)),
+      title: 'PLAYER STATS',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildStatRow('⭐ Level', '${p?.level ?? 1} (${p?.levelTitle ?? "Farmhand"})'),
+          _buildStatRow('🎯 XP', '${p?.totalXp ?? 0}'),
+          _buildStatRow('💰 Coins', '${p?.coins ?? 0}'),
+          _buildStatRow('⚔️ Matches Played', '${p?.matchesPlayed ?? 0}'),
+          _buildStatRow('🥇 Victories', '${p?.matchesWon ?? 0} (${((p?.winRate ?? 0) * 100).toStringAsFixed(0)}%)'),
+          _buildStatRow('🌾 Tiles Captured', '${p?.totalCaptures ?? 0}'),
+          _buildStatRow('🔥 Daily Streak', '${p?.dailyStreak ?? 0}'),
+          const SizedBox(height: 12),
+          CartoonButton(
+            label: 'CLOSE',
+            isWide: true,
+            onPressed: () => Navigator.pop(context),
           ),
         ],
       ),
@@ -436,54 +494,68 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   void _showShopDialog() {
     if (_progressService == null) return;
-    showDialog(
+    ShopDialog.show(
       context: context,
-      builder: (_) => ShopDialog(progress: _progressService!),
+      progress: _progressService!,
     ).then((_) => setState(() {}));
   }
 
   void _showSettingsDialog() {
-    showDialog(
+    CartoonDialog.show(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF2E1C0C),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Color(0xFFFFD54F), width: 2),
-        ),
-        title: Text(
-          'SETTINGS',
-          style: GoogleFonts.bangers(fontSize: 24, color: const Color(0xFFFFD54F), letterSpacing: 2),
-          textAlign: TextAlign.center,
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildSettingsRow('🔊 Sound Effects', true),
-            _buildSettingsRow('🎵 Music', true),
-            _buildSettingsRow('📳 Haptic Feedback', true),
-            const SizedBox(height: 12),
-            Text(
-              'CPU Difficulty',
-              style: GoogleFonts.bangers(fontSize: 14, color: Colors.white70),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _buildDifficultyBtn('EASY', const Color(0xFF689F38)),
-                const SizedBox(width: 8),
-                _buildDifficultyBtn('MEDIUM', const Color(0xFFFFA000)),
-                const SizedBox(width: 8),
-                _buildDifficultyBtn('HARD', const Color(0xFFD32F2F)),
-              ],
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('CLOSE', style: GoogleFonts.bangers(fontSize: 16, color: Colors.white)),
+      title: 'SETTINGS',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildSettingsRow('🔊 Sound Effects', true),
+          _buildSettingsRow('🎵 Music', true),
+          _buildSettingsRow('📳 Haptic Feedback', true),
+          const SizedBox(height: 12),
+          Text(
+            'CPU Difficulty',
+            style: GoogleFonts.bangers(fontSize: 14, color: Colors.white70),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildDifficultyBtn('EASY', const Color(0xFF689F38)),
+              const SizedBox(width: 8),
+              _buildDifficultyBtn('MEDIUM', const Color(0xFFFFA000)),
+              const SizedBox(width: 8),
+              _buildDifficultyBtn('HARD', const Color(0xFFD32F2F)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          CartoonButton(
+            label: 'SHARE',
+            icon: Icons.share,
+            isWide: true,
+            onPressed: () {
+              Navigator.pop(context);
+              Share.share(
+                'Check out Battle Cows! Round up, rampage, repeat! 🐮 https://play.google.com/store/apps/details?id=com.battlecows.game',
+              );
+            },
+          ),
+          const SizedBox(height: 8),
+          CartoonButton(
+            label: 'RATE',
+            icon: Icons.star,
+            isWide: true,
+            onPressed: () async {
+              Navigator.pop(context);
+              final inAppReview = InAppReview.instance;
+              if (await inAppReview.isAvailable()) {
+                inAppReview.requestReview();
+              }
+            },
+          ),
+          const SizedBox(height: 8),
+          CartoonButton(
+            label: 'CLOSE',
+            isWide: true,
+            onPressed: () => Navigator.pop(context),
           ),
         ],
       ),
@@ -880,35 +952,41 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           height: 54,
           fontSize: 22,
           onPressed: () {
-            showDialog(
+            CartoonDialog.show(
               context: context,
-              builder: (ctx) => AlertDialog(
-                backgroundColor: const Color(0xFF2E1C0C),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: const BorderSide(color: Color(0xFFFFD54F), width: 2),
-                ),
-                title: Text(
-                  'EXIT GAME?',
-                  style: GoogleFonts.bangers(fontSize: 24, color: const Color(0xFFFFD54F)),
-                  textAlign: TextAlign.center,
-                ),
-                content: Text(
-                  'Are you sure you want to exit?',
-                  style: GoogleFonts.bangers(fontSize: 16, color: Colors.white70),
-                  textAlign: TextAlign.center,
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    child: Text('CANCEL', style: GoogleFonts.bangers(fontSize: 14, color: Colors.white70)),
+              title: 'EXIT GAME?',
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Are you sure you want to exit?',
+                    style: GoogleFonts.bangers(fontSize: 16, color: Colors.white70),
+                    textAlign: TextAlign.center,
                   ),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      SystemNavigator.pop();
-                    },
-                    child: Text('EXIT', style: GoogleFonts.bangers(fontSize: 14, color: const Color(0xFFEF5350))),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: CartoonButton(
+                          label: 'CANCEL',
+                          isWide: true,
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: CartoonButton(
+                          label: 'EXIT',
+                          isWide: true,
+                          baseColor: const Color(0xFFD32F2F),
+                          borderColor: const Color(0xFFEF5350),
+                          onPressed: () {
+                            Navigator.pop(context);
+                            SystemNavigator.pop();
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -941,9 +1019,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                if (!_progressService!.canClaimDailyReward) return;
                final reward = _progressService!.claimDailyReward();
               setState(() {});
-              showDialog(
+              DailyRewardDialog.show(
                 context: context,
-                builder: (_) => DailyRewardDialog(progress: _progressService!, rewardAmount: reward),
+                progress: _progressService!,
+                rewardAmount: reward,
               ).then((_) => setState(() {}));
             },
             child: _buildBottomItem(
@@ -959,9 +1038,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           GestureDetector(
             onTap: () {
               if (_progressService == null) return;
-              showDialog(
+              DailyQuestsDialog.show(
                 context: context,
-                builder: (_) => DailyQuestsDialog(progress: _progressService!),
+                progress: _progressService!,
               ).then((_) => setState(() {}));
             },
             child: _buildBottomItem(

@@ -28,6 +28,17 @@ class ProgressService {
     _save();
   }
 
+  bool get shouldShowRatePrompt {
+    return progress.matchesWon > 0 &&
+        progress.matchesWon % 3 == 0 &&
+        progress.ratePromptCount < progress.matchesWon ~/ 3;
+  }
+
+  void markRatePromptShown() {
+    progress.ratePromptCount = progress.matchesWon ~/ 3;
+    _save();
+  }
+
   void _load() {
     final data = _prefs.getString(_key);
     if (data != null) {

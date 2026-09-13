@@ -14,6 +14,7 @@ class PlayerProgress {
   List<QuestProgress> dailyQuests;
   String? lastQuestRefreshDate;
   bool tutorialCompleted;
+  int ratePromptCount;
 
   PlayerProgress({
     this.coins = 0,
@@ -29,6 +30,7 @@ class PlayerProgress {
     List<QuestProgress>? dailyQuests,
     this.lastQuestRefreshDate,
     this.tutorialCompleted = false,
+    this.ratePromptCount = 0,
   })  : ownedItems = ownedItems ?? [],
         dailyQuests = dailyQuests ?? [];
 
@@ -71,6 +73,7 @@ class PlayerProgress {
         'dailyQuests': dailyQuests.map((q) => q.toJson()).toList(),
         'lastQuestRefreshDate': lastQuestRefreshDate,
         'tutorialCompleted': tutorialCompleted,
+        'ratePromptCount': ratePromptCount,
       };
 
   factory PlayerProgress.fromJson(Map<String, dynamic> json) {
@@ -91,6 +94,7 @@ class PlayerProgress {
           [],
       lastQuestRefreshDate: json['lastQuestRefreshDate'],
       tutorialCompleted: json['tutorialCompleted'] ?? false,
+      ratePromptCount: json['ratePromptCount'] ?? 0,
     );
   }
 

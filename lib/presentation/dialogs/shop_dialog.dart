@@ -2,11 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../data/models/shop_item.dart';
 import '../../data/services/progress_service.dart';
+import '../widgets/cartoon_dialog.dart';
 
 class ShopDialog extends StatefulWidget {
   final ProgressService progress;
 
   const ShopDialog({super.key, required this.progress});
+
+  static Future<void> show({
+    required BuildContext context,
+    required ProgressService progress,
+  }) {
+    return CartoonDialog.show(
+      context: context,
+      title: 'COW BARN SHOP',
+      maxWidth: 380,
+      child: ShopDialog(progress: progress),
+    );
+  }
 
   @override
   State<ShopDialog> createState() => _ShopDialogState();
@@ -21,30 +34,11 @@ class _ShopDialogState extends State<ShopDialog> {
     final owned = widget.progress.progress.ownedItems;
     final filtered = shopItems.where((i) => i.category == _selectedCategory).toList();
 
-    return AlertDialog(
-      backgroundColor: const Color(0xFF2E1C0C),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: const BorderSide(color: Color(0xFFFFD54F), width: 3),
-      ),
-      title: Column(
+    return SizedBox(
+      width: 340,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text('🐮', style: TextStyle(fontSize: 24)),
-              const SizedBox(width: 8),
-              Text(
-                'COW BARN SHOP',
-                style: GoogleFonts.bangers(
-                  fontSize: 22,
-                  color: const Color(0xFFFFD54F),
-                  letterSpacing: 2,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
@@ -66,41 +60,34 @@ class _ShopDialogState extends State<ShopDialog> {
               ],
             ),
           ),
+          const SizedBox(height: 10),
+          _buildCategoryTabs(),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 300,
+            child: GridView.builder(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+              ),
+              itemCount: filtered.length,
+              itemBuilder: (context, index) {
+                final item = filtered[index];
+                final isOwned = owned.contains(item.id);
+                final canBuy = coins >= item.price && !isOwned;
+                return _buildShopTile(item, isOwned, canBuy);
+              },
+            ),
+          ),
+          const SizedBox(height: 8),
+          CartoonButton(
+            label: 'CLOSE',
+            isWide: true,
+            onPressed: () => Navigator.pop(context),
+          ),
         ],
       ),
-      content: SizedBox(
-        width: 340,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildCategoryTabs(),
-            const SizedBox(height: 10),
-            SizedBox(
-              height: 300,
-              child: GridView.builder(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: 8,
-                  mainAxisSpacing: 8,
-                ),
-                itemCount: filtered.length,
-                itemBuilder: (context, index) {
-                  final item = filtered[index];
-                  final isOwned = owned.contains(item.id);
-                  final canBuy = coins >= item.price && !isOwned;
-                  return _buildShopTile(item, isOwned, canBuy);
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text('CLOSE', style: GoogleFonts.bangers(fontSize: 16, color: Colors.white70)),
-        ),
-      ],
     );
   }
 

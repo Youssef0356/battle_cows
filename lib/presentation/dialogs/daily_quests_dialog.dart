@@ -2,11 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../data/models/player_progress.dart';
 import '../../data/services/progress_service.dart';
+import '../widgets/cartoon_dialog.dart';
 
 class DailyQuestsDialog extends StatefulWidget {
   final ProgressService progress;
 
   const DailyQuestsDialog({super.key, required this.progress});
+
+  static Future<void> show({
+    required BuildContext context,
+    required ProgressService progress,
+  }) {
+    return CartoonDialog.show(
+      context: context,
+      title: 'DAILY QUESTS',
+      accentColor: const Color(0xFF81C784),
+      child: DailyQuestsDialog(progress: progress),
+    );
+  }
 
   @override
   State<DailyQuestsDialog> createState() => _DailyQuestsDialogState();
@@ -18,50 +31,28 @@ class _DailyQuestsDialogState extends State<DailyQuestsDialog> {
     widget.progress.refreshDailyQuests();
     final quests = widget.progress.progress.dailyQuests;
 
-    return AlertDialog(
-      backgroundColor: const Color(0xFF2E1C0C),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: const BorderSide(color: Color(0xFF81C784), width: 3),
-      ),
-      title: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+    return SizedBox(
+      width: 320,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('📅', style: TextStyle(fontSize: 24)),
-          const SizedBox(width: 8),
           Text(
-            'DAILY QUESTS',
-            style: GoogleFonts.bangers(
-              fontSize: 22,
-              color: const Color(0xFF81C784),
-              letterSpacing: 2,
-            ),
+            'Complete tactics, claim coins, and level up your herd.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.bangers(fontSize: 12, color: Colors.white54),
+          ),
+          const SizedBox(height: 10),
+          _buildProgressSummary(quests),
+          const SizedBox(height: 12),
+          ...quests.map((quest) => _buildQuestTile(quest)),
+          const SizedBox(height: 12),
+          CartoonButton(
+            label: 'CLOSE',
+            isWide: true,
+            onPressed: () => Navigator.pop(context),
           ),
         ],
       ),
-      content: SizedBox(
-        width: 320,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Complete tactics, claim coins, and level up your herd.',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.bangers(fontSize: 12, color: Colors.white54),
-            ),
-            const SizedBox(height: 10),
-            _buildProgressSummary(quests),
-            const SizedBox(height: 12),
-            ...quests.map((quest) => _buildQuestTile(quest)),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text('CLOSE', style: GoogleFonts.bangers(fontSize: 16, color: Colors.white70)),
-        ),
-      ],
     );
   }
 

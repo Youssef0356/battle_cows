@@ -17,8 +17,10 @@ import '../game/board/board_generator.dart';
 import '../game/board/board_builder.dart';
 import '../game/ai/ai_player.dart';
 import '../core/constants/colors.dart';
+import '../ads/ad_manager.dart';
 import 'components/hex_board_component.dart';
 import 'components/background_component.dart';
+import 'components/board_border_component.dart';
 import 'components/move_animation_component.dart';
 import 'components/placement_preview_component.dart';
 import 'audio_manager.dart';
@@ -34,6 +36,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
   late GameEngine _engine;
   late AiPlayer _aiPlayer;
   HexBoardComponent? _boardComponent;
+  BoardBorderComponent? _borderComponent;
   PlacementPreviewComponent? _previewComponent;
   BackgroundComponent? _backgroundComponent;
 
@@ -44,6 +47,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
   bool _timerRunning = false;
   async.Timer? _gameTimer;
   bool _isAnimating = false;
+  bool isPlacementDragActive = false;
   double _shakeTime = 0;
   double _shakeStrength = 0;
 
@@ -202,6 +206,10 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
     if (_boardComponent != null) {
       _boardComponent!.removeFromParent();
       _boardComponent = null;
+    }
+    if (_borderComponent != null) {
+      _borderComponent!.removeFromParent();
+      _borderComponent = null;
     }
     if (_previewComponent != null) {
       _previewComponent!.removeFromParent();
@@ -418,6 +426,10 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
       _boardComponent!.removeFromParent();
       _boardComponent = null;
     }
+    if (_borderComponent != null) {
+      _borderComponent!.removeFromParent();
+      _borderComponent = null;
+    }
     if (_previewComponent != null) {
       _previewComponent!.removeFromParent();
       _previewComponent = null;
@@ -429,6 +441,15 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
       size: Vector2(boardSize, boardSize),
     );
     world.add(_boardComponent!);
+
+    final allHexes = _engine.board!.cells.keys.toList();
+    _borderComponent = BoardBorderComponent(
+      hexPositions: allHexes,
+      hexSize: _hexSize,
+      position: Vector2.zero(),
+      size: Vector2(boardSize, boardSize),
+    );
+    world.add(_borderComponent!);
 
     camera.viewfinder.position = Vector2.zero();
     camera.viewfinder.anchor = Anchor.center;
@@ -455,7 +476,8 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
       return;
     }
     _shakeTime -= dt;
-    final strength = _shakeStrength * (_shakeTime / .22).clamp(0.0, 1.0);
+    final zoom = camera.viewfinder.zoom;
+    final strength = _shakeStrength * (_shakeTime / .22).clamp(0.0, 1.0) * zoom;
     camera.viewfinder.position = Vector2(
       sin(_shakeTime * 95) * strength,
       cos(_shakeTime * 83) * strength,
@@ -494,6 +516,8 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
       cell.herd = herd;
       cell.territoryOwner = herd.owner;
     }
+
+    shakeCamera(strength: 2.5);
 
     _herdPlacementPlayerIndex++;
 
@@ -573,6 +597,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
       return;
     }
     _isDragging = true;
+    isPlacementDragActive = true;
     _tileOffset = _screenToHex(event.canvasPosition);
     _updatePreview();
     notifyStateChanged();
@@ -598,6 +623,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
       return;
     }
     _isDragging = false;
+    isPlacementDragActive = false;
     placeCurrentTile();
     super.onDragEnd(event);
   }
@@ -882,6 +908,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
     winner = _engine.determineWinner();
     _updateCounts();
     AudioManager().playGameOver();
+    AdManager().loadInterstitialAd();
     onGameOver?.call(winner, territoryCounts);
     notifyStateChanged();
   }
