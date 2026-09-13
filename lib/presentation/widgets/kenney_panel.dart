@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 
 enum KenneyPanelStyle {
-  wood,
-  woodDark,
-  fantasy0,
-  fantasy1,
-  fantasy2,
-  fantasy3,
+  dialogue,
+  settings,
+  exit,
+  container,
 }
 
 class KenneyPanel extends StatelessWidget {
@@ -19,7 +17,7 @@ class KenneyPanel extends StatelessWidget {
   const KenneyPanel({
     super.key,
     required this.child,
-    this.style = KenneyPanelStyle.wood,
+    this.style = KenneyPanelStyle.dialogue,
     this.width,
     this.height,
     this.padding,
@@ -27,18 +25,14 @@ class KenneyPanel extends StatelessWidget {
 
   String get _assetPath {
     switch (style) {
-      case KenneyPanelStyle.wood:
-        return 'assets/images/ui/panel.png';
-      case KenneyPanelStyle.woodDark:
-        return 'assets/images/ui/panel_dark.png';
-      case KenneyPanelStyle.fantasy0:
-        return 'assets/images/ui/panel_fantasy_0.png';
-      case KenneyPanelStyle.fantasy1:
-        return 'assets/images/ui/panel_fantasy_1.png';
-      case KenneyPanelStyle.fantasy2:
-        return 'assets/images/ui/panel_fantasy_2.png';
-      case KenneyPanelStyle.fantasy3:
-        return 'assets/images/ui/panel_fantasy_3.png';
+      case KenneyPanelStyle.dialogue:
+        return 'assets/images/ui/dialog_bg.png';
+      case KenneyPanelStyle.settings:
+        return 'assets/images/ui/dialog_settings.png';
+      case KenneyPanelStyle.exit:
+        return 'assets/images/ui/dialog_exit.png';
+      case KenneyPanelStyle.container:
+        return 'assets/images/ui/dialog_container.png';
     }
   }
 
@@ -51,7 +45,6 @@ class KenneyPanel extends StatelessWidget {
         image: DecorationImage(
           image: AssetImage(_assetPath),
           fit: BoxFit.fill,
-          repeat: ImageRepeat.repeat,
           filterQuality: FilterQuality.none,
         ),
       ),
