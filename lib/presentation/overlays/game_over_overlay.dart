@@ -1,11 +1,14 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:in_app_review/in_app_review.dart';
 import '../../flame/battle_cows_game.dart';
 import '../../game/models/player.dart';
 import '../../core/constants/colors.dart';
 import '../../ads/ad_manager.dart';
-import '../widgets/wood_button.dart';
+import '../../data/services/progress_service.dart';
+import '../widgets/kenney_button.dart';
+import '../widgets/cartoon_dialog.dart';
 
 class GameOverOverlay extends StatefulWidget {
   final BattleCowsGame game;
@@ -37,6 +40,65 @@ class _GameOverOverlayState extends State<GameOverOverlay>
       CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
     );
     _controller.forward();
+    _checkRatePrompt();
+  }
+
+  Future<void> _checkRatePrompt() async {
+    await Future.delayed(const Duration(seconds: 2));
+    if (!mounted) return;
+    final progress = await ProgressService.getInstance();
+    if (progress.shouldShowRatePrompt) {
+      progress.markRatePromptShown();
+      if (!mounted) return;
+      _showRatePrompt();
+    }
+  }
+
+  void _showRatePrompt() {
+    final inAppReview = InAppReview.instance;
+    CartoonDialog.show(
+      context: context,
+      title: 'ENJOYING THE GAME?',
+      accentColor: const Color(0xFFFFB74D),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Rate us 5 stars to support the herd!',
+            style: GoogleFonts.bangers(
+              fontSize: 14,
+              color: Colors.white70,
+              letterSpacing: 0.5,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          KenneyButton(
+            label: 'RATE US',
+            icon: Icons.star_rounded,
+            isWide: true,
+            onPressed: () async {
+              Navigator.pop(context);
+              if (await inAppReview.isAvailable()) {
+                inAppReview.requestReview();
+              }
+            },
+          ),
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'MAYBE LATER',
+              style: GoogleFonts.bangers(
+                fontSize: 12,
+                color: Colors.white54,
+                letterSpacing: 1,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -59,24 +121,33 @@ class _GameOverOverlayState extends State<GameOverOverlay>
           scale: _scaleAnimation.value,
           child: Dialog(
             backgroundColor: Colors.transparent,
+            insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
             child: Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.black.withValues(alpha: 0.95),
-                    Colors.black.withValues(alpha: 0.99),
-                  ],
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF3E2723), Color(0xFF1B0000)],
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 ),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.3),
-                  width: 3,
-                ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFFFFD54F), width: 3),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.7),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
+                  ),
+                  BoxShadow(
+                    color: const Color(0xFFFFD54F).withValues(alpha: 0.15),
+                    blurRadius: 16,
+                    spreadRadius: 2,
+                  ),
+                ],
               ),
-              child: Column(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(17),
+                child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   _buildConfetti(),
@@ -155,17 +226,16 @@ class _GameOverOverlayState extends State<GameOverOverlay>
                   const SizedBox(height: 20),
                   _buildStatsSection(),
                   const SizedBox(height: 20),
-                  _buildSecondChanceButton(),
-                  const SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(
-                        child: WoodButton(
+                        child: KenneyButton(
                           label: 'MENU',
-                          width: double.infinity,
-                          height: 50,
+                          icon: Icons.home_rounded,
+                          isWide: true,
+                          style: KenneyBtnStyle.neutral,
                           fontSize: 18,
-                          baseColor: AppColors.secondaryAction,
+                          height: 50,
                           onPressed: () {
                             AdManager().showInterstitialAd(
                               onAdDismissed: () {
@@ -178,12 +248,12 @@ class _GameOverOverlayState extends State<GameOverOverlay>
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: WoodButton(
+                        child: KenneyButton(
                           label: 'REMATCH',
-                          width: double.infinity,
-                          height: 50,
+                          icon: Icons.refresh_rounded,
+                          isWide: true,
                           fontSize: 18,
-                          baseColor: AppColors.primaryAction,
+                          height: 50,
                           onPressed: () {
                             AdManager().showInterstitialAd(
                               onAdDismissed: () {
@@ -198,6 +268,7 @@ class _GameOverOverlayState extends State<GameOverOverlay>
                   ),
                 ],
               ),
+              ),
             ),
           ),
         );
@@ -208,26 +279,6 @@ class _GameOverOverlayState extends State<GameOverOverlay>
   String _getPlayerName(PlayerColor color) {
     final player = widget.players.where((p) => p.color == color).firstOrNull;
     return (player?.name ?? 'UNKNOWN').toUpperCase();
-  }
-
-  Widget _buildSecondChanceButton() {
-    return WoodButton(
-      label: 'WATCH AD FOR SECOND CHANCE',
-      icon: Icons.play_arrow,
-      width: double.infinity,
-      height: 44,
-      fontSize: 14,
-      baseColor: AppColors.yellow,
-      onPressed: () {
-        AdManager().showRewardedAd(
-          onUserEarnedReward: (reward) {
-            Navigator.of(context).pop();
-            widget.game.overlays.remove('GameOver');
-            widget.game.rematch();
-          },
-        );
-      },
-    );
   }
 
   Widget _buildStatsSection() {

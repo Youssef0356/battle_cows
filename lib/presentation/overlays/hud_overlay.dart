@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:in_app_review/in_app_review.dart';
 import '../../flame/battle_cows_game.dart';
 import '../../game/models/player.dart';
 import '../../game/models/challenge_mode.dart';
 import '../../core/constants/colors.dart';
+import '../widgets/cartoon_dialog.dart';
+import '../widgets/kenney_button.dart';
 
 class HudOverlay extends StatelessWidget {
   final BattleCowsGame game;
@@ -206,79 +210,108 @@ class HudOverlay extends StatelessWidget {
   Widget buildSettingsButton(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        showDialog(
+        CartoonDialog.show(
           context: context,
-          builder: (ctx) => AlertDialog(
-            backgroundColor: const Color(0xFF2E1C0C),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: const BorderSide(color: Color(0xFFFFD54F), width: 2),
-            ),
-            title: Text(
-              'GAME PAUSED',
-              style: GoogleFonts.bangers(fontSize: 22, color: const Color(0xFFFFD54F)),
-              textAlign: TextAlign.center,
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildPauseButton(
-                  label: 'RESTART MATCH',
-                  icon: Icons.refresh_rounded,
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    game.rematch();
-                  },
-                ),
-                const SizedBox(height: 12),
-                _buildPauseButton(
-                  label: 'RESET BOARD',
-                  icon: Icons.restart_alt_rounded,
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    game.resetBoard();
-                  },
-                ),
-                const SizedBox(height: 12),
-                _buildPauseButton(
-                  label: 'EXIT TO MAIN MENU',
-                  icon: Icons.exit_to_app_rounded,
-                  baseColor: const Color(0xFF8B2500),
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    Navigator.pop(context);
-                  },
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'TABLE BACKGROUND',
-                  style: GoogleFonts.bangers(fontSize: 12, color: Colors.white70, letterSpacing: 1),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildBackgroundButton(
-                      ctx,
-                       'TABLE',
-                       'assets/images/Background/Table image.jpg',
+          title: 'GAME PAUSED',
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              KenneyButton(
+                label: 'RESTART MATCH',
+                icon: Icons.refresh_rounded,
+                isWide: true,
+                onPressed: () {
+                  Navigator.pop(context);
+                  game.rematch();
+                },
+              ),
+              const SizedBox(height: 10),
+              KenneyButton(
+                label: 'RESET BOARD',
+                icon: Icons.restart_alt_rounded,
+                isWide: true,
+                style: KenneyBtnStyle.neutral,
+                onPressed: () {
+                  Navigator.pop(context);
+                  game.resetBoard();
+                },
+              ),
+              const SizedBox(height: 10),
+              KenneyButton(
+                label: 'EXIT TO MAIN MENU',
+                icon: Icons.exit_to_app_rounded,
+                isWide: true,
+                style: KenneyBtnStyle.danger,
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                },
+              ),
+              const SizedBox(height: 14),
+              Text(
+                'TABLE BACKGROUND',
+                style: GoogleFonts.bangers(fontSize: 12, color: Colors.white70, letterSpacing: 1),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _buildBackgroundButton(
+                    context,
+                    'TABLE',
+                    'assets/images/Background/Table image.jpg',
+                  ),
+                  const SizedBox(width: 8),
+                  _buildBackgroundButton(
+                    context,
+                    'WOOD',
+                    'assets/images/Background/Table image.jpg',
+                  ),
+                  const SizedBox(width: 8),
+                  _buildBackgroundButton(
+                    context,
+                    'FARM',
+                    'assets/images/Background/Background.jpg',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: KenneyButton(
+                      label: 'SHARE',
+                      icon: Icons.share_rounded,
+                      style: KenneyBtnStyle.neutral,
+                      fontSize: 13,
+                      height: 42,
+                      isWide: true,
+                      onPressed: () {
+                        Share.share(
+                          'Check out Battle Cows! Round up, rampage, repeat! 🐮 https://play.google.com/store/apps/details?id=com.battlecows.game',
+                        );
+                      },
                     ),
-                    const SizedBox(width: 8),
-                    _buildBackgroundButton(
-                      ctx,
-                      'WOOD',
-                      'assets/images/Background/Table image.jpg',
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: KenneyButton(
+                      label: 'RATE',
+                      icon: Icons.star_rounded,
+                      fontSize: 13,
+                      height: 42,
+                      isWide: true,
+                      onPressed: () async {
+                        final inAppReview = InAppReview.instance;
+                        if (await inAppReview.isAvailable()) {
+                          inAppReview.requestReview();
+                        }
+                      },
                     ),
-                    const SizedBox(width: 8),
-                    _buildBackgroundButton(
-                      ctx,
-                       'FARM',
-                       'assets/images/Background/Background.jpg',
-                    ),
-                  ],
-                ),
-              ],
-            ),
+                  ),
+                ],
+              ),
+            ],
           ),
         );
       },
@@ -322,43 +355,6 @@ class HudOverlay extends StatelessWidget {
           border: Border.all(color: const Color(0xFF8D6E63)),
         ),
         child: Text(label, style: GoogleFonts.bangers(fontSize: 12, color: Colors.white)),
-      ),
-    );
-  }
-
-  Widget _buildPauseButton({
-    required String label,
-    required IconData icon,
-    required VoidCallback onPressed,
-    Color baseColor = const Color(0xFF5D4037),
-  }) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        width: 200,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [baseColor, baseColor.withValues(alpha: 0.7)],
-          ),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFF8D6E63), width: 1.5),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: Colors.white, size: 18),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: GoogleFonts.bangers(
-                fontSize: 14,
-                color: Colors.white,
-                letterSpacing: 1,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

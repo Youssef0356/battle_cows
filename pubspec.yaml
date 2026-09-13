@@ -18,6 +18,8 @@ dependencies:
   vector_math: ^2.1.4
   shared_preferences: ^2.2.2
   icony: ^1.0.5
+  share_plus: ^10.1.4
+  in_app_review: ^2.0.9
 
 dev_dependencies:
   flutter_test:
@@ -33,5 +35,6 @@ flutter:
     - assets/images/Cows/
     - assets/images/Effects/
     - assets/images/Tile Image/
+    - assets/images/ui/
     - assets/sounds/
     - assets/models/

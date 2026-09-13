@@ -14,6 +14,7 @@ import '../widgets/wood_button.dart';
 import '../widgets/rustic_decor.dart';
 import '../../game/models/challenge_mode.dart';
 import '../widgets/cartoon_dialog.dart';
+import '../widgets/kenney_button.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -527,10 +528,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ],
           ),
           const SizedBox(height: 16),
-          CartoonButton(
+          KenneyButton(
             label: 'SHARE',
             icon: Icons.share,
             isWide: true,
+            style: KenneyBtnStyle.neutral,
             onPressed: () {
               Navigator.pop(context);
               Share.share(
@@ -539,7 +541,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             },
           ),
           const SizedBox(height: 8),
-          CartoonButton(
+          KenneyButton(
             label: 'RATE',
             icon: Icons.star,
             isWide: true,
@@ -967,19 +969,19 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   Row(
                     children: [
                       Expanded(
-                        child: CartoonButton(
+                        child: KenneyButton(
                           label: 'CANCEL',
                           isWide: true,
+                          style: KenneyBtnStyle.neutral,
                           onPressed: () => Navigator.pop(context),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: CartoonButton(
+                        child: KenneyButton(
                           label: 'EXIT',
                           isWide: true,
-                          baseColor: const Color(0xFFD32F2F),
-                          borderColor: const Color(0xFFEF5350),
+                          style: KenneyBtnStyle.danger,
                           onPressed: () {
                             Navigator.pop(context);
                             SystemNavigator.pop();

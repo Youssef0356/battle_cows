@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../data/models/shop_item.dart';
 import '../../data/services/progress_service.dart';
 import '../widgets/cartoon_dialog.dart';
+import '../widgets/kenney_button.dart';
 
 class ShopDialog extends StatefulWidget {
   final ProgressService progress;
@@ -81,9 +82,10 @@ class _ShopDialogState extends State<ShopDialog> {
             ),
           ),
           const SizedBox(height: 8),
-          CartoonButton(
+          KenneyButton(
             label: 'CLOSE',
             isWide: true,
+            style: KenneyBtnStyle.neutral,
             onPressed: () => Navigator.pop(context),
           ),
         ],

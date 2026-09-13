@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../data/models/player_progress.dart';
 import '../../data/services/progress_service.dart';
 import '../widgets/cartoon_dialog.dart';
+import '../widgets/kenney_button.dart';
 
 class DailyQuestsDialog extends StatefulWidget {
   final ProgressService progress;
@@ -46,9 +47,10 @@ class _DailyQuestsDialogState extends State<DailyQuestsDialog> {
           const SizedBox(height: 12),
           ...quests.map((quest) => _buildQuestTile(quest)),
           const SizedBox(height: 12),
-          CartoonButton(
+          KenneyButton(
             label: 'CLOSE',
             isWide: true,
+            style: KenneyBtnStyle.neutral,
             onPressed: () => Navigator.pop(context),
           ),
         ],
