@@ -16,6 +16,8 @@ import '../overlays/turn_banner.dart';
 import '../overlays/scoreboard_overlay.dart';
 import '../overlays/placement_overlay.dart';
 import '../overlays/herd_placement_overlay.dart';
+import '../overlays/tutorial_overlay.dart';
+import '../../game/tutorial/tutorial_data.dart';
 import '../widgets/capture_toast.dart';
 import '../widgets/parallax_dust_layer.dart';
 
@@ -26,6 +28,7 @@ class FlameGameScreen extends StatefulWidget {
   final int boardSize;
   final int tilesPerPlayer;
   final ChallengeMode challengeMode;
+  final bool isTutorial;
 
   const FlameGameScreen({
     super.key,
@@ -35,6 +38,7 @@ class FlameGameScreen extends StatefulWidget {
     this.boardSize = 7,
     this.tilesPerPlayer = 5,
     this.challengeMode = ChallengeMode.standard,
+    this.isTutorial = false,
   });
 
   @override
@@ -51,7 +55,7 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
   void initState() {
     super.initState();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    AdManager().loadRewardedAd();
+    if (!widget.isTutorial) AdManager().loadRewardedAd();
     _initProgress();
     _game = BattleCowsGame(
       players: widget.players,
@@ -98,7 +102,10 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
     // Defer to after first frame so overlayBuilderMap is registered
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      if (widget.tiles == null || widget.tiles!.isEmpty) {
+      if (widget.isTutorial) {
+        _game.overlays.add('Tutorial');
+        _game.overlays.add('Placement');
+      } else if (widget.tiles == null || widget.tiles!.isEmpty) {
         _game.overlays.add('Placement');
       } else {
         _game.overlays.add('HerdPlacement');
@@ -219,6 +226,51 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
     });
   }
 
+  void _onTutorialComplete() {
+    _game.overlays.remove('Tutorial');
+    _game.overlays.remove('Placement');
+    _game.overlays.remove('HerdPlacement');
+    _game.overlays.remove('HUD');
+    _game.overlays.remove('GameControls');
+    _game.overlays.remove('Scoreboard');
+    if (widget.isTutorial && mounted) {
+      _progressService?.markTutorialCompleted();
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    }
+  }
+
+  void _onTutorialStepChanged(int stepIndex, TutorialStep step) {
+    if (!mounted) return;
+    final activeOverlays = _game.overlays.activeOverlays;
+    // Manage game overlays based on tutorial phase
+    switch (step.phase) {
+      case TutorialPhase.tilePlacement:
+        if (!activeOverlays.contains('Placement')) {
+          _game.overlays.remove('HerdPlacement');
+          _game.overlays.remove('HUD');
+          _game.overlays.remove('GameControls');
+          _game.overlays.remove('Scoreboard');
+          _game.overlays.add('Placement');
+        }
+        break;
+      case TutorialPhase.herdPlacement:
+        if (!activeOverlays.contains('HerdPlacement')) {
+          _game.overlays.remove('Placement');
+          _game.overlays.add('HerdPlacement');
+        }
+        break;
+      case TutorialPhase.gameplay:
+        if (!activeOverlays.contains('HUD')) {
+          _game.overlays.remove('Placement');
+          _game.overlays.remove('HerdPlacement');
+          _game.overlays.add('HUD');
+          _game.overlays.add('GameControls');
+          _game.overlays.add('Scoreboard');
+        }
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -270,6 +322,12 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
                     game: game as BattleCowsGame,
                     players: widget.players,
                   ),
+                  if (widget.isTutorial)
+                    'Tutorial': (context, game) => TutorialOverlay(
+                      steps: TutorialScenario.steps,
+                      onComplete: _onTutorialComplete,
+                      onStepChanged: _onTutorialStepChanged,
+                    ),
                 },
                 initialActiveOverlays: const [],
               ),

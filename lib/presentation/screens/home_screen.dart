@@ -48,7 +48,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     if (mounted) {
       setState(() {});
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showDailyRewardIfNeeded();
+        if (!_progressService!.tutorialCompleted) {
+          Navigator.pushNamed(context, AppRouter.tutorial);
+        } else {
+          _showDailyRewardIfNeeded();
+        }
       });
     }
   }

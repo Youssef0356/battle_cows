@@ -21,6 +21,13 @@ class ProgressService {
 
   PlayerProgress get progress => _progress ?? PlayerProgress();
 
+  bool get tutorialCompleted => progress.tutorialCompleted;
+
+  void markTutorialCompleted() {
+    progress.tutorialCompleted = true;
+    _save();
+  }
+
   void _load() {
     final data = _prefs.getString(_key);
     if (data != null) {

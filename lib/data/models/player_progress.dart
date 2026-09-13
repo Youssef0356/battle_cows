@@ -13,6 +13,7 @@ class PlayerProgress {
   List<String> ownedItems;
   List<QuestProgress> dailyQuests;
   String? lastQuestRefreshDate;
+  bool tutorialCompleted;
 
   PlayerProgress({
     this.coins = 0,
@@ -27,6 +28,7 @@ class PlayerProgress {
     List<String>? ownedItems,
     List<QuestProgress>? dailyQuests,
     this.lastQuestRefreshDate,
+    this.tutorialCompleted = false,
   })  : ownedItems = ownedItems ?? [],
         dailyQuests = dailyQuests ?? [];
 
@@ -68,6 +70,7 @@ class PlayerProgress {
         'ownedItems': ownedItems,
         'dailyQuests': dailyQuests.map((q) => q.toJson()).toList(),
         'lastQuestRefreshDate': lastQuestRefreshDate,
+        'tutorialCompleted': tutorialCompleted,
       };
 
   factory PlayerProgress.fromJson(Map<String, dynamic> json) {
@@ -87,6 +90,7 @@ class PlayerProgress {
               .toList() ??
           [],
       lastQuestRefreshDate: json['lastQuestRefreshDate'],
+      tutorialCompleted: json['tutorialCompleted'] ?? false,
     );
   }
 
