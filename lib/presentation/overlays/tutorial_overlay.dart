@@ -131,79 +131,82 @@ class _TutorialOverlayState extends State<TutorialOverlay>
           top: topPadding + 40,
           left: 16,
           right: 16,
-          child: AnimatedBuilder(
-            animation: _pulseAnimation,
-            builder: (context, _) {
-              return Stack(
-                alignment: Alignment.topCenter,
-                children: [
-                  Image.asset(
-                    'assets/images/ui/bubble_rect.png',
-                    fit: BoxFit.fill,
-                    width: double.infinity,
-                    gaplessPlayback: true,
-                  ),
-                  Positioned(
-                    top: 20,
-                    left: 24,
-                    right: 24,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          _step.title,
-                          style: GoogleFonts.bangers(
-                            fontSize: 20,
-                            color: _step.accentColor,
-                            letterSpacing: 1.5,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _step.description,
-                          style: GoogleFonts.bangers(
-                            fontSize: 14,
-                            color: Colors.white.withValues(alpha: 0.9),
-                            letterSpacing: 0.5,
-                            height: 1.4,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 12),
-                        GestureDetector(
-                          onTap: _nextStep,
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(vertical: 10),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  _step.accentColor,
-                                  _step.accentColor.withValues(alpha: 0.7),
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              _currentStep == widget.steps.length - 1
-                                  ? "LET'S GO!"
-                                  : 'GOT IT',
-                              style: GoogleFonts.bangers(
-                                fontSize: 16,
-                                color: Colors.white,
-                                letterSpacing: 2,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ),
-                      ],
+          bottom: 16,
+          child: SingleChildScrollView(
+            child: AnimatedBuilder(
+              animation: _pulseAnimation,
+              builder: (context, _) {
+                return Stack(
+                  alignment: Alignment.topCenter,
+                  children: [
+                    Image.asset(
+                      'assets/images/ui/bubble_rect.png',
+                      fit: BoxFit.fill,
+                      width: double.infinity,
+                      gaplessPlayback: true,
                     ),
-                  ),
-                ],
-              );
-            },
+                    Positioned(
+                      top: 20,
+                      left: 24,
+                      right: 24,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _step.title,
+                            style: GoogleFonts.bangers(
+                              fontSize: 20,
+                              color: _step.accentColor,
+                              letterSpacing: 1.5,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _step.description,
+                            style: GoogleFonts.bangers(
+                              fontSize: 14,
+                              color: Colors.white.withValues(alpha: 0.9),
+                              letterSpacing: 0.5,
+                              height: 1.4,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 12),
+                          GestureDetector(
+                            onTap: _nextStep,
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    _step.accentColor,
+                                    _step.accentColor.withValues(alpha: 0.7),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                _currentStep == widget.steps.length - 1
+                                    ? "LET'S GO!"
+                                    : 'GOT IT',
+                                style: GoogleFonts.bangers(
+                                  fontSize: 16,
+                                  color: Colors.white,
+                                  letterSpacing: 2,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
           ),
         ),
       ],
