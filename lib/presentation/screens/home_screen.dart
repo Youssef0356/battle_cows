@@ -24,7 +24,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
-  int _playerCount = 2;
   int _tilesPerPlayer = 4;
   late AnimationController _animController;
   late Animation<double> _titleScale;
@@ -115,7 +114,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   void _showGameSetupDialog({required String title, required bool isMultiplayer, ChallengeMode challengeMode = ChallengeMode.standard}) {
-    int selectedPlayers = _playerCount;
     int selectedTiles = _tilesPerPlayer;
 
     showDialog(
@@ -216,86 +214,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                               label,
                               style: GoogleFonts.bangers(
                                 fontSize: 12,
-                                color: isSel ? Colors.black : Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'NUMBER OF PLAYERS',
-                  style: GoogleFonts.bangers(
-                    fontSize: 16,
-                    color: Colors.white70,
-                    letterSpacing: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'More players = more chaos!',
-                  style: GoogleFonts.bangers(
-                    fontSize: 11,
-                    color: Colors.white38,
-                    letterSpacing: 1,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 12,
-                  children: [2, 3, 4].map((count) {
-                    final isSel = selectedPlayers == count;
-                    return GestureDetector(
-                      onTap: () => setDialogState(() => selectedPlayers = count),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        margin: const EdgeInsets.symmetric(horizontal: 6),
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          gradient: isSel
-                              ? const LinearGradient(
-                                  colors: [Color(0xFFFFD54F), Color(0xFFFF8F00)],
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                )
-                              : LinearGradient(
-                                  colors: [
-                                    Colors.white.withValues(alpha: 0.12),
-                                    Colors.white.withValues(alpha: 0.04),
-                                  ],
-                                ),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: isSel ? const Color(0xFFFFD54F) : Colors.white24,
-                            width: isSel ? 2.5 : 1.5,
-                          ),
-                          boxShadow: isSel
-                              ? [
-                                  BoxShadow(
-                                    color: const Color(0xFFFFD54F).withValues(alpha: 0.3),
-                                    blurRadius: 12,
-                                    spreadRadius: 1,
-                                  ),
-                                ]
-                              : null,
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              '\uD83D\uDC2E',
-                              style: TextStyle(fontSize: count == 2 ? 22 : 18),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              '$count',
-                              style: GoogleFonts.bangers(
-                                fontSize: 22,
                                 color: isSel ? Colors.black : Colors.white,
                               ),
                             ),
@@ -427,11 +345,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         onTap: () {
                           Navigator.pop(ctx);
                           setState(() {
-                            _playerCount = selectedPlayers;
                             _tilesPerPlayer = selectedTiles;
                           });
                           _launchGame(
-                            playerCount: selectedPlayers,
+                            playerCount: 2,
                             tilesPerPlayer: selectedTiles,
                             isMultiplayer: isMultiplayer,
                             challengeMode: challengeMode,
