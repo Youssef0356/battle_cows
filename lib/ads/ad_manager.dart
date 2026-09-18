@@ -14,8 +14,7 @@ class AdManager {
   // Production IDs
   static const String _rewardedAdUnitId = 'ca-app-pub-6774620515484669/6141831508';
   static const String _interstitialAdUnitId = 'ca-app-pub-6774620515484669/8062629287';
-  // TODO: Replace with real banner ad unit ID
-  static const String _bannerAdUnitId = 'ca-app-pub-6774620515484669/XXXXXXXXXX';
+  static const String _bannerAdUnitId = 'ca-app-pub-6774620515484669/1564457516';
 
   bool get bannerLoaded => _bannerLoaded;
   BannerAd? get bannerAd => _bannerAd;

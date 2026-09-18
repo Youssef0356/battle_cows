@@ -228,25 +228,28 @@ class _WoodButtonState extends State<WoodButton>
                       ),
                       const SizedBox(width: 8),
                     ],
-                    Text(
-                      widget.label.toUpperCase(),
-                      style: GoogleFonts.bangers(
-                        fontSize: widget.isSmall
-                            ? widget.fontSize * 0.8
-                            : widget.fontSize,
-                        color: isDisabled
-                            ? const Color(0xFFFFF3D6).withValues(alpha: 0.35)
-                            : const Color(0xFFFFF3D6),
-                        letterSpacing: 1.5,
-                        shadows: isDisabled
-                            ? null
-                            : [
-                                Shadow(
-                                  color: Colors.black.withValues(alpha: 0.7),
-                                  offset: const Offset(1.5, 2),
-                                  blurRadius: 3,
-                                ),
-                              ],
+                    Flexible(
+                      child: Text(
+                        widget.label.toUpperCase(),
+                        style: GoogleFonts.bangers(
+                          fontSize: widget.isSmall
+                              ? widget.fontSize * 0.8
+                              : widget.fontSize,
+                          color: isDisabled
+                              ? const Color(0xFFFFF3D6).withValues(alpha: 0.35)
+                              : const Color(0xFFFFF3D6),
+                          letterSpacing: 1.5,
+                          shadows: isDisabled
+                              ? null
+                              : [
+                                  Shadow(
+                                    color: Colors.black.withValues(alpha: 0.7),
+                                    offset: const Offset(1.5, 2),
+                                    blurRadius: 3,
+                                  ),
+                                ],
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
