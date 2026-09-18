@@ -14,6 +14,7 @@ import '../../game/models/challenge_mode.dart';
 import '../../game/ai/ai_player.dart';
 import '../widgets/cartoon_dialog.dart';
 import '../widgets/kenney_button.dart';
+import '../widgets/bouncy_pressable.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -165,8 +166,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   ),
                 ),
                 const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 12,
                   children: ['EASY', 'MEDIUM', 'HARD'].asMap().entries.map((entry) {
                     final idx = entry.key;
                     final label = entry.value;
@@ -790,7 +792,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     required String label,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
+    return BouncyPressable(
+      scaleDown: 0.90,
       onTap: onTap,
       child: Container(
         width: 50,

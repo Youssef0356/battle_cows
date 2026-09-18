@@ -51,6 +51,7 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
   OverlayEntry? _turnBannerEntry;
   OverlayEntry? _captureToastEntry;
   ProgressService? _progressService;
+  bool _showTutorialOverlay = false;
 
   static const double _minZoom = 0.5;
   static const double _maxZoom = 3.0;
@@ -112,7 +113,7 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       if (widget.isTutorial) {
-        _game.overlays.add('Tutorial');
+        setState(() => _showTutorialOverlay = true);
         _game.overlays.add('Placement');
       } else if (widget.tiles == null || widget.tiles!.isEmpty) {
         _game.overlays.add('Placement');
@@ -236,7 +237,7 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
   }
 
   void _onTutorialComplete() {
-    _game.overlays.remove('Tutorial');
+    setState(() => _showTutorialOverlay = false);
     _game.overlays.remove('Placement');
     _game.overlays.remove('HerdPlacement');
     _game.overlays.remove('HUD');
@@ -258,26 +259,26 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
   }
 
   void _onScaleUpdate(ScaleUpdateDetails details) {
+    if (widget.isTutorial) return;
     if (details.pointerCount == 2) {
-      // Pinch-to-zoom
-      final newZoom = (_baseZoom * details.scale).clamp(_minZoom, _maxZoom);
+      // Pinch-to-zoom: keep world focal point stable under fingers
       final camera = _game.camera.viewfinder;
-
       final screenFocal = Vector2(details.focalPoint.dx, details.focalPoint.dy);
       final worldFocalBefore = camera.globalToLocal(screenFocal);
 
+      final newZoom = (_baseZoom * details.scale).clamp(_minZoom, _maxZoom);
       camera.zoom = newZoom;
 
       final worldFocalAfter = camera.globalToLocal(screenFocal);
-      camera.position += worldFocalBefore - worldFocalAfter;
-
+      final drift = worldFocalBefore - worldFocalAfter;
+      _game.userCameraOffset += drift;
       _clampCameraPosition();
       _game.notifyStateChanged();
     } else if (details.pointerCount == 1 && !_game.isPlacementDragActive) {
-      // Pan camera
+      // Single-finger pan
       final delta = details.focalPoint - _lastFocalPoint;
       final zoom = _game.camera.viewfinder.zoom;
-      _game.camera.viewfinder.position -= Vector2(delta.dx, delta.dy) / zoom;
+      _game.userCameraOffset -= Vector2(delta.dx / zoom, delta.dy / zoom);
       _clampCameraPosition();
       _game.notifyStateChanged();
     }
@@ -287,12 +288,10 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
   void _onScaleEnd(ScaleEndDetails details) {}
 
   void _clampCameraPosition() {
-    final pos = _game.camera.viewfinder.position;
-    final zoom = _game.camera.viewfinder.zoom;
-    final maxOffset = 300.0 * zoom;
-    _game.camera.viewfinder.position = Vector2(
-      pos.x.clamp(-maxOffset, maxOffset),
-      pos.y.clamp(-maxOffset, maxOffset),
+    const maxOffset = 400.0; // fixed world-unit limit, independent of zoom
+    _game.userCameraOffset = Vector2(
+      _game.userCameraOffset.x.clamp(-maxOffset, maxOffset),
+      _game.userCameraOffset.y.clamp(-maxOffset, maxOffset),
     );
   }
 
@@ -350,12 +349,6 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
                     game: game as BattleCowsGame,
                     players: widget.players,
                   ),
-                  if (widget.isTutorial)
-                    'Tutorial': (context, game) => TutorialOverlay(
-                      steps: TutorialScenario.steps,
-                      onComplete: _onTutorialComplete,
-                      onStepChanged: _onTutorialStepChanged,
-                    ),
                 },
                 initialActiveOverlays: const [],
               ),
@@ -364,6 +357,14 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
           const Positioned.fill(
             child: ParallaxDustLayer(),
           ),
+          if (_showTutorialOverlay)
+            Positioned.fill(
+              child: TutorialOverlay(
+                steps: TutorialScenario.steps,
+                onComplete: _onTutorialComplete,
+                onStepChanged: _onTutorialStepChanged,
+              ),
+            ),
           if (!widget.isTutorial)
             Positioned(
               top: 0,

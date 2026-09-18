@@ -5,6 +5,7 @@ class TurnBanner extends StatefulWidget {
   final String playerName;
   final Color playerColor;
   final bool isAi;
+  final String? cowAsset;
   final VoidCallback? onComplete;
 
   const TurnBanner({
@@ -12,6 +13,7 @@ class TurnBanner extends StatefulWidget {
     required this.playerName,
     required this.playerColor,
     this.isAi = false,
+    this.cowAsset,
     this.onComplete,
   });
 
@@ -105,9 +107,9 @@ class _TurnBannerState extends State<TurnBanner>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Image.asset(
-                      'assets/images/Cows/cow_viking.png',
-                      width: 34,
-                      height: 34,
+                      widget.cowAsset ?? _getCowAsset(widget.playerColor),
+                      width: 38,
+                      height: 38,
                       fit: BoxFit.contain,
                     ),
                     const SizedBox(width: 12),
@@ -152,5 +154,19 @@ class _TurnBannerState extends State<TurnBanner>
   Color _darken(Color c, double amount) {
     final hsl = HSLColor.fromColor(c);
     return hsl.withLightness((hsl.lightness - amount).clamp(0, 1)).toColor();
+  }
+
+  String _getCowAsset(Color color) {
+    final hex = color.toARGB32() & 0x00FFFFFF;
+    if (hex == 0x1E88E5 || hex == 0x2196F3) {
+      return 'assets/images/Cows/cow_viking.png';
+    } else if (hex == 0xE53935 || hex == 0xF44336) {
+      return 'assets/images/Cows/cow_cowboy.png';
+    } else if (hex == 0xFDD835 || hex == 0xFFFFEB3B || hex == 0xFFB300) {
+      return 'assets/images/Cows/cow_farmer.png';
+    } else if (hex == 0x8E24AA || hex == 0x9C27B0) {
+      return 'assets/images/Cows/cow_disco.png';
+    }
+    return 'assets/images/Cows/cow_viking.png';
   }
 }

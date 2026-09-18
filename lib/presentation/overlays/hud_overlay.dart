@@ -114,7 +114,8 @@ class HudOverlay extends StatelessWidget {
     final timeRemaining = game.timeRemaining;
     final hasTimer = game.challengeMode.hasTimer;
     final isLowTime = hasTimer && timeRemaining <= 10;
-    
+    final isFenceBattle = game.challengeMode == ChallengeMode.fenceChallenge;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
@@ -125,7 +126,7 @@ class HudOverlay extends StatelessWidget {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isLowTime ? const Color(0xFFFF5252) : const Color(0xFF8D6E63),
           width: 2,
@@ -133,34 +134,86 @@ class HudOverlay extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: isLowTime
-                ? const Color(0xFFD32F2F).withValues(alpha: 0.4)
+                ? const Color(0xFFD32F2F).withValues(alpha: 0.5)
                 : Colors.black.withValues(alpha: 0.4),
             offset: const Offset(0, 2),
-            blurRadius: 4,
+            blurRadius: isLowTime ? 8 : 4,
           ),
         ],
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-           Text(
-             hasTimer ? '⏱️ TIME' : '🎮 FREE PLAY',
-            style: GoogleFonts.bangers(
-              fontSize: 10,
-              color: Colors.white70,
-              letterSpacing: 1,
+      child: hasTimer
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 26,
+                  height: 26,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      CircularProgressIndicator(
+                        value: (timeRemaining / 60.0).clamp(0.0, 1.0),
+                        strokeWidth: 3.0,
+                        backgroundColor: Colors.white24,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          isLowTime ? const Color(0xFFFF5252) : const Color(0xFFFFD54F),
+                        ),
+                      ),
+                      Text(
+                        '',
+                        style: GoogleFonts.bangers(
+                          fontSize: 11,
+                          color: isLowTime ? const Color(0xFFFF5252) : Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '⏱️ TIME',
+                      style: GoogleFonts.bangers(
+                        fontSize: 9,
+                        color: Colors.white70,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                    Text(
+                      isLowTime ? 'HURRY!' : 'RUNNING',
+                      style: GoogleFonts.bangers(
+                        fontSize: 10,
+                        color: isLowTime ? const Color(0xFFFF8A80) : const Color(0xFFFFD54F),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            )
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  isFenceBattle ? '🪵 FENCES' : '🎮 FREE PLAY',
+                  style: GoogleFonts.bangers(
+                    fontSize: 10,
+                    color: Colors.white70,
+                    letterSpacing: 1,
+                  ),
+                ),
+                Text(
+                  isFenceBattle ? 'BATTLE' : '∞',
+                  style: GoogleFonts.bangers(
+                    fontSize: 18,
+                    color: const Color(0xFFFFD54F),
+                    letterSpacing: 1,
+                  ),
+                ),
+              ],
             ),
-          ),
-           Text(
-             hasTimer ? '$timeRemaining' : '∞',
-            style: GoogleFonts.bangers(
-              fontSize: 20,
-              color: isLowTime ? const Color(0xFFFF5252) : const Color(0xFFFFD54F),
-              letterSpacing: 1,
-            ),
-          ),
-        ],
-      ),
     );
   }
 

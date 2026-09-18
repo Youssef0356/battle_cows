@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../flame/battle_cows_game.dart';
 import '../../core/constants/colors.dart';
+import '../../game/models/challenge_mode.dart';
 
 class GameControlsOverlay extends StatefulWidget {
   final BattleCowsGame game;
@@ -47,6 +48,10 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
 
     if (currentPlayer == null) return const SizedBox.shrink();
 
+    final isFenceChallenge = game.challengeMode == ChallengeMode.fenceChallenge;
+    final isMyTurn = !currentPlayer.isAi && !game.isGameOver;
+    final remainingFences = game.getRemainingFences(currentPlayer.color);
+
     return SafeArea(
       child: Stack(
         children: [
@@ -61,6 +66,127 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
                 playerColor: playerColor,
               ),
             ],
+          ),
+          if (isFenceChallenge && isMyTurn)
+            Positioned(
+              left: 16,
+              bottom: 16,
+              right: 124,
+              child: _buildFenceActionBar(game, currentPlayer, remainingFences),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFenceActionBar(BattleCowsGame game, dynamic currentPlayer, int remainingFences) {
+    final isFenceMode = game.isFenceMode;
+    final hasSelectedFence = game.selectedFencePosition != null;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isFenceMode
+              ? [const Color(0xFF6D4C41), const Color(0xFF3E2723)]
+              : [const Color(0xFF4E342E), const Color(0xFF2E1C0C)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isFenceMode ? const Color(0xFFFFD54F) : const Color(0xFF8D6E63),
+          width: isFenceMode ? 2.5 : 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: isFenceMode
+                ? const Color(0xFFFFD54F).withValues(alpha: 0.3)
+                : Colors.black.withValues(alpha: 0.5),
+            blurRadius: isFenceMode ? 12 : 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: Colors.black26,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Center(
+              child: Text('🪵', style: TextStyle(fontSize: 20)),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  isFenceMode
+                      ? (hasSelectedFence ? 'RELOCATE FENCE' : 'PLACE FENCE')
+                      : 'FENCES: $remainingFences/3',
+                  style: GoogleFonts.bangers(
+                    fontSize: 14,
+                    color: isFenceMode ? const Color(0xFFFFD54F) : Colors.white,
+                    letterSpacing: 1,
+                  ),
+                ),
+                Text(
+                  isFenceMode
+                      ? (hasSelectedFence
+                          ? 'Tap empty hex to drop fence'
+                          : (remainingFences > 0 ? 'Tap empty hex to place' : 'Tap your fence to move'))
+                      : 'Block enemy paths or move',
+                  style: GoogleFonts.bangers(
+                    fontSize: 10,
+                    color: Colors.white70,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () {
+              game.toggleFenceMode();
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: isFenceMode
+                      ? [const Color(0xFFD32F2F), const Color(0xFF8B0000)]
+                      : [const Color(0xFF2E7D32), const Color(0xFF1B5E20)],
+                ),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: isFenceMode ? const Color(0xFFFF8A80) : const Color(0xFFA5D6A7),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.4),
+                    offset: const Offset(0, 2),
+                    blurRadius: 3,
+                  ),
+                ],
+              ),
+              child: Text(
+                isFenceMode ? 'CANCEL' : 'USE',
+                style: GoogleFonts.bangers(
+                  fontSize: 12,
+                  color: Colors.white,
+                  letterSpacing: 1,
+                ),
+              ),
+            ),
           ),
         ],
       ),

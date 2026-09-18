@@ -11,6 +11,7 @@ import '../game/models/player.dart';
 import '../game/models/herd.dart';
 import '../game/models/pasture_tile.dart';
 import '../game/models/game_board.dart';
+import '../game/models/hex_cell.dart';
 import '../game/models/challenge_mode.dart';
 import '../game/logic/game_engine.dart';
 import '../game/board/board_generator.dart';
@@ -50,6 +51,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
   bool isPlacementDragActive = false;
   double _shakeTime = 0;
   double _shakeStrength = 0;
+  Vector2 userCameraOffset = Vector2.zero(); // tracks user pan independently of shake
 
   PlayerColor? winner;
   Map<PlayerColor, int> territoryCounts = {};
@@ -63,6 +65,79 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
 
   // Hearts for survival mode
   Map<PlayerColor, int> playerHearts = {};
+
+  // Fence challenge mode state
+  static const int maxFencesPerPlayer = 3;
+  Map<PlayerColor, List<HexPosition>> playerFences = {};
+  bool isFenceMode = false;
+  HexPosition? selectedFencePosition;
+
+  int getRemainingFences(PlayerColor color) {
+    return maxFencesPerPlayer - (playerFences[color]?.length ?? 0);
+  }
+
+  void toggleFenceMode() {
+    if (challengeMode != ChallengeMode.fenceChallenge) return;
+    if (_engine.currentPlayer.isAi || isGameOver || _isAnimating) return;
+    isFenceMode = !isFenceMode;
+    selectedFencePosition = null;
+    selectedPosition = null;
+    validMoves = [];
+    _boardComponent?.updateSelection(null, []);
+    notifyStateChanged();
+  }
+
+  bool placeFence(HexPosition pos, PlayerColor player) {
+    if (_engine.board == null || !_engine.board!.isEmpty(pos)) return false;
+    final fences = playerFences.putIfAbsent(player, () => []);
+    if (fences.length >= maxFencesPerPlayer) return false;
+
+    fences.add(pos);
+    final currentCell = _engine.board!.cells[pos];
+    if (currentCell != null) {
+      final updated = Map<HexPosition, HexCell>.from(_engine.board!.cells);
+      updated[pos] = currentCell.copyWith(specialType: SpecialTileType.fenceGate);
+      _engine.board = GameBoard(cells: updated, herds: _engine.board!.herds);
+      _boardComponent?.updateBoard(_engine.board!);
+    }
+
+    shakeCamera(strength: 2.5);
+    AudioManager().playSelect();
+    isFenceMode = false;
+    selectedFencePosition = null;
+    totalMoves++;
+    _advanceTurn();
+    nextTurn();
+    return true;
+  }
+
+  bool moveFence(HexPosition from, HexPosition to, PlayerColor player) {
+    if (_engine.board == null || !_engine.board!.isEmpty(to)) return false;
+    final fences = playerFences[player];
+    if (fences == null || !fences.contains(from)) return false;
+
+    fences.remove(from);
+    fences.add(to);
+
+    final fromCell = _engine.board!.cells[from];
+    final toCell = _engine.board!.cells[to];
+    if (fromCell != null && toCell != null) {
+      final updated = Map<HexPosition, HexCell>.from(_engine.board!.cells);
+      updated[from] = fromCell.copyWith(specialType: SpecialTileType.none);
+      updated[to] = toCell.copyWith(specialType: SpecialTileType.fenceGate);
+      _engine.board = GameBoard(cells: updated, herds: _engine.board!.herds);
+      _boardComponent?.updateBoard(_engine.board!);
+    }
+
+    shakeCamera(strength: 2.5);
+    AudioManager().playSelect();
+    isFenceMode = false;
+    selectedFencePosition = null;
+    totalMoves++;
+    _advanceTurn();
+    nextTurn();
+    return true;
+  }
 
   // Placement phase
   bool _isPlacementPhase = false;
@@ -472,13 +547,13 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
   void update(double dt) {
     super.update(dt);
     if (_shakeTime <= 0) {
-      camera.viewfinder.position = Vector2.zero();
+      // Apply only user-controlled pan offset (no shake)
+      camera.viewfinder.position = userCameraOffset;
       return;
     }
     _shakeTime -= dt;
-    final zoom = camera.viewfinder.zoom;
-    final strength = _shakeStrength * (_shakeTime / .22).clamp(0.0, 1.0) * zoom;
-    camera.viewfinder.position = Vector2(
+    final strength = _shakeStrength * (_shakeTime / .22).clamp(0.0, 1.0);
+    camera.viewfinder.position = userCameraOffset + Vector2(
       sin(_shakeTime * 95) * strength,
       cos(_shakeTime * 83) * strength,
     );
@@ -487,6 +562,12 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
   void shakeCamera({double strength = 3.0}) {
     _shakeTime = .22;
     _shakeStrength = strength;
+  }
+
+  void resetCameraPosition() {
+    userCameraOffset = Vector2.zero();
+    camera.viewfinder.position = Vector2.zero();
+    camera.viewfinder.zoom = 1.0;
   }
 
   void _computeValidHerdPositions() {
@@ -718,6 +799,8 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
       timeRemaining = 60;
       selectedPosition = null;
       validMoves = [];
+      isFenceMode = false;
+      selectedFencePosition = null;
 
       _boardComponent?.updateSelection(null, []);
 
@@ -757,6 +840,33 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
     final session = _sessionId;
     Future.delayed(const Duration(milliseconds: 500), () {
       if (session != _sessionId || !_callbacksEnabled || isGameOver) return;
+
+      // Smart Fence Challenge AI logic
+      if (challengeMode == ChallengeMode.fenceChallenge) {
+        final aiColor = _engine.currentPlayer.color;
+        final fences = playerFences[aiColor] ?? [];
+        final oppHerds = _engine.board!.herds.where((h) => h.owner != aiColor && h.size >= 2).toList();
+
+        if (oppHerds.isNotEmpty && Random().nextDouble() < 0.45) {
+          oppHerds.sort((a, b) => b.size.compareTo(a.size));
+          final oppHerd = oppHerds.first;
+          final oppMoves = _engine.board!.getReachablePositions(oppHerd.position, oppHerd.size)
+              .where((p) => _engine.board!.isEmpty(p)).toList();
+
+          if (oppMoves.isNotEmpty) {
+            final blockTarget = oppMoves[Random().nextInt(oppMoves.length)];
+            if (getRemainingFences(aiColor) > 0) {
+              placeFence(blockTarget, aiColor);
+              return;
+            } else if (fences.isNotEmpty) {
+              final fenceToMove = fences.first;
+              moveFence(fenceToMove, blockTarget, aiColor);
+              return;
+            }
+          }
+        }
+      }
+
       final move = _aiPlayer.calculateMove(_engine, _engine.currentPlayer.color);
       if (move != null) {
         _executeWithAnimation(move);
@@ -774,6 +884,39 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
       return;
     }
     if (_isPlacementPhase || _engine.currentPlayer.isAi || isGameOver || _isAnimating) return;
+
+    if (isFenceMode) {
+      final currentColor = _engine.currentPlayer.color;
+      final fences = playerFences[currentColor] ?? [];
+
+      if (selectedFencePosition != null) {
+        if (selectedFencePosition == position) {
+          selectedFencePosition = null;
+          notifyStateChanged();
+          return;
+        }
+        if (fences.contains(position)) {
+          selectedFencePosition = position;
+          notifyStateChanged();
+          return;
+        }
+        if (_engine.board!.isEmpty(position)) {
+          moveFence(selectedFencePosition!, position, currentColor);
+          return;
+        }
+      } else {
+        if (fences.contains(position)) {
+          selectedFencePosition = position;
+          notifyStateChanged();
+          return;
+        }
+        if (getRemainingFences(currentColor) > 0 && _engine.board!.isEmpty(position)) {
+          placeFence(position, currentColor);
+          return;
+        }
+      }
+      return;
+    }
 
     final herd = _engine.board?.getHerdAt(position);
 

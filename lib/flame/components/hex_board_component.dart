@@ -25,6 +25,7 @@ class HexBoardComponent extends PositionComponent {
 
   @override
   Future<void> onLoad() async {
+    await HexCellComponent.precacheAllAssets();
     try {
       final data = await rootBundle.load('assets/images/Tile Image/Tile Texture.jpg');
       final bytes = data.buffer.asUint8List();
@@ -82,6 +83,11 @@ class HexBoardComponent extends PositionComponent {
   void updateBoard(GameBoard newBoard) {
     for (final entry in _cells.entries) {
       final pos = entry.key;
+      final newCell = newBoard.cells[pos];
+      if (newCell != null && newCell.specialType != entry.value.cell.specialType) {
+        entry.value.cell = newCell;
+        entry.value.updateSpecialImage();
+      }
       final herd = newBoard.getHerdAt(pos);
       entry.value.setHerd(herd);
       entry.value.territoryOwner = herd?.owner;

@@ -8,7 +8,7 @@ import '../../game/models/herd.dart';
 import '../../core/constants/colors.dart';
 
 class HexCellComponent extends PositionComponent {
-  final HexCell cell;
+  HexCell cell;
   Herd? herd;
   bool isSelected;
   bool isValidMove;
@@ -19,6 +19,33 @@ class HexCellComponent extends PositionComponent {
   ui.Image? _specialImage;
   ui.Image? _cowImage;
   double _lifeTime = 0;
+
+  static final Map<String, ui.Image> imageCache = {};
+
+  static Future<void> precacheAllAssets() async {
+    final paths = [
+      'assets/images/Cows/cow_viking.png',
+      'assets/images/Cows/cow_cowboy.png',
+      'assets/images/Cows/cow_farmer.png',
+      'assets/images/Cows/cow_disco.png',
+      'assets/images/Board Tiles/tile_fence_gate.png',
+      'assets/images/Board Tiles/tile_mud.png',
+      'assets/images/Board Tiles/tile_water_pond.png',
+      'assets/images/Board Tiles/tile_hay_bale.png',
+      'assets/images/Board Tiles/tile_golden_pasture.png',
+      'assets/images/Board Tiles/tile_hill.png',
+    ];
+    for (final path in paths) {
+      if (!imageCache.containsKey(path)) {
+        try {
+          final data = await rootBundle.load(path);
+          final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+          final frame = await codec.getNextFrame();
+          imageCache[path] = frame.image;
+        } catch (_) {}
+      }
+    }
+  }
 
   HexCellComponent({
     required this.cell,
@@ -39,6 +66,17 @@ class HexCellComponent extends PositionComponent {
     _cowImage = await _loadImage(_cowAssetPath);
   }
 
+  void updateSpecialImage() {
+    final path = _specialAssetPath;
+    if (path == null) {
+      _specialImage = null;
+    } else if (imageCache.containsKey(path)) {
+      _specialImage = imageCache[path];
+    } else {
+      _loadImage(path).then((img) => _specialImage = img);
+    }
+  }
+
   String? get _specialAssetPath {
     switch (cell.specialType) {
       case SpecialTileType.mud:
@@ -46,11 +84,13 @@ class HexCellComponent extends PositionComponent {
       case SpecialTileType.waterPond:
         return 'assets/images/Board Tiles/tile_water_pond.png';
       case SpecialTileType.hayBale:
-        return 'assets/images/Board Tiles/Hay Bale.png';
+        return 'assets/images/Board Tiles/tile_hay_bale.png';
       case SpecialTileType.goldenPasture:
-        return 'assets/images/Board Tiles/Golden Pasture.png';
+        return 'assets/images/Board Tiles/tile_golden_pasture.png';
       case SpecialTileType.hill:
         return 'assets/images/Board Tiles/tile_hill.png';
+      case SpecialTileType.fenceGate:
+        return 'assets/images/Board Tiles/tile_fence_gate.png';
       case SpecialTileType.none:
         return null;
     }
@@ -72,10 +112,13 @@ class HexCellComponent extends PositionComponent {
 
   Future<ui.Image?> _loadImage(String? path) async {
     if (path == null) return null;
+    if (imageCache.containsKey(path)) return imageCache[path];
     try {
       final data = await rootBundle.load(path);
       final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
-      return (await codec.getNextFrame()).image;
+      final image = (await codec.getNextFrame()).image;
+      imageCache[path] = image;
+      return image;
     } catch (_) {
       return null;
     }
@@ -83,10 +126,18 @@ class HexCellComponent extends PositionComponent {
 
   void setHerd(Herd? value) {
     herd = value;
-    _cowImage = null;
-    _loadImage(_cowAssetPath).then((image) {
-      _cowImage = image;
-    });
+    final path = _cowAssetPath;
+    if (path == null) {
+      _cowImage = null;
+      return;
+    }
+    if (imageCache.containsKey(path)) {
+      _cowImage = imageCache[path];
+    } else {
+      _loadImage(path).then((image) {
+        _cowImage = image;
+      });
+    }
   }
 
   @override
@@ -300,19 +351,36 @@ class HexCellComponent extends PositionComponent {
 
   void _drawSelectionGlow(Canvas canvas, Path path) {
     final glowPaint = Paint()
-      ..color = const Color(0xFFFFD54F).withValues(alpha: 0.6 + pulseValue * 0.4)
+      ..color = const Color(0xFFFFD54F).withValues(alpha: 0.5 + pulseValue * 0.5)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 4 + pulseValue * 2
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+      ..strokeWidth = 3.5 + pulseValue * 3.5
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
 
     canvas.drawPath(path, glowPaint);
+
+    final innerGlow = Paint()
+      ..color = Colors.white.withValues(alpha: 0.4 + pulseValue * 0.4)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.8;
+
+    canvas.drawPath(path, innerGlow);
   }
 
   void _drawValidMoveDashedOutline(Canvas canvas, Vector2 center, double radius) {
+    final movePulse = (sin(_lifeTime * 5.0) + 1.0) / 2.0;
+    
+    // Soft glowing green indicator fill
+    final hexPath = _createHexPath(center, radius * 0.88);
+    final fillPaint = Paint()
+      ..color = const Color(0xFF69F0AE).withValues(alpha: 0.12 + movePulse * 0.14)
+      ..style = PaintingStyle.fill;
+    canvas.drawPath(hexPath, fillPaint);
+
     final dashPaint = Paint()
-      ..color = Colors.white
+      ..color = Color.lerp(const Color(0xFF69F0AE), Colors.white, movePulse)!
+          .withValues(alpha: 0.75 + movePulse * 0.25)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5;
+      ..strokeWidth = 2.4 + movePulse * 1.2;
 
     // Draw dashed hex perimeter
     final innerRadius = radius * 0.9;

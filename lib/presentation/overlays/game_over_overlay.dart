@@ -197,17 +197,11 @@ class _GameOverOverlayState extends State<GameOverOverlay>
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Container(
-                                    width: 16,
-                                    height: 16,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.getPlayerPrimary(color),
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: Colors.white,
-                                        width: 1,
-                                      ),
-                                    ),
+                                  Image.asset(
+                                    _getCowAsset(color),
+                                    width: 26,
+                                    height: 26,
+                                    fit: BoxFit.contain,
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
@@ -394,5 +388,18 @@ class _GameOverOverlayState extends State<GameOverOverlay>
         },
       ),
     );
+  }
+
+  String _getCowAsset(PlayerColor color) {
+    switch (color) {
+      case PlayerColor.blue:
+        return 'assets/images/Cows/cow_viking.png';
+      case PlayerColor.red:
+        return 'assets/images/Cows/cow_cowboy.png';
+      case PlayerColor.yellow:
+        return 'assets/images/Cows/cow_farmer.png';
+      case PlayerColor.purple:
+        return 'assets/images/Cows/cow_disco.png';
+    }
   }
 }

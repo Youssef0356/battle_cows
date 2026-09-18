@@ -21,7 +21,9 @@ class GameEngine {
   final Map<PlayerColor, int> _hearts = {};
   final Random _random = Random();
 
+  // ignore: unnecessary_getters_setters
   GameBoard? get board => _board;
+  set board(GameBoard? value) => _board = value;
   List<Player> get players => _players;
   Player get currentPlayer => _players[_currentPlayerIndex];
   int get turnCount => _turnCount;

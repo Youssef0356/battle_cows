@@ -39,7 +39,11 @@ class GameBoard {
 
   bool isEmpty(HexPosition pos) {
     final cell = cells[pos];
-    return cell != null && cell.isEmpty && !hasHerdAt(pos);
+    return cell != null &&
+        cell.isEmpty &&
+        !cell.isObstacle &&
+        cell.specialType != SpecialTileType.fenceGate &&
+        !hasHerdAt(pos);
   }
 
   bool isHole(HexPosition pos) => !cells.containsKey(pos);
@@ -64,7 +68,9 @@ class GameBoard {
         final next = current + dir;
         if (!isValidPosition(next)) break;
         if (isHole(next)) break;
+        if (cells[next]?.isObstacle == true) break;
         if (specialAt(next) == SpecialTileType.waterPond) break;
+        if (specialAt(next) == SpecialTileType.fenceGate) break;
         if (hasHerdAt(next)) break;
         final stepCost = specialAt(next) == SpecialTileType.mud ? 2 : 1;
         if (distanceUsed + stepCost > maxDistance) break;
