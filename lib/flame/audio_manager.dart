@@ -1,7 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:flame_audio/flame_audio.dart';
 
-/// Manages game audio. Silently fails when audio assets are missing.
 class AudioManager {
   static final AudioManager _instance = AudioManager._internal();
   factory AudioManager() => _instance;
@@ -19,14 +18,11 @@ class AudioManager {
     if (_initialized) return;
     _initialized = true;
 
-    // Check if audio assets actually exist before trying to use them
     try {
-      await rootBundle.load('assets/audio/move.wav');
+      await rootBundle.load('assets/sounds/select.wav');
       _assetsAvailable = true;
     } catch (_) {
-      // Audio assets not present — run silently
       _assetsAvailable = false;
-      return;
     }
 
     try {
@@ -44,9 +40,11 @@ class AudioManager {
   void toggleSfx() => _sfxEnabled = !_sfxEnabled;
 
   void _playSfx(String filename, {double volume = 0.5}) {
-    if (!_sfxEnabled || !_assetsAvailable) return;
+    if (!_sfxEnabled) return;
     try {
-      FlameAudio.play(filename, volume: volume);
+      if (_assetsAvailable) {
+        FlameAudio.play(filename, volume: volume);
+      }
     } catch (_) {}
   }
 

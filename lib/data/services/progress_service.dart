@@ -152,6 +152,12 @@ class ProgressService {
     return true;
   }
 
+  void equipItem(String itemId) {
+    if (!progress.ownedItems.contains(itemId)) return;
+    progress.equippedSkin = itemId;
+    _save();
+  }
+
   void recordMatch({required bool won, required int captures}) {
     progress.matchesPlayed++;
     if (won) progress.matchesWon++;
@@ -163,6 +169,8 @@ class ProgressService {
     updateQuestProgress(QuestType.playMatches, 1);
     if (won) updateQuestProgress(QuestType.winMatches, 1);
     updateQuestProgress(QuestType.captureTiles, captures);
+    updateQuestProgress(QuestType.moveCows, captures);
+    if (won) updateQuestProgress(QuestType.winStreak, 1);
 
     _save();
   }
@@ -175,6 +183,8 @@ class ProgressService {
     _QuestDef('cap10', 'Conquest', 'Capture 10 tiles', '⚔️', QuestType.captureTiles, 10, 150, 40),
     _QuestDef('cap3', 'Quick Hooves', 'Capture 3 tiles in your matches', '💨', QuestType.captureTiles, 3, 60, 15),
     _QuestDef('play1', 'Warm Up', 'Play 1 match today', '🌞', QuestType.playMatches, 1, 40, 10),
+    _QuestDef('move5', 'Herd Builder', 'Move 5 cows in matches', '🐮', QuestType.moveCows, 5, 70, 20),
+    _QuestDef('winStreak2', 'On a Roll', 'Win 2 matches in a row', '🔥', QuestType.winStreak, 2, 90, 25),
   ];
 }
 

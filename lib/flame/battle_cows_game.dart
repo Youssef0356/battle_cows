@@ -148,7 +148,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
   Future<void> onLoad() async {
     await super.onLoad();
     await AudioManager().init();
-    _aiPlayer = AiPlayer();
+    _aiPlayer = AiPlayer(difficulty: players.firstWhere((p) => p.isAi).difficulty ?? Difficulty.medium);
 
     final bg = BackgroundComponent(
       position: Vector2.zero(),

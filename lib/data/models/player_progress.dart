@@ -31,8 +31,11 @@ class PlayerProgress {
     this.lastQuestRefreshDate,
     this.tutorialCompleted = false,
     this.ratePromptCount = 0,
+    this.equippedSkin = '',
   })  : ownedItems = ownedItems ?? [],
         dailyQuests = dailyQuests ?? [];
+
+  String equippedSkin;
 
   int get xpForCurrentLevel => level * 100;
   int get xpForNextLevel => (level + 1) * 100;
@@ -74,6 +77,7 @@ class PlayerProgress {
         'lastQuestRefreshDate': lastQuestRefreshDate,
         'tutorialCompleted': tutorialCompleted,
         'ratePromptCount': ratePromptCount,
+        'equippedSkin': equippedSkin,
       };
 
   factory PlayerProgress.fromJson(Map<String, dynamic> json) {
@@ -95,6 +99,7 @@ class PlayerProgress {
       lastQuestRefreshDate: json['lastQuestRefreshDate'],
       tutorialCompleted: json['tutorialCompleted'] ?? false,
       ratePromptCount: json['ratePromptCount'] ?? 0,
+      equippedSkin: json['equippedSkin'] ?? '',
     );
   }
 
@@ -166,4 +171,21 @@ enum QuestType {
   captureTiles,
   moveCows,
   winStreak,
+}
+
+extension QuestTypeExtension on QuestType {
+  String get displayName {
+    switch (this) {
+      case QuestType.winMatches:
+        return 'Win Matches';
+      case QuestType.playMatches:
+        return 'Play Matches';
+      case QuestType.captureTiles:
+        return 'Capture Tiles';
+      case QuestType.moveCows:
+        return 'Move Cows';
+      case QuestType.winStreak:
+        return 'Win Streak';
+    }
+  }
 }

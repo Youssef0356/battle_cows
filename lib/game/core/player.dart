@@ -1,4 +1,4 @@
-import 'player_color.dart';
+import '../models/player_color.dart';
 
 /// Player representation for Battle Cows.
 class Player {

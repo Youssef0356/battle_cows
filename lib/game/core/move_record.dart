@@ -1,5 +1,5 @@
 import '../board/hex_coordinate.dart';
-import 'player_color.dart';
+import '../models/player_color.dart';
 
 /// Serializable record of a player's movement action.
 class MoveRecord {

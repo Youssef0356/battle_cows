@@ -135,7 +135,7 @@ class GameEngine {
 
     _board = GameBoard(
       cells: updatedCells,
-      herds: herds,
+      herds: herds.where((h) => h.size > 0).toList(),
     );
 
     _turnCount++;
@@ -346,6 +346,43 @@ class GameEngine {
         maxSize = entry.value;
         winner = entry.key;
       }
+    }
+
+    return winner;
+  }
+
+  bool playerIsEliminated(PlayerColor color) {
+    if (_board == null) return false;
+    final hearts = _hearts[color] ?? 3;
+    return hearts <= 0;
+  }
+
+  PlayerColor? determineWinnerWithHearts() {
+    if (!_gameOver) return null;
+
+    if (_objectiveWinner != null) return _objectiveWinner;
+
+    final alivePlayers = _players.where((p) => playerIsEliminated(p.color) == false).toList();
+    if (alivePlayers.length == 1) return alivePlayers.first.color;
+
+    final territoryCounts = getChallengeScores();
+    PlayerColor? winner;
+    int maxTerritory = -1;
+    int tieCount = 0;
+
+    for (final player in alivePlayers) {
+      final score = territoryCounts[player.color] ?? 0;
+      if (score > maxTerritory) {
+        maxTerritory = score;
+        winner = player.color;
+        tieCount = 1;
+      } else if (score == maxTerritory) {
+        tieCount++;
+      }
+    }
+
+    if (tieCount > 1) {
+      return _breakTie();
     }
 
     return winner;

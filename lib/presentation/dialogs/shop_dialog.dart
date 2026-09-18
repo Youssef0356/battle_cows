@@ -128,8 +128,10 @@ class _ShopDialogState extends State<ShopDialog> {
   }
 
   Widget _buildShopTile(ShopItem item, bool isOwned, bool canBuy) {
+    final isEquipped = widget.progress.progress.equippedSkin == item.id;
     return GestureDetector(
       onTap: canBuy ? () => _buyItem(item) : null,
+      onLongPress: isOwned ? () => _equipItem(item) : null,
       child: Container(
         padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
@@ -169,25 +171,25 @@ class _ShopDialogState extends State<ShopDialog> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 1),
-            if (isOwned)
-              Text(
-                'OWNED',
-                style: GoogleFonts.bangers(fontSize: 8, color: const Color(0xFF689F38)),
-              )
-            else
-              Text(
-                '💰 ${item.price}',
-                style: GoogleFonts.bangers(
-                  fontSize: 9,
-                  color: canBuy ? const Color(0xFFFFD54F) : Colors.white38,
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
+             const SizedBox(height: 1),
+                            if (isOwned)
+                              Text(
+                                isEquipped ? 'EQUIPPED ✅' : 'OWNED',
+                                style: GoogleFonts.bangers(fontSize: 8, color: isEquipped ? const Color(0xFF43A047) : const Color(0xFF689F38)),
+                              )
+                            else
+                              Text(
+                                '💰 ${item.price}',
+                                style: GoogleFonts.bangers(
+                                  fontSize: 9,
+                                  color: canBuy ? const Color(0xFFFFD54F) : Colors.white38,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
 
   void _buyItem(ShopItem item) {
     final success = widget.progress.buyItem(item.id, item.price);
@@ -203,6 +205,32 @@ class _ShopDialogState extends State<ShopDialog> {
           duration: const Duration(seconds: 2),
         ),
       );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Cannot purchase — check coins or already owned',
+            style: GoogleFonts.bangers(fontSize: 14),
+          ),
+          backgroundColor: const Color(0xFFD32F2F),
+          duration: const Duration(seconds: 2),
+        ),
+      );
     }
+  }
+
+  void _equipItem(ShopItem item) {
+    widget.progress.equipItem(item.id);
+    setState(() {});
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '${item.icon} ${item.name} equipped!',
+          style: GoogleFonts.bangers(fontSize: 16),
+        ),
+        backgroundColor: const Color(0xFF43A047),
+        duration: const Duration(seconds: 1),
+      ),
+    );
   }
 }

@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:in_app_review/in_app_review.dart';
 import '../../core/constants/colors.dart';
 import '../../data/services/progress_service.dart';
 import '../../game/models/player.dart';
@@ -13,6 +11,7 @@ import '../router/app_router.dart';
 import '../widgets/wood_button.dart';
 import '../widgets/rustic_decor.dart';
 import '../../game/models/challenge_mode.dart';
+import '../../game/ai/ai_player.dart';
 import '../widgets/cartoon_dialog.dart';
 import '../widgets/kenney_button.dart';
 
@@ -76,23 +75,25 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     super.dispose();
   }
 
-  List<Player> _createPlayers({required int count, required bool isMultiplayer}) {
-    final colors = [PlayerColor.blue, PlayerColor.red, PlayerColor.yellow, PlayerColor.purple];
-
+  List<Player> _createPlayers({required int count, required bool isMultiplayer, Difficulty difficulty = Difficulty.medium}) {
     final players = <Player>[];
     for (var i = 0; i < count; i++) {
       players.add(Player(
         id: i,
         name: isMultiplayer ? 'Player ${i + 1}' : (i == 0 ? 'Player 1' : 'AI Cow $i'),
-        color: colors[i % colors.length],
+        color: PlayerColor.values[i % 4],
         isAi: isMultiplayer ? false : (i > 0),
+        difficulty: isMultiplayer ? null : difficulty,
       ));
     }
     return players;
   }
 
+  int _selectedDifficultyIndex = 1;
+
   void _launchGame({required int playerCount, required int tilesPerPlayer, required bool isMultiplayer, ChallengeMode challengeMode = ChallengeMode.standard}) {
-    final players = _createPlayers(count: playerCount, isMultiplayer: isMultiplayer);
+    final difficulty = Difficulty.values[_selectedDifficultyIndex];
+    final players = _createPlayers(count: playerCount, isMultiplayer: isMultiplayer, difficulty: difficulty);
 
     if (_progressService != null && !_progressService!.tutorialCompleted) {
       Navigator.pushNamed(context, AppRouter.tutorial);
@@ -153,6 +154,74 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       const Shadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 4),
                     ],
                   ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'CPU DIFFICULTY',
+                  style: GoogleFonts.bangers(
+                    fontSize: 16,
+                    color: Colors.white70,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: ['EASY', 'MEDIUM', 'HARD'].asMap().entries.map((entry) {
+                    final idx = entry.key;
+                    final label = entry.value;
+                    final isSel = _selectedDifficultyIndex == idx;
+                    final colors = [const Color(0xFF689F38), const Color(0xFFFFA000), const Color(0xFFD32F2F)];
+                    return GestureDetector(
+                      onTap: () => setDialogState(() => _selectedDifficultyIndex = idx),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        margin: const EdgeInsets.symmetric(horizontal: 6),
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          gradient: isSel
+                              ? LinearGradient(
+                                  colors: [colors[idx], colors[idx].withValues(alpha: 0.7)],
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                )
+                              : LinearGradient(
+                                  colors: [
+                                    Colors.white.withValues(alpha: 0.12),
+                                    Colors.white.withValues(alpha: 0.04),
+                                  ],
+                                ),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isSel ? colors[idx] : Colors.white24,
+                            width: isSel ? 2.5 : 1.5,
+                          ),
+                          boxShadow: isSel
+                              ? [
+                                  BoxShadow(
+                                    color: colors[idx].withValues(alpha: 0.3),
+                                    blurRadius: 12,
+                                    spreadRadius: 1,
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              label,
+                              style: GoogleFonts.bangers(
+                                fontSize: 12,
+                                color: isSel ? Colors.black : Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
                 ),
                 const SizedBox(height: 24),
                 Text(
@@ -505,129 +574,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     ).then((_) => setState(() {}));
   }
 
-  void _showSettingsDialog() {
-    CartoonDialog.show(
-      context: context,
-      title: 'SETTINGS',
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildSettingsRow('🔊 Sound Effects', true),
-          _buildSettingsRow('🎵 Music', true),
-          _buildSettingsRow('📳 Haptic Feedback', true),
-          const SizedBox(height: 12),
-          Text(
-            'CPU Difficulty',
-            style: GoogleFonts.bangers(fontSize: 14, color: Colors.white70),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildDifficultyBtn('EASY', const Color(0xFF689F38)),
-              const SizedBox(width: 8),
-              _buildDifficultyBtn('MEDIUM', const Color(0xFFFFA000)),
-              const SizedBox(width: 8),
-              _buildDifficultyBtn('HARD', const Color(0xFFD32F2F)),
-            ],
-          ),
-          const SizedBox(height: 16),
-          KenneyButton(
-            label: 'SHARE',
-            icon: Icons.share,
-            isWide: true,
-            style: KenneyBtnStyle.neutral,
-            onPressed: () {
-              Navigator.pop(context);
-              Share.share(
-                'Check out Battle Cows! Round up, rampage, repeat! 🐮 https://play.google.com/store/apps/details?id=com.battlecows.game',
-              );
-            },
-          ),
-          const SizedBox(height: 8),
-          KenneyButton(
-            label: 'RATE',
-            icon: Icons.star,
-            isWide: true,
-            onPressed: () async {
-              Navigator.pop(context);
-              final inAppReview = InAppReview.instance;
-              if (await inAppReview.isAvailable()) {
-                inAppReview.requestReview();
-              }
-            },
-          ),
-          const SizedBox(height: 8),
-          CartoonButton(
-            label: 'CLOSE',
-            isWide: true,
-            onPressed: () => Navigator.pop(context),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSettingsRow(String label, bool defaultValue) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: GoogleFonts.bangers(fontSize: 16, color: Colors.white70)),
-          StatefulBuilder(
-            builder: (context, setInnerState) {
-              bool value = defaultValue;
-              return GestureDetector(
-                onTap: () => setInnerState(() => value = !value),
-                child: Container(
-                  width: 48,
-                  height: 26,
-                  decoration: BoxDecoration(
-                    color: value ? const Color(0xFF689F38) : Colors.grey.shade800,
-                    borderRadius: BorderRadius.circular(13),
-                    border: Border.all(color: Colors.white24),
-                  ),
-                  child: AnimatedAlign(
-                    duration: const Duration(milliseconds: 200),
-                    alignment: value ? Alignment.centerRight : Alignment.centerLeft,
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 3),
-                      width: 20,
-                      height: 20,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDifficultyBtn(String label, Color color) {
-    return GestureDetector(
-      onTap: () {},
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: color, width: 1.5),
-        ),
-        child: Text(
-          label,
-          style: GoogleFonts.bangers(fontSize: 12, color: color),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -830,7 +776,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   Widget _buildSideToolButtons() {
     return Column(
       children: [
-        _buildWoodToolButton(icon: Icons.settings, label: 'SETTINGS', onTap: _showSettingsDialog),
+        _buildWoodToolButton(icon: Icons.settings, label: 'SETTINGS', onTap: () => Navigator.pushNamed(context, AppRouter.settings)),
         const SizedBox(height: 6),
         _buildWoodToolButton(icon: Icons.bar_chart, label: 'STATS', onTap: _showStatsDialog),
         const SizedBox(height: 6),

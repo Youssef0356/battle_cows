@@ -4,6 +4,7 @@ import '../screens/flame_game_screen.dart';
 import '../screens/tutorial_screen.dart';
 import '../screens/result_screen.dart';
 import '../screens/tile_placement_screen.dart';
+import '../screens/settings_screen.dart';
 import '../../game/models/player.dart';
 import '../../game/models/pasture_tile.dart';
 import '../../game/models/challenge_mode.dart';
@@ -14,6 +15,7 @@ class AppRouter {
   static const String tutorial = '/tutorial';
   static const String result = '/result';
   static const String tilePlacement = '/tile-placement';
+  static const String settings = '/settings';
 
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -47,6 +49,8 @@ class AppRouter {
         );
       case '/tutorial':
         return MaterialPageRoute(builder: (_) => const TutorialScreen());
+      case '/settings':
+        return MaterialPageRoute(builder: (_) => const SettingsScreen());
       case '/result':
         final args = settings.arguments as Map<String, dynamic>?;
         final winner = args?['winner'] as String? ?? 'Draw';

@@ -1,4 +1,4 @@
-import 'player_color.dart';
+import '../models/player_color.dart';
 
 /// Represents the final outcome of a Battle Cows match.
 class GameResult {

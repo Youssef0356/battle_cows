@@ -100,6 +100,7 @@ class AdManager {
   }) {
     if (_rewardedAd == null) {
       loadRewardedAd();
+      onAdDismissed?.call();
       return;
     }
 
