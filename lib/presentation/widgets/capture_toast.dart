@@ -108,7 +108,7 @@ class _CaptureToastState extends State<CaptureToast>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Image.asset(
-                      'assets/images/Effects/capture_burst.png',
+                      'assets/images/Effects/Capture Burst.png',
                       width: 34,
                       height: 34,
                     ),

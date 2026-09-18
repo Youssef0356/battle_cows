@@ -267,13 +267,13 @@ class HudOverlay extends StatelessWidget {
                    _buildBackgroundButton(
                      context,
                      'WOOD',
-                     'assets/images/Background/background.jpg',
+                     'assets/images/Background/Wood planks.jpg',
                    ),
                   const SizedBox(width: 8),
                   _buildBackgroundButton(
                     context,
                     'FARM',
-                    'assets/images/Background/Background.jpg',
+                    'assets/images/Background/Farm field.jpg',
                   ),
                 ],
               ),

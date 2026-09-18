@@ -46,9 +46,9 @@ class HexCellComponent extends PositionComponent {
       case SpecialTileType.waterPond:
         return 'assets/images/Board Tiles/tile_water_pond.png';
       case SpecialTileType.hayBale:
-        return 'assets/images/Board Tiles/tile_hay_bale.png';
+        return 'assets/images/Board Tiles/Hay Bale.png';
       case SpecialTileType.goldenPasture:
-        return 'assets/images/Board Tiles/tile_golden_pasture.png';
+        return 'assets/images/Board Tiles/Golden Pasture.png';
       case SpecialTileType.hill:
         return 'assets/images/Board Tiles/tile_hill.png';
       case SpecialTileType.none:

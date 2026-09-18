@@ -61,7 +61,7 @@ class _HexBoardWidgetState extends State<HexBoardWidget> with SingleTickerProvid
 
   Future<void> _loadTexture() async {
     try {
-      final data = await rootBundle.load('assets/images/Tile Image/Tile Texture.png');
+      final data = await rootBundle.load('assets/images/Tile Image/Tile Texture.jpg');
       final bytes = data.buffer.asUint8List();
       final codec = await ui.instantiateImageCodec(bytes);
       final frame = await codec.getNextFrame();

@@ -30,7 +30,7 @@ class MoveAnimationComponent extends PositionComponent {
   @override
   Future<void> onLoad() async {
     try {
-      final data = await rootBundle.load('assets/images/Effects/stampede_dust.png');
+      final data = await rootBundle.load('assets/images/Effects/Stampede Dust.png');
       final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
       _dustImage = (await codec.getNextFrame()).image;
     } catch (_) {}

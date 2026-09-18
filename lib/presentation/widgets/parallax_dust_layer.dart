@@ -66,7 +66,7 @@ class _ParallaxDustLayerState extends State<ParallaxDustLayer>
                 child: Opacity(
                   opacity: 0.18,
                   child: Image.asset(
-                    'assets/images/Effects/stampede_dust.png',
+                    'assets/images/Effects/Stampede Dust.png',
                     width: min(330, width * 0.58),
                   ),
                 ),
@@ -77,7 +77,7 @@ class _ParallaxDustLayerState extends State<ParallaxDustLayer>
                 child: Opacity(
                   opacity: 0.12,
                   child: Image.asset(
-                    'assets/images/Effects/stampede_dust.png',
+                    'assets/images/Effects/Stampede Dust.png',
                     width: min(250, width * 0.44),
                   ),
                 ),
