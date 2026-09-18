@@ -145,129 +145,131 @@ class _GameOverOverlayState extends State<GameOverOverlay>
                   ),
                 ],
               ),
-              child: ClipRRect(
+               child: ClipRRect(
                 borderRadius: BorderRadius.circular(17),
-                child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildConfetti(),
-                   Image.asset(
-                     'assets/images/Effects/victory_badge.png',
-                     width: 96,
-                     height: 96,
-                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    winner != null
-                        ? '${_getPlayerName(winner)} WINS!'
-                        : 'DRAW!',
-                    style: GoogleFonts.bangers(
-                      fontSize: 32,
-                      color: Colors.white,
-                      letterSpacing: 2,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.2),
+                child: SingleChildScrollView(
+                  child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildConfetti(),
+                     Image.asset(
+                       'assets/images/Effects/victory_badge.png',
+                       width: 96,
+                       height: 96,
+                     ),
+                    const SizedBox(height: 12),
+                    Text(
+                      winner != null
+                          ? '${_getPlayerName(winner)} WINS!'
+                          : 'DRAW!',
+                      style: GoogleFonts.bangers(
+                        fontSize: 32,
+                        color: Colors.white,
+                        letterSpacing: 2,
                       ),
                     ),
-                    child: Column(
-                      children: [
-                        Text(
-                          'FINAL TERRITORY',
-                          style: GoogleFonts.bangers(
-                            fontSize: 14,
-                            color: Colors.white.withValues(alpha: 0.7),
-                            letterSpacing: 1.5,
-                          ),
+                    const SizedBox(height: 20),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.2),
                         ),
-                        const SizedBox(height: 12),
-                        ...territoryCounts.entries.map((entry) {
-                          final color = entry.key;
-                          final count = entry.value;
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  width: 16,
-                                  height: 16,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.getPlayerPrimary(color),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: Colors.white,
-                                      width: 1,
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            'FINAL TERRITORY',
+                            style: GoogleFonts.bangers(
+                              fontSize: 14,
+                              color: Colors.white.withValues(alpha: 0.7),
+                              letterSpacing: 1.5,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          ...territoryCounts.entries.map((entry) {
+                            final color = entry.key;
+                            final count = entry.value;
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    width: 16,
+                                    height: 16,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.getPlayerPrimary(color),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.white,
+                                        width: 1,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  '${_getPlayerName(color)}: $count',
-                                  style: GoogleFonts.bangers(
-                                    fontSize: 18,
-                                    color: Colors.white,
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '${_getPlayerName(color)}: $count',
+                                    style: GoogleFonts.bangers(
+                                      fontSize: 18,
+                                      color: Colors.white,
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }),
+                                ],
+                              ),
+                            );
+                          }),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    _buildStatsSection(),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: KenneyButton(
+                            label: 'MENU',
+                            icon: Icons.home_rounded,
+                            isWide: true,
+                            style: KenneyBtnStyle.neutral,
+                            fontSize: 18,
+                            height: 50,
+                            onPressed: () {
+                              AdManager().showInterstitialAd(
+                                onAdDismissed: () {
+                                  widget.game.overlays.remove('GameOver');
+                                  Navigator.of(context).pop();
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: KenneyButton(
+                            label: 'REMATCH',
+                            icon: Icons.refresh_rounded,
+                            isWide: true,
+                            fontSize: 18,
+                            height: 50,
+                            onPressed: () {
+                              AdManager().showInterstitialAd(
+                                onAdDismissed: () {
+                                  widget.game.overlays.remove('GameOver');
+                                  widget.game.rematch();
+                                },
+                              );
+                            },
+                          ),
+                        ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 20),
-                  _buildStatsSection(),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: KenneyButton(
-                          label: 'MENU',
-                          icon: Icons.home_rounded,
-                          isWide: true,
-                          style: KenneyBtnStyle.neutral,
-                          fontSize: 18,
-                          height: 50,
-                          onPressed: () {
-                            AdManager().showInterstitialAd(
-                              onAdDismissed: () {
-                                widget.game.overlays.remove('GameOver');
-                                Navigator.of(context).pop();
-                              },
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: KenneyButton(
-                          label: 'REMATCH',
-                          icon: Icons.refresh_rounded,
-                          isWide: true,
-                          fontSize: 18,
-                          height: 50,
-                          onPressed: () {
-                            AdManager().showInterstitialAd(
-                              onAdDismissed: () {
-                                widget.game.overlays.remove('GameOver');
-                                widget.game.rematch();
-                              },
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                  ],
+                ),
+                ),
               ),
             ),
           ),

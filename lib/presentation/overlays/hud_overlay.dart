@@ -213,10 +213,12 @@ class HudOverlay extends StatelessWidget {
         CartoonDialog.show(
           context: context,
           title: 'GAME PAUSED',
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              KenneyButton(
+          maxWidth: 340,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                KenneyButton(
                 label: 'RESTART MATCH',
                 icon: Icons.refresh_rounded,
                 isWide: true,
@@ -262,11 +264,11 @@ class HudOverlay extends StatelessWidget {
                     'assets/images/Background/Table image.jpg',
                   ),
                   const SizedBox(width: 8),
-                  _buildBackgroundButton(
-                    context,
-                    'WOOD',
-                    'assets/images/Background/Table image.jpg',
-                  ),
+                   _buildBackgroundButton(
+                     context,
+                     'WOOD',
+                     'assets/images/Background/background.jpg',
+                   ),
                   const SizedBox(width: 8),
                   _buildBackgroundButton(
                     context,
@@ -312,6 +314,7 @@ class HudOverlay extends StatelessWidget {
                 ],
               ),
             ],
+          ),
           ),
         );
       },

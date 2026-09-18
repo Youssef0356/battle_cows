@@ -124,15 +124,17 @@ class _CartoonDialogState extends State<CartoonDialog>
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(17),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (widget.title != null) _buildTitle(),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-              child: widget.child,
-            ),
-          ],
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (widget.title != null) _buildTitle(),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+                child: widget.child,
+              ),
+            ],
+          ),
         ),
       ),
     );

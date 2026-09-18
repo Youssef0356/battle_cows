@@ -61,29 +61,32 @@ class _PlacementOverlayState extends State<PlacementOverlay> {
   Widget _buildTopBar(int currentPlayerIndex, List<Player> players, List<int> tilesRemaining) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          HudOverlay(game: widget.game, players: players).buildSettingsButton(context),
-          const SizedBox(width: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF5D4037), Color(0xFF3E2723)],
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            HudOverlay(game: widget.game, players: players).buildSettingsButton(context),
+            const SizedBox(width: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF5D4037), Color(0xFF3E2723)],
+                ),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFFFD54F), width: 1.5),
               ),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFFFD54F), width: 1.5),
-            ),
-            child: Text(
-              'BUILD THE PASTURE',
-              style: GoogleFonts.bangers(
-                fontSize: 16,
-                color: const Color(0xFFFFD54F),
-                letterSpacing: 1.5,
+              child: Text(
+                'BUILD THE PASTURE',
+                style: GoogleFonts.bangers(
+                  fontSize: 16,
+                  color: const Color(0xFFFFD54F),
+                  letterSpacing: 1.5,
+                ),
               ),
             ),
-          ),
-          const Spacer(),
+            const SizedBox(width: 12),
           // Player indicators
           ...List.generate(players.length, (index) {
             final player = players[index];
@@ -130,6 +133,7 @@ class _PlacementOverlayState extends State<PlacementOverlay> {
             );
           }),
         ],
+      ),
       ),
     );
   }
