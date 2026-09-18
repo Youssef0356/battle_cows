@@ -98,6 +98,7 @@ class _ScoreboardOverlayState extends State<ScoreboardOverlay>
               builder: (context, _) {
                 return Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
                   children: players.map((player) {
                     final isActive = currentColor == player.color;
                     final cows = cowCounts[player.color] ?? 0;

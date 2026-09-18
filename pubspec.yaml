@@ -37,4 +37,5 @@ flutter:
     - assets/images/Tile Image/
     - assets/images/ui/
     - assets/sounds/
+    - assets/audio/
     - assets/models/

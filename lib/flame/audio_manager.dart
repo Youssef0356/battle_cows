@@ -19,7 +19,7 @@ class AudioManager {
     _initialized = true;
 
     try {
-      await rootBundle.load('assets/sounds/select.wav');
+      await rootBundle.load('assets/audio/select.wav');
       _assetsAvailable = true;
     } catch (_) {
       _assetsAvailable = false;

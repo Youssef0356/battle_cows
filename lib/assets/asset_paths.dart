@@ -2,7 +2,7 @@
 class AssetPaths {
   static const String modelsPath = 'assets/models';
   static const String imagesPath = 'assets/images';
-  static const String soundsPath = 'assets/sounds';
+  static const String soundsPath = 'assets/audio';
 
   // 3D Models (GLB)
   static const String cowPawnModel = '$modelsPath/Cow Pawn .glb';
