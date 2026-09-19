@@ -75,23 +75,6 @@ class ProgressService {
     _save();
   }
 
-  bool get canClaimDailyReward {
-    final today = DateTime.now().toIso8601String().substring(0, 10);
-    return progress.lastDailyRewardClaimed != today;
-  }
-
-  int claimDailyReward() {
-    if (!canClaimDailyReward) return 0;
-    final streak = progress.dailyStreak;
-    final baseReward = 50;
-    final bonus = min(streak, 7) * 25;
-    final total = baseReward + bonus;
-    progress.coins += total;
-    progress.lastDailyRewardClaimed = DateTime.now().toIso8601String().substring(0, 10);
-    _save();
-    return total;
-  }
-
   void refreshDailyQuests() {
     final today = DateTime.now().toIso8601String().substring(0, 10);
     if (progress.lastQuestRefreshDate == today) return;

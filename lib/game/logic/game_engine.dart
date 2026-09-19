@@ -16,8 +16,6 @@ class GameEngine {
   bool _gameOver = false;
   int _lastCaptureCount = 0;
   ChallengeMode _challengeMode = ChallengeMode.standard;
-  final Map<PlayerColor, int> _objectiveScores = {};
-  PlayerColor? _objectiveWinner;
   final Map<PlayerColor, int> _hearts = {};
   final Random _random = Random();
 
@@ -32,13 +30,6 @@ class GameEngine {
   Map<PlayerColor, int> get hearts => Map.unmodifiable(_hearts);
 
   ChallengeMode get challengeMode => _challengeMode;
-  bool get hasObjective => _challengeMode.hasObjective;
-  PlayerColor? get objectiveWinner => _objectiveWinner;
-  Map<PlayerColor, int> get objectiveScores => Map.unmodifiable(_objectiveScores);
-
-  int get objectiveTarget {
-    return 0;
-  }
 
   void initializeGame(GameBoard board, List<Player> players, {ChallengeMode challengeMode = ChallengeMode.standard}) {
     _board = board;
@@ -47,12 +38,9 @@ class GameEngine {
     _turnCount = 0;
     _gameOver = false;
     _challengeMode = challengeMode;
-    _objectiveWinner = null;
-    _objectiveScores.clear();
     _hearts.clear();
     for (final player in players) {
       _hearts[player.color] = 3;
-      _objectiveScores[player.color] = 0;
     }
   }
 
@@ -137,13 +125,8 @@ class GameEngine {
     _currentPlayerIndex = (_currentPlayerIndex + 1) % _players.length;
 
     _checkGameOver();
-    _evaluateObjective(move.player);
 
     return true;
-  }
-
-  void _evaluateObjective(PlayerColor mover) {
-    // No objective modes remain
   }
 
   void _checkGameOver() {
@@ -250,16 +233,10 @@ class GameEngine {
     return counts;
   }
 
-  Map<PlayerColor, int> getChallengeScores() {
-    return getTerritoryCount();
-  }
-
   PlayerColor? determineWinner() {
     if (!_gameOver) return null;
 
-    if (_objectiveWinner != null) return _objectiveWinner;
-
-    final territoryCounts = getChallengeScores();
+    final territoryCounts = getTerritoryCount();
     PlayerColor? winner;
     int maxTerritory = -1;
     int tieCount = 0;
@@ -318,12 +295,10 @@ class GameEngine {
   PlayerColor? determineWinnerWithHearts() {
     if (!_gameOver) return null;
 
-    if (_objectiveWinner != null) return _objectiveWinner;
-
     final alivePlayers = _players.where((p) => playerIsEliminated(p.color) == false).toList();
     if (alivePlayers.length == 1) return alivePlayers.first.color;
 
-    final territoryCounts = getChallengeScores();
+    final territoryCounts = getTerritoryCount();
     PlayerColor? winner;
     int maxTerritory = -1;
     int tieCount = 0;

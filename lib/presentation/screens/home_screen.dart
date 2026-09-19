@@ -816,25 +816,20 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         color: const Color(0xFF3E2723),
         seed: 29,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          GestureDetector(
-            onTap: () {
-              if (_progressService == null) return;
-              DailyQuestsDialog.show(
-                context: context,
-                progress: _progressService!,
-              ).then((_) => setState(() {}));
-            },
-            child: _buildBottomItem(
-              iconText: '📅',
-              title: 'DAILY QUESTS',
-              subtitle: readyQuests > 0 ? '$readyQuests READY' : 'PLAY MORE',
-              color: readyQuests > 0 ? const Color(0xFF81C784) : Colors.white54,
-            ),
+        child: GestureDetector(
+          onTap: () {
+            if (_progressService == null) return;
+            DailyQuestsDialog.show(
+              context: context,
+              progress: _progressService!,
+            ).then((_) => setState(() {}));
+          },
+          child: _buildBottomItem(
+            iconText: '📅',
+            title: 'DAILY QUESTS',
+            subtitle: readyQuests > 0 ? '$readyQuests READY' : 'PLAY MORE',
+            color: readyQuests > 0 ? const Color(0xFF81C784) : Colors.white54,
           ),
-        ],
         ),
       ),
     );

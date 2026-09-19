@@ -1036,7 +1036,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
   }
 
   void _updateCounts() {
-    territoryCounts = _engine.getChallengeScores();
+    territoryCounts = _engine.getTerritoryCount();
     cowCounts = {};
     for (final player in players) {
       cowCounts[player.color] = 0;
