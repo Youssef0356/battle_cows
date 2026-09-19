@@ -5,7 +5,6 @@ import 'package:in_app_review/in_app_review.dart';
 import '../../flame/battle_cows_game.dart';
 import '../../game/models/player.dart';
 import '../../game/models/challenge_mode.dart';
-import '../../core/constants/colors.dart';
 import '../widgets/cartoon_dialog.dart';
 import '../widgets/kenney_button.dart';
 
@@ -42,71 +41,11 @@ class HudOverlay extends StatelessWidget {
                     Expanded(child: Align(alignment: Alignment.centerRight, child: buildSettingsButton(context))),
                   ],
                 ),
-                if (game.engine.hasObjective) ...[
-                  const SizedBox(height: 6),
-                  _buildObjectiveBar(),
-                ],
               ],
             ),
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildObjectiveBar() {
-    final engine = game.engine;
-    final target = engine.objectiveTarget;
-    final icon = game.challengeMode.icon;
-    final isKing = game.challengeMode == ChallengeMode.kingOfTheHill;
-
-    return Wrap(
-      alignment: WrapAlignment.center,
-      spacing: 10,
-      runSpacing: 6,
-      children: players.map((player) {
-        final score = engine.objectiveScores[player.color] ?? 0;
-        final color = AppColors.getPlayerPrimary(player.color);
-        final progress = target > 0 ? (score / target).clamp(0.0, 1.0) : 0.0;
-
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.55),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: color, width: 1.5),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(icon, style: const TextStyle(fontSize: 14)),
-              const SizedBox(width: 6),
-              Text(
-                isKing ? '${player.name} ⛰️' : player.name,
-                style: GoogleFonts.bangers(fontSize: 12, color: Colors.white, letterSpacing: 1),
-              ),
-              const SizedBox(width: 6),
-              SizedBox(
-                width: 46,
-                height: 8,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    backgroundColor: Colors.white24,
-                    valueColor: AlwaysStoppedAnimation<Color>(color),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                '$score/$target',
-                style: GoogleFonts.bangers(fontSize: 12, color: const Color(0xFFFFD54F)),
-              ),
-            ],
-          ),
-        );
-      }).toList(),
     );
   }
 

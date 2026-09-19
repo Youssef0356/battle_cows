@@ -37,14 +37,7 @@ class GameEngine {
   Map<PlayerColor, int> get objectiveScores => Map.unmodifiable(_objectiveScores);
 
   int get objectiveTarget {
-    switch (_challengeMode) {
-      case ChallengeMode.goldenPasture:
-        return 5;
-      case ChallengeMode.kingOfTheHill:
-        return 3;
-      default:
-        return 0;
-    }
+    return 0;
   }
 
   void initializeGame(GameBoard board, List<Player> players, {ChallengeMode challengeMode = ChallengeMode.standard}) {
@@ -150,31 +143,7 @@ class GameEngine {
   }
 
   void _evaluateObjective(PlayerColor mover) {
-    if (_board == null || !_challengeMode.hasObjective) return;
-
-    final objective = _challengeMode == ChallengeMode.goldenPasture
-        ? SpecialTileType.goldenPasture
-        : SpecialTileType.hill;
-
-    final moverHoldsObjective = _board!.cells.entries.any((entry) {
-      if (entry.value.specialType != objective) return false;
-      return _board!.getHerdAt(entry.key)?.owner == mover;
-    });
-
-    if (_challengeMode == ChallengeMode.goldenPasture) {
-      if (moverHoldsObjective) {
-        _objectiveScores[mover] = (_objectiveScores[mover] ?? 0) + 1;
-      }
-    } else {
-      // King of the Hill requires a consecutive hold.
-      _objectiveScores[mover] = moverHoldsObjective ? (_objectiveScores[mover] ?? 0) + 1 : 0;
-    }
-
-    final target = objectiveTarget;
-    if (target > 0 && (_objectiveScores[mover] ?? 0) >= target) {
-      _objectiveWinner = mover;
-      _gameOver = true;
-    }
+    // No objective modes remain
   }
 
   void _checkGameOver() {
@@ -282,20 +251,7 @@ class GameEngine {
   }
 
   Map<PlayerColor, int> getChallengeScores() {
-    final scores = getTerritoryCount();
-    if (_board == null) return scores;
-    final objective = _challengeMode == ChallengeMode.goldenPasture
-        ? SpecialTileType.goldenPasture
-        : _challengeMode == ChallengeMode.kingOfTheHill
-            ? SpecialTileType.hill
-            : SpecialTileType.none;
-    if (objective == SpecialTileType.none) return scores;
-    for (final entry in _board!.cells.entries) {
-      if (entry.value.specialType != objective) continue;
-      final herd = _board!.getHerdAt(entry.key);
-      if (herd != null) scores[herd.owner] = (scores[herd.owner] ?? 0) + 3;
-    }
-    return scores;
+    return getTerritoryCount();
   }
 
   PlayerColor? determineWinner() {

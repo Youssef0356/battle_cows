@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/colors.dart';
 import '../../data/services/progress_service.dart';
 import '../../game/models/player.dart';
-import '../dialogs/daily_reward_dialog.dart';
 import '../dialogs/daily_quests_dialog.dart';
 import '../dialogs/shop_dialog.dart';
 import '../router/app_router.dart';
@@ -50,22 +49,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     _progressService!.refreshDailyQuests();
     if (mounted) {
       setState(() {});
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showDailyRewardIfNeeded();
-      });
-    }
-  }
-
-  void _showDailyRewardIfNeeded() {
-    if (_progressService == null) return;
-    if (_progressService!.canClaimDailyReward) {
-      final reward = _progressService!.claimDailyReward();
-      if (reward == 0) return;
-      DailyRewardDialog.show(
-        context: context,
-        progress: _progressService!,
-        rewardAmount: reward,
-      ).then((_) => setState(() {}));
     }
   }
 
@@ -456,8 +439,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _buildStatRow('⭐ Level', '${p?.level ?? 1} (${p?.levelTitle ?? "Farmhand"})'),
-          _buildStatRow('🎯 XP', '${p?.totalXp ?? 0}'),
           _buildStatRow('💰 Coins', '${p?.coins ?? 0}'),
           _buildStatRow('⚔️ Matches Played', '${p?.matchesPlayed ?? 0}'),
           _buildStatRow('🥇 Victories', '${p?.matchesWon ?? 0} (${((p?.winRate ?? 0) * 100).toStringAsFixed(0)}%)'),
@@ -592,8 +573,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   Widget _buildProfilePlaque() {
     final p = _progressService?.progress;
-    final level = p?.level ?? 1;
-    final xpPercent = p?.xpPercent ?? 0.0;
     final coins = p?.coins ?? 0;
 
     return RusticPlank(
@@ -603,41 +582,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFF5D4037),
-                  border: Border.all(color: const Color(0xFFFFD54F), width: 2),
-                ),
-                child: const Center(
-                  child: Text('🐮', style: TextStyle(fontSize: 26)),
-                ),
-              ),
-              Positioned(
-                bottom: -4,
-                left: -4,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1976D2),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: Colors.white, width: 1),
-                  ),
-                  child: Text(
-                    '$level',
-                    style: GoogleFonts.bangers(
-                      fontSize: 11,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFF5D4037),
+              border: Border.all(color: const Color(0xFFFFD54F), width: 2),
+            ),
+            child: const Center(
+              child: Text('🐮', style: TextStyle(fontSize: 26)),
+            ),
           ),
           const SizedBox(width: 10),
           Column(
@@ -664,28 +619,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     ),
                   ),
                 ],
-              ),
-              const SizedBox(height: 4),
-              Container(
-                width: 90,
-                height: 7,
-                decoration: BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: Colors.white24, width: 0.5),
-                ),
-                child: FractionallySizedBox(
-                  alignment: Alignment.centerLeft,
-                  widthFactor: xpPercent,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF42A5F5), Color(0xFF1976D2)],
-                      ),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                ),
               ),
             ],
           ),
@@ -876,7 +809,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   Widget _buildBottomRusticBar() {
     final p = _progressService?.progress;
     final readyQuests = p?.dailyQuests.where((q) => q.isComplete && !q.claimed).length ?? 0;
-    final streak = p?.dailyStreak ?? 0;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -887,28 +819,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          GestureDetector(
-            onTap: () {
-              if (_progressService == null) return;
-               if (!_progressService!.canClaimDailyReward) return;
-               final reward = _progressService!.claimDailyReward();
-              setState(() {});
-              DailyRewardDialog.show(
-                context: context,
-                progress: _progressService!,
-                rewardAmount: reward,
-              ).then((_) => setState(() {}));
-            },
-            child: _buildBottomItem(
-              iconText: '🎁',
-              title: 'DAILY REWARD',
-              subtitle: '🔥 Day $streak',
-              color: const Color(0xFFFFD54F),
-            ),
-          ),
-          Container(width: 1, height: 32, color: Colors.white24),
-          _buildSeasonPassBadge(),
-          Container(width: 1, height: 32, color: Colors.white24),
           GestureDetector(
             onTap: () {
               if (_progressService == null) return;
@@ -959,57 +869,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 color: color,
                 letterSpacing: 1,
               ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSeasonPassBadge() {
-    final p = _progressService?.progress;
-    final level = p?.level ?? 1;
-    final xpPercent = (p?.xpProgress ?? 0) / (p?.xpNeeded ?? 100);
-    return Row(
-      children: [
-        const Text('🛡️', style: TextStyle(fontSize: 18)),
-        const SizedBox(width: 6),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                Text(
-                  'Level $level',
-                  style: GoogleFonts.bangers(fontSize: 10, color: Colors.white70),
-                ),
-                const SizedBox(width: 4),
-                const Text('⭐', style: TextStyle(fontSize: 9)),
-              ],
-            ),
-            const SizedBox(height: 2),
-            Container(
-              width: 64,
-              height: 6,
-              decoration: BoxDecoration(
-                color: Colors.black54,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: FractionallySizedBox(
-                alignment: Alignment.centerLeft,
-                widthFactor: xpPercent.clamp(0.0, 1.0),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF42A5F5),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ),
-            ),
-            Text(
-              '${p?.xpProgress ?? 0} / ${p?.xpNeeded ?? 100}',
-              style: GoogleFonts.bangers(fontSize: 8, color: Colors.white60),
             ),
           ],
         ),

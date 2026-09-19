@@ -34,13 +34,7 @@ class BoardGenerator {
     final sorted = cells.toList()..sort((a, b) => a.distanceTo(const HexPosition(0, 0)).compareTo(b.distanceTo(const HexPosition(0, 0))));
     if (sorted.isEmpty) return {};
     final specials = <HexPosition, SpecialTileType>{};
-    if (mode == ChallengeMode.goldenPasture) {
-      specials[sorted.first] = SpecialTileType.goldenPasture;
-      if (sorted.length > 4) specials[sorted[sorted.length ~/ 2]] = SpecialTileType.hayBale;
-    } else if (mode == ChallengeMode.kingOfTheHill) {
-      specials[sorted.first] = SpecialTileType.hill;
-      if (sorted.length > 6) specials[sorted[sorted.length ~/ 2]] = SpecialTileType.mud;
-    } else if (mode == ChallengeMode.timed) {
+    if (mode == ChallengeMode.timed) {
       if (sorted.length > 3) specials[sorted[sorted.length ~/ 3]] = SpecialTileType.hayBale;
     }
     return specials;
