@@ -8,9 +8,14 @@ import 'hud_overlay.dart';
 class HerdPlacementOverlay extends StatefulWidget {
   final BattleCowsGame game;
 
+  /// Extra top spacing (the ad banner height) so the top bar sits below the
+  /// banner instead of being covered by it.
+  final double topInset;
+
   const HerdPlacementOverlay({
     super.key,
     required this.game,
+    this.topInset = 0,
   });
 
   @override
@@ -58,7 +63,7 @@ class _HerdPlacementOverlayState extends State<HerdPlacementOverlay> {
 
   Widget _buildTopBar(int currentPlayerIndex, List<Player> players) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+      margin: EdgeInsets.fromLTRB(12, 8 + widget.topInset, 12, 0),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
         color: const Color(0xFF2E1C0C).withValues(alpha: 0.88),

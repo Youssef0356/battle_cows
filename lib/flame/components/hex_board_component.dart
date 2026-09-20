@@ -5,6 +5,7 @@ import 'package:flame/components.dart';
 import '../../game/models/hex_position.dart';
 import '../../game/models/game_board.dart';
 import '../../game/models/hex_cell.dart';
+import '../../game/models/player_color.dart';
 import 'hex_cell_component.dart';
 
 class HexBoardComponent extends PositionComponent {
@@ -13,12 +14,20 @@ class HexBoardComponent extends PositionComponent {
   HexPosition? _selectedPosition;
   List<HexPosition> _validMoves = [];
   double _pulseTime = 0;
+  PlayerColor? _turnOwner;
   ui.Image? _texture;
+
+  /// Player color whose herds render with [skinOverride] (the local
+  /// player's equipped shop skin). Null disables skin overrides.
+  final PlayerColor? skinOwnerColor;
+  final String? skinOverride;
 
   HexBoardComponent({
     required this.board,
     required super.position,
     required super.size,
+    this.skinOwnerColor,
+    this.skinOverride,
   });
 
   Map<HexPosition, HexCellComponent> get cells => _cells;
@@ -50,6 +59,8 @@ class HexBoardComponent extends PositionComponent {
         flipMode: HexCellComponent.getFlipMode(pos.q, pos.r),
         texture: _texture,
         territoryOwner: herd?.owner,
+        skinOverride: skinOverride,
+        skinOwnerColor: skinOwnerColor,
       );
 
       _cells[pos] = cellComponent;
@@ -72,6 +83,15 @@ class HexBoardComponent extends PositionComponent {
       } else {
         entry.value.pulseValue = 0;
       }
+    }
+  }
+
+  /// Sets the player whose turn it is; their herds get a colored
+  /// border + stronger tint as the on-board turn indicator.
+  set turnOwner(PlayerColor? owner) {
+    _turnOwner = owner;
+    for (final cell in _cells.values) {
+      cell.turnOwner = owner;
     }
   }
 
@@ -106,7 +126,10 @@ class HexBoardComponent extends PositionComponent {
       flipMode: HexCellComponent.getFlipMode(pos.q, pos.r),
       texture: _texture,
       isValidMove: isPreview,
+      skinOverride: skinOverride,
+      skinOwnerColor: skinOwnerColor,
     );
+    cellComponent.turnOwner = _turnOwner;
     _cells[pos] = cellComponent;
     add(cellComponent);
   }

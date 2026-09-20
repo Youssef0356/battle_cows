@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -78,11 +80,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final difficulty = Difficulty.values[_selectedDifficultyIndex];
     final players = _createPlayers(count: playerCount, isMultiplayer: isMultiplayer, difficulty: difficulty);
 
-    if (_progressService != null && !_progressService!.tutorialCompleted) {
-      Navigator.pushNamed(context, AppRouter.tutorial);
-      return;
-    }
-
     Navigator.pushNamed(
       context,
       AppRouter.game,
@@ -90,7 +87,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         'players': players,
         'herdSize': 16,
         'tilesPerPlayer': tilesPerPlayer,
-        'boardSize': 7 + (tilesPerPlayer - 3) * 2,
+        // 5 tiles → small hex field (7), 4 → medium (9), 3 → large hexes (11).
+        'boardSize': 7 + (5 - tilesPerPlayer) * 2,
         'challengeMode': challengeMode,
       },
     );
@@ -217,7 +215,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'More tiles = bigger battlefield!',
+                  'Bigger pasture = bigger hexes, fewer tiles!',
                   style: GoogleFonts.bangers(
                     fontSize: 11,
                     color: Colors.white38,
@@ -229,9 +227,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   alignment: WrapAlignment.center,
                   spacing: 12,
                   children: [
-                    (3, 'SMALL'),
+                    (5, 'SMALL'),
                     (4, 'MEDIUM'),
-                    (5, 'LARGE'),
+                    (3, 'LARGE'),
                   ].map((entry) {
                     final (tiles, label) = entry;
                     final isSel = selectedTiles == tiles;
@@ -273,14 +271,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(
-                              '\u2B21',
-                              style: TextStyle(
-                                fontSize: 22,
-                                color: isSel ? Colors.white : Colors.white70,
+                            SizedBox(
+                              width: 56,
+                              height: 36,
+                              child: CustomPaint(
+                                painter: _PasturePreviewPainter(
+                                  hexCount: tiles,
+                                  color: isSel ? Colors.white : Colors.white70,
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 2),
+                            const SizedBox(height: 4),
                             Text(
                               label,
                               style: GoogleFonts.bangers(
@@ -427,43 +428,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   ))
               .toList(),
         ),
-      ),
-    );
-  }
-
-  void _showStatsDialog() {
-    final p = _progressService?.progress;
-    CartoonDialog.show(
-      context: context,
-      title: 'PLAYER STATS',
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildStatRow('💰 Coins', '${p?.coins ?? 0}'),
-          _buildStatRow('⚔️ Matches Played', '${p?.matchesPlayed ?? 0}'),
-          _buildStatRow('🥇 Victories', '${p?.matchesWon ?? 0} (${((p?.winRate ?? 0) * 100).toStringAsFixed(0)}%)'),
-          _buildStatRow('🌾 Tiles Captured', '${p?.totalCaptures ?? 0}'),
-          _buildStatRow('🔥 Daily Streak', '${p?.dailyStreak ?? 0}'),
-          const SizedBox(height: 12),
-          CartoonButton(
-            label: 'CLOSE',
-            isWide: true,
-            onPressed: () => Navigator.pop(context),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: GoogleFonts.bangers(fontSize: 16, color: Colors.white70)),
-          Text(value, style: GoogleFonts.bangers(fontSize: 16, color: const Color(0xFFFFD54F))),
-        ],
       ),
     );
   }
@@ -631,8 +595,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     return Column(
       children: [
         _buildWoodToolButton(icon: Icons.settings, label: 'SETTINGS', onTap: () => Navigator.pushNamed(context, AppRouter.settings)),
-        const SizedBox(height: 6),
-        _buildWoodToolButton(icon: Icons.bar_chart, label: 'STATS', onTap: _showStatsDialog),
         const SizedBox(height: 6),
         _buildWoodToolButton(icon: Icons.shopping_cart, label: 'SHOP', onTap: _showShopDialog),
       ],
@@ -870,4 +832,107 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       ],
     );
   }
+}
+
+/// Draws a mini hex-cluster matching the pasture size, mirroring how the game
+/// actually deals land: whole 4-hex diamond tiles (PastureTile.diamond) plus
+/// leftover single hexes. 3 = three single hexes in a triangle (SMALL), 4 = one
+/// diamond (MEDIUM), 5 = a diamond plus two extra hexes (LARGE). The cluster is
+/// scaled uniformly to fit its option box, so more tiles always reads as a
+/// bigger, denser pasture.
+class _PasturePreviewPainter extends CustomPainter {
+  final int hexCount;
+  final Color color;
+
+  _PasturePreviewPainter({required this.hexCount, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final count = hexCount.clamp(1, 6);
+    final tiles = count ~/ 4;
+    final leftovers = count % 4;
+
+    // Axial (q, r) hex coordinates: tiles side by side, leftover single
+    // hexes continuing the top row to the right.
+    final centers = <Offset>[];
+    for (var t = 0; t < tiles; t++) {
+      final base = 2.0 * t;
+      centers.addAll([
+        Offset(base, 0),
+        Offset(base + 1, 0),
+        Offset(base, 1),
+        Offset(base + 1, -1),
+      ]);
+    }
+    if (tiles == 0) {
+      // No full tiles yet: 1 = single hex, 2 = pair, 3 = triangle.
+      const singleShapes = [
+        [Offset(0, 0)],
+        [Offset(0, 0), Offset(1, 0)],
+        [Offset(0, 0), Offset(1, -1), Offset(0, -1)],
+      ];
+      centers.addAll(singleShapes[leftovers - 1]);
+    } else {
+      for (var l = 0; l < leftovers; l++) {
+        centers.add(Offset(2.0 * tiles + l, 0));
+      }
+    }
+
+    // Pointy-top axial -> pixel offsets, with a hex radius of 1.
+    Offset toPixel(Offset hex) => Offset(hex.dx + hex.dy / 2, hex.dy * 0.8660254);
+    final points = centers.map(toPixel).toList();
+
+    final minX = points.map((p) => p.dx).reduce(min) - 1;
+    final maxX = points.map((p) => p.dx).reduce(max) + 1;
+    final minY = points.map((p) => p.dy).reduce(min) - 1;
+    final maxY = points.map((p) => p.dy).reduce(max) + 1;
+    // Uniform scale so the whole cluster (plus a small margin) stays inside
+    // the option box - nothing gets clipped.
+    final scale = min(
+      (size.width - 8) / (maxX - minX),
+      (size.height - 8) / (maxY - minY),
+    );
+    final origin = Offset(
+      size.width / 2 - (minX + maxX) / 2 * scale,
+      size.height / 2 - (minY + maxY) / 2 * scale,
+    );
+
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = (scale * 0.16).clamp(1.0, 1.8).toDouble();
+
+    final path = Path();
+    for (final p in points) {
+      path.addPath(
+        _hexPath(
+          Offset(origin.dx + p.dx * scale, origin.dy + p.dy * scale),
+          scale * 0.94,
+        ),
+        Offset.zero,
+      );
+    }
+    canvas.drawPath(path, paint);
+  }
+
+  Path _hexPath(Offset center, double radius) {
+    final path = Path();
+    for (var i = 0; i < 6; i++) {
+      final angle = (pi / 3) * i - pi / 6;
+      final point = Offset(
+        center.dx + radius * cos(angle),
+        center.dy + radius * sin(angle),
+      );
+      if (i == 0) {
+        path.moveTo(point.dx, point.dy);
+      } else {
+        path.lineTo(point.dx, point.dy);
+      }
+    }
+    return path..close();
+  }
+
+  @override
+  bool shouldRepaint(covariant _PasturePreviewPainter old) =>
+      old.hexCount != hexCount || old.color != color;
 }

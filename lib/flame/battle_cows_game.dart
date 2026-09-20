@@ -154,8 +154,26 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
   int _sessionId = 0;
 
   double get _hexSize {
-    final shortestSide = min(size.x, size.y);
-    final density = max(14, boardSize + _tilesPerPlayer);
+    return BattleCowsGame.hexSizeFor(
+      shortestSide: min(size.x, size.y),
+      boardSize: boardSize,
+    );
+  }
+
+  /// Hex radius (center→corner) used to lay out the board.
+  ///
+  /// Density = how many hexes fit across the shortest screen side. It
+  /// follows the [boardSize] pasture setting (7 → 14, 9 → 12, 11 → 10),
+  /// so bigger pastures use larger hexes — fewer visible at once — while
+  /// the tile count no longer affects hex size. Unexpected board sizes
+  /// clamp into that 10–14 density range (below 7 → 14, above 11 → 10).
+  static double hexSizeFor({
+    required double shortestSide,
+    required int boardSize,
+  }) {
+    // Linear: 14 at boardSize 7 down to 10 at boardSize 11, clamped so
+    // sizes outside the supported range land on the range's endpoints.
+    final density = (14.0 - (boardSize - 7)).clamp(10.0, 14.0).toDouble();
     return shortestSide > 0 ? shortestSide * .94 / density : 30.0;
   }
 
@@ -204,7 +222,21 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
     this.onHeartLost,
     this.onPlacementComplete,
     this.onTilePlacementComplete,
+    this.equippedSkin = '',
   }) : _tilesPerPlayer = tilesPerPlayer;
+
+  /// The local player's equipped cow skin (shop item id, e.g.
+  /// `skin_cowboy`), used to override their color-based cow sprite.
+  final String equippedSkin;
+
+  /// Difficulty for the AI opponent. Matches with no AI players
+  /// (local multiplayer) fall back to [Difficulty.medium].
+  static Difficulty resolveAiDifficulty(List<Player> players) {
+    for (final player in players) {
+      if (player.isAi) return player.difficulty ?? Difficulty.medium;
+    }
+    return Difficulty.medium;
+  }
 
   GameEngine get engine => _engine;
   bool get isAnimating => _isAnimating;
@@ -219,12 +251,34 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
   HexPosition get tileOffset => _tileOffset;
   BoardBuilder get boardBuilder => _boardBuilder;
 
+  /// First non-AI player (the local player), or null in AI-only matches.
+  PlayerColor? get _localPlayerColor {
+    for (final player in players) {
+      if (!player.isAi) return player.color;
+    }
+    return null;
+  }
+
+  /// Skin args shared by every HexBoardComponent construction site.
+  /// Nulls when no skin is equipped, so cells fall back to color art.
+  ({PlayerColor? owner, String? skin}) get _skinArgs {
+    final skin = equippedSkin;
+    return (
+      owner: skin.isEmpty ? null : _localPlayerColor,
+      skin: skin.isEmpty ? null : skin,
+    );
+  }
+
   @override
   Future<void> onLoad() async {
     await super.onLoad();
     await AudioManager().init();
-    _aiPlayer = AiPlayer(difficulty: players.firstWhere((p) => p.isAi).difficulty ?? Difficulty.medium);
+    _aiPlayer = AiPlayer(difficulty: resolveAiDifficulty(players));
 
+    // Screen-fixed table: rendered by camera.backdrop, which ignores the
+    // viewfinder's pan/zoom — same as before the world-attached experiment,
+    // so its on-screen size is identical across pasture modes. The board is
+    // drawn over it by the world layer above.
     final bg = BackgroundComponent(
       position: Vector2.zero(),
       size: Vector2(size.x, size.y),
@@ -298,6 +352,8 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
         board: board,
         position: Vector2.zero(),
         size: Vector2(fixedSize, fixedSize),
+        skinOwnerColor: _skinArgs.owner,
+        skinOverride: _skinArgs.skin,
       );
       world.add(_boardComponent!);
 
@@ -315,6 +371,8 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
         board: _engine.board!,
         position: Vector2.zero(),
         size: Vector2(boardSize, boardSize),
+        skinOwnerColor: _skinArgs.owner,
+        skinOverride: _skinArgs.skin,
       );
       world.add(_boardComponent!);
     }
@@ -514,6 +572,8 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
       board: _engine.board!,
       position: Vector2.zero(),
       size: Vector2(boardSize, boardSize),
+      skinOwnerColor: _skinArgs.owner,
+      skinOverride: _skinArgs.skin,
     );
     world.add(_boardComponent!);
 
@@ -803,7 +863,9 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
       selectedFencePosition = null;
 
       _boardComponent?.updateSelection(null, []);
-
+      // Highlight the new current player's herds in their color — the
+      // on-board turn indicator that replaced the top scoreboard.
+      _boardComponent?.turnOwner = _engine.currentPlayer.color;
       if (_engine.gameOver || _engine.allPlayersHaveNoMoves()) {
         _handleGameOver();
         return;
@@ -1073,7 +1135,6 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
     overlays.remove('GameOver');
     overlays.remove('HUD');
     overlays.remove('GameControls');
-    overlays.remove('Scoreboard');
     overlays.remove('HerdPlacement');
     overlays.remove('Placement');
   }

@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../../game/models/hex_cell.dart';
 import '../../game/models/herd.dart';
 import '../../core/constants/colors.dart';
+import '../../game/utils/cow_skin_loader.dart';
 
 class HexCellComponent extends PositionComponent {
   HexCell cell;
@@ -16,6 +17,11 @@ class HexCellComponent extends PositionComponent {
   final int flipMode;
   final ui.Image? texture;
   PlayerColor? territoryOwner;
+
+  /// Player whose turn it is. When it matches the rendered herd's owner,
+  /// the cell border and tint take that player's color — the on-board
+  /// turn indicator that replaced the top scoreboard.
+  PlayerColor? turnOwner;
   ui.Image? _specialImage;
   ui.Image? _cowImage;
   double _lifeTime = 0;
@@ -58,7 +64,14 @@ class HexCellComponent extends PositionComponent {
     this.flipMode = 0,
     this.texture,
     this.territoryOwner,
+    this.skinOwnerColor,
+    this.skinOverride,
   }) : super(anchor: Anchor.center);
+
+  /// Shop skin id (e.g. `skin_cowboy`). When non-empty it replaces the
+  /// color-based cow sprite for herds owned by [skinOwnerColor].
+  final String? skinOverride;
+  final PlayerColor? skinOwnerColor;
 
   @override
   Future<void> onLoad() async {
@@ -94,15 +107,28 @@ class HexCellComponent extends PositionComponent {
 
   String? get _cowAssetPath {
     if (herd == null) return null;
-    switch (herd!.owner) {
-      case PlayerColor.blue:
-        return 'assets/images/Cows/cow_viking.png';
-      case PlayerColor.red:
-        return 'assets/images/Cows/cow_cowboy.png';
-      case PlayerColor.yellow:
-        return 'assets/images/Cows/cow_farmer.png';
-      case PlayerColor.purple:
-        return 'assets/images/Cows/cow_disco.png';
+    if (skinOverride != null &&
+        skinOverride!.isNotEmpty &&
+        skinOwnerColor == herd!.owner) {
+      return CowSkins.assetFor(herd!.owner, skinId: skinOverride);
+    }
+    return CowSkins.assetFor(herd!.owner);
+  }
+
+  /// Re-resolves the cow sprite for the current herd (called after the
+  /// equipped skin changes mid-game, e.g. when progress loads late).
+  void refreshHerdImages() {
+    final path = _cowAssetPath;
+    if (path == null) {
+      _cowImage = null;
+      return;
+    }
+    if (imageCache.containsKey(path)) {
+      _cowImage = imageCache[path];
+    } else {
+      _loadImage(path).then((image) {
+        _cowImage = image;
+      });
     }
   }
 
@@ -147,8 +173,12 @@ class HexCellComponent extends PositionComponent {
     _draw3DDepth(canvas, path, center, hexRadius);
     _drawHexFill(canvas, path, center, hexRadius);
     final hasSpecialTile = cell.specialType != SpecialTileType.none && _specialImage != null;
-    if (!hasSpecialTile) {
-      _drawHexBorder(canvas, path);
+    final turnColor =
+        (turnOwner != null && herd != null && herd!.size > 0 && herd!.owner == turnOwner)
+            ? AppColors.getPlayerPrimary(turnOwner!)
+            : null;
+    if (!hasSpecialTile || turnColor != null) {
+      _drawHexBorder(canvas, path, color: turnColor);
     }
 
     if (cell.isObstacle) {
@@ -282,7 +312,9 @@ class HexCellComponent extends PositionComponent {
     }
 
     if (herd != null && herd!.size > 0) {
-      final tint = AppColors.getPlayerPrimary(herd!.owner).withValues(alpha: 0.3);
+      final isTurnHerd = turnOwner != null && herd!.owner == turnOwner;
+      final tint = AppColors.getPlayerPrimary(herd!.owner)
+          .withValues(alpha: isTurnHerd ? 0.42 : 0.3);
       canvas.drawPath(path, Paint()..color = tint);
     }
 
@@ -320,9 +352,9 @@ class HexCellComponent extends PositionComponent {
     canvas.restore();
   }
 
-  void _drawHexBorder(Canvas canvas, Path path) {
+  void _drawHexBorder(Canvas canvas, Path path, {Color? color}) {
     final borderPaint = Paint()
-      ..color = const Color(0xFF3F642D).withValues(alpha: 0.95)
+      ..color = (color ?? const Color(0xFF3F642D)).withValues(alpha: 0.95)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.5;
 

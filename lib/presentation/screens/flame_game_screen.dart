@@ -7,13 +7,13 @@ import '../../data/services/progress_service.dart';
 import '../../game/models/player.dart';
 import '../../game/models/pasture_tile.dart';
 import '../../game/models/challenge_mode.dart';
+import '../../game/utils/cow_skin_loader.dart';
 import '../../core/constants/colors.dart';
 import '../../ads/ad_manager.dart';
 import '../overlays/hud_overlay.dart';
 import '../overlays/game_controls_overlay.dart';
 import '../overlays/game_over_overlay.dart';
 import '../overlays/turn_banner.dart';
-import '../overlays/scoreboard_overlay.dart';
 import '../overlays/placement_overlay.dart';
 import '../overlays/herd_placement_overlay.dart';
 import '../overlays/tutorial_overlay.dart';
@@ -58,13 +58,56 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
   double _baseZoom = 1.0;
   Offset _lastFocalPoint = Offset.zero;
 
+  /// Height of the loaded ad banner (0 when absent), used to push the
+  /// top-bar overlays below the banner instead of underneath it.
+  double get _bannerHeight {
+    final banner = AdManager().bannerAd;
+    return banner?.size.height.toDouble() ?? 0;
+  }
+
+  double get _topInset => widget.isTutorial ? 0 : _bannerHeight;
+
+  /// Equipped cow skin id for the local (first) player, from saved progress.
+  /// Empty when nothing is equipped, tutorial mode, or progress not loaded.
+  String get _equippedSkin {
+    if (widget.isTutorial) return '';
+    return _progressService?.progress.equippedSkin ?? '';
+  }
+
+  /// Equipped skin for a specific player (only the local player's own
+  /// banner shows the custom skin; AI/opponent banners keep color art).
+  String _equippedSkinFor(String playerName) {
+    final skin = _equippedSkin;
+    if (skin.isEmpty || !skin.startsWith('skin_')) return '';
+    final isLocal = widget.players.any(
+      (p) => !p.isAi && p.name == playerName,
+    );
+    return isLocal ? skin : '';
+  }
+
+  /// Maps the UI [Color] fired by [BattleCowsGame.onTurnChanged] back to
+  /// its [PlayerColor] via the app palette (the same colors the game uses
+  /// to build the callback's color).
+  PlayerColor _playerColorFromUi(Color color) {
+    for (final p in widget.players) {
+      if (AppColors.getPlayerPrimary(p.color) == color) return p.color;
+    }
+    return PlayerColor.blue;
+  }
+
   @override
   void initState() {
     super.initState();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     if (!widget.isTutorial) {
       AdManager().loadRewardedAd();
-      AdManager().loadBannerAd();
+      AdManager().loadBannerAd(
+        // Rebuild so overlays shift down as soon as the banner's real height
+        // is known (it loads asynchronously after the first frame).
+        onLoaded: () {
+          if (mounted) setState(() {});
+        },
+      );
     }
     _initProgress();
     _game = BattleCowsGame(
@@ -74,6 +117,7 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
       boardSize: widget.boardSize,
       tilesPerPlayer: widget.tilesPerPlayer,
       challengeMode: widget.challengeMode,
+      equippedSkin: _equippedSkin,
       onStateChanged: () {
         if (mounted) setState(() {});
       },
@@ -97,7 +141,6 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
           _game.overlays.remove('HerdPlacement');
           _game.overlays.add('HUD');
           _game.overlays.add('GameControls');
-          _game.overlays.add('Scoreboard');
         }
       },
       onTilePlacementComplete: () {
@@ -152,6 +195,10 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
           playerName: playerName,
           playerColor: playerColor,
           isAi: isAi,
+          cowAsset: CowSkins.assetFor(
+            _playerColorFromUi(playerColor),
+            skinId: _equippedSkinFor(playerName),
+          ),
           onComplete: () {
             _turnBannerEntry?.remove();
             _turnBannerEntry = null;
@@ -242,7 +289,6 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
     _game.overlays.remove('HerdPlacement');
     _game.overlays.remove('HUD');
     _game.overlays.remove('GameControls');
-    _game.overlays.remove('Scoreboard');
     if (widget.isTutorial && mounted) {
       _progressService?.markTutorialCompleted();
       Navigator.of(context).popUntil((route) => route.isFirst);
@@ -331,23 +377,24 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
                     child: HudOverlay(
                       game: game as BattleCowsGame,
                       players: widget.players,
+                      topInset: _topInset,
                     ),
                   ),
                   'Placement': (context, game) => PlacementOverlay(
                     game: game as BattleCowsGame,
+                    topInset: _topInset,
                   ),
                   'HerdPlacement': (context, game) => HerdPlacementOverlay(
                     game: game as BattleCowsGame,
+                    topInset: _topInset,
                   ),
                   'GameControls': (context, game) => GameControlsOverlay(
-                    game: game as BattleCowsGame,
-                  ),
-                  'Scoreboard': (context, game) => ScoreboardOverlay(
                     game: game as BattleCowsGame,
                   ),
                   'GameOver': (context, game) => GameOverOverlay(
                     game: game as BattleCowsGame,
                     players: widget.players,
+                    localSkin: _equippedSkin,
                   ),
                 },
                 initialActiveOverlays: const [],

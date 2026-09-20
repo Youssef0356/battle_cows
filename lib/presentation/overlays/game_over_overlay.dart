@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:in_app_review/in_app_review.dart';
 import '../../flame/battle_cows_game.dart';
 import '../../game/models/player.dart';
+import '../../game/utils/cow_skin_loader.dart';
 import '../../core/constants/colors.dart';
 import '../../ads/ad_manager.dart';
 import '../../data/services/progress_service.dart';
@@ -14,10 +15,15 @@ class GameOverOverlay extends StatefulWidget {
   final BattleCowsGame game;
   final List<Player> players;
 
+  /// Equipped skin id of the local player (empty = none). Used to render
+  /// the local player's cow with their purchased skin.
+  final String localSkin;
+
   const GameOverOverlay({
     super.key,
     required this.game,
     required this.players,
+    this.localSkin = '',
   });
 
   @override
@@ -393,6 +399,10 @@ class _GameOverOverlayState extends State<GameOverOverlay>
   }
 
   String _getCowAsset(PlayerColor color) {
+    if (widget.localSkin.startsWith('skin_') &&
+        color == _localPlayerColor) {
+      return CowSkins.assetFor(color, skinId: widget.localSkin);
+    }
     switch (color) {
       case PlayerColor.blue:
         return 'assets/images/Cows/cow_viking.png';
@@ -403,5 +413,13 @@ class _GameOverOverlayState extends State<GameOverOverlay>
       case PlayerColor.purple:
         return 'assets/images/Cows/cow_disco.png';
     }
+  }
+
+  /// First non-AI player (the local player), or null in AI-only matches.
+  PlayerColor? get _localPlayerColor {
+    for (final player in widget.players) {
+      if (!player.isAi) return player.color;
+    }
+    return null;
   }
 }

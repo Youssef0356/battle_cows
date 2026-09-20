@@ -1,5 +1,8 @@
 import 'dart:math';
+
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../models/player_progress.dart';
 
 class ProgressService {
@@ -17,6 +20,13 @@ class ProgressService {
       _instance!._load();
     }
     return _instance!;
+  }
+
+  /// Test-only: forget the cached singleton so the next [getInstance]
+  /// reloads progress from (mock) storage.
+  @visibleForTesting
+  static void resetInstance() {
+    _instance = null;
   }
 
   PlayerProgress get progress => _progress ?? PlayerProgress();
@@ -43,9 +53,54 @@ class ProgressService {
     final data = _prefs.getString(_key);
     if (data != null) {
       _progress = PlayerProgress.decode(data);
+      _migrateLegacyShopEntries();
     } else {
       _progress = PlayerProgress();
     }
+  }
+
+  /// One-time save cleanup after the shop consolidation: the duplicate
+  /// COWS tab was removed, so remap its cow ids onto the equivalent
+  /// (identical art) skins ids, and clear any equipped skin that no
+  /// longer exists as a purchasable skin item.
+  void _migrateLegacyShopEntries() {
+    const legacyToSkin = {
+      'cow_cowboy': 'skin_cowboy',
+      'cow_viking': 'skin_viking',
+      'cow_disco': 'skin_disco',
+      'cow_farmer': 'skin_farmer',
+    };
+    var changed = false;
+    final owned = _progress!.ownedItems;
+    for (final entry in legacyToSkin.entries) {
+      if (owned.contains(entry.key)) {
+        owned.remove(entry.key);
+        if (!owned.contains(entry.value)) owned.add(entry.value);
+        changed = true;
+      }
+    }
+    // Remap a legacy equipped skin only when that cow was actually owned
+    // (otherwise clear it — it was never purchasable).
+    final equipped = _progress!.equippedSkin;
+    if (equipped.startsWith('cow_')) {
+      final mapped = legacyToSkin[equipped];
+      if (mapped != null && owned.contains(mapped)) {
+        _progress!.equippedSkin = mapped;
+      } else {
+        _progress!.equippedSkin = '';
+      }
+      changed = true;
+    } else if (equipped.isNotEmpty && !owned.contains(equipped)) {
+      _progress!.equippedSkin = '';
+      changed = true;
+    }
+    // Drop any remaining legacy cow ids that have no replacement in the
+    // consolidated catalog (e.g. cow_ninja / cow_robot — no art existed,
+    // so they were never fulfillable). No new-catalog id uses cow_*.
+    final countBefore = owned.length;
+    owned.removeWhere((id) => id.startsWith('cow_'));
+    if (owned.length != countBefore) changed = true;
+    if (changed) _save();
   }
 
   void _save() {
@@ -137,6 +192,8 @@ class ProgressService {
 
   void equipItem(String itemId) {
     if (!progress.ownedItems.contains(itemId)) return;
+    // Only skins can be equipped; the equipped skin drives the in-game cow art.
+    if (!itemId.startsWith('skin_')) return;
     progress.equippedSkin = itemId;
     _save();
   }

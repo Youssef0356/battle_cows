@@ -27,7 +27,7 @@ class ShopDialog extends StatefulWidget {
 }
 
 class _ShopDialogState extends State<ShopDialog> {
-  ShopCategory _selectedCategory = ShopCategory.hats;
+  ShopCategory _selectedCategory = ShopCategory.skins;
 
   @override
   Widget build(BuildContext context) {
@@ -64,22 +64,24 @@ class _ShopDialogState extends State<ShopDialog> {
           const SizedBox(height: 10),
           _buildCategoryTabs(),
           const SizedBox(height: 10),
-          SizedBox(
-            height: 300,
-            child: GridView.builder(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                crossAxisSpacing: 8,
-                mainAxisSpacing: 8,
-              ),
-              itemCount: filtered.length,
-              itemBuilder: (context, index) {
-                final item = filtered[index];
-                final isOwned = owned.contains(item.id);
-                final canBuy = coins >= item.price && !isOwned;
-                return _buildShopTile(item, isOwned, canBuy);
-              },
+          // The dialog body already provides the scroll view, so the grid
+          // shrink-wraps and the whole shop scrolls as a single list.
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: EdgeInsets.zero,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
             ),
+            itemCount: filtered.length,
+            itemBuilder: (context, index) {
+              final item = filtered[index];
+              final isOwned = owned.contains(item.id);
+              final canBuy = coins >= item.price && !isOwned;
+              return _buildShopTile(item, isOwned, canBuy);
+            },
           ),
           const SizedBox(height: 8),
           KenneyButton(
@@ -101,14 +103,14 @@ class _ShopDialogState extends State<ShopDialog> {
         children: ShopCategory.values.map((cat) {
         final isSelected = _selectedCategory == cat;
         final labels = {
-          ShopCategory.hats: '🤠',
           ShopCategory.skins: '🐄',
+          ShopCategory.hats: '🤠',
           ShopCategory.themes: '🎨',
           ShopCategory.emojis: '💬',
-          ShopCategory.boards: '🐮',
-          ShopCategory.cows: '🐄',
+          ShopCategory.boards: '🪵',
         };
         return GestureDetector(
+          key: ValueKey('shop-tab-${cat.name}'),
           onTap: () => setState(() => _selectedCategory = cat),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -129,8 +131,17 @@ class _ShopDialogState extends State<ShopDialog> {
 
   Widget _buildShopTile(ShopItem item, bool isOwned, bool canBuy) {
     final isEquipped = widget.progress.progress.equippedSkin == item.id;
+    // Single tap equips owned skins that aren't equipped yet; long-press
+    // still equips any owned item.
+    final canEquip = isOwned &&
+        item.category == ShopCategory.skins &&
+        !isEquipped;
     return GestureDetector(
-      onTap: canBuy ? () => _buyItem(item) : null,
+      onTap: canBuy
+          ? () => _buyItem(item)
+          : canEquip
+              ? () => _equipItem(item)
+              : null,
       onLongPress: isOwned ? () => _equipItem(item) : null,
       child: Container(
         padding: const EdgeInsets.all(6),
@@ -151,15 +162,18 @@ class _ShopDialogState extends State<ShopDialog> {
           ),
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-             SizedBox(
-               width: 54,
-               height: 54,
-               child: item.imageAsset != null
-                   ? Image.asset(item.imageAsset!, fit: BoxFit.contain)
-                   : Center(child: Text(item.icon, style: const TextStyle(fontSize: 22))),
-             ),
+            // Flexible image area: it shrinks to whatever height the grid
+            // tile actually has, so the tile can never overflow.
+            Expanded(
+              child: Center(
+                child: item.imageAsset != null
+                    ? Image.asset(item.imageAsset!, fit: BoxFit.contain)
+                    : Text(item.icon, style: const TextStyle(fontSize: 22)),
+              ),
+            ),
             const SizedBox(height: 2),
             Text(
               item.name,
@@ -171,22 +185,29 @@ class _ShopDialogState extends State<ShopDialog> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-             const SizedBox(height: 1),
-                            if (isOwned)
-                              Text(
-                                isEquipped ? 'EQUIPPED ✅' : 'OWNED',
-                                style: GoogleFonts.bangers(fontSize: 8, color: isEquipped ? const Color(0xFF43A047) : const Color(0xFF689F38)),
-                              )
-                            else
-                              Text(
-                                '💰 ${item.price}',
-                                style: GoogleFonts.bangers(
-                                  fontSize: 9,
-                                  color: canBuy ? const Color(0xFFFFD54F) : Colors.white38,
-                                ),
-                              ),
-                          ],
-                        ),
+            const SizedBox(height: 1),
+            if (isOwned)
+              Text(
+                isEquipped ? 'EQUIPPED ✅' : 'OWNED',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.bangers(
+                  fontSize: 8,
+                  color: isEquipped ? const Color(0xFF43A047) : const Color(0xFF689F38),
+                ),
+              )
+            else
+              Text(
+                '💰 ${item.price}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.bangers(
+                  fontSize: 9,
+                  color: canBuy ? const Color(0xFFFFD54F) : Colors.white38,
+                ),
+              ),
+          ],
+        ),
                       ),
                     );
                   }

@@ -12,10 +12,15 @@ class HudOverlay extends StatelessWidget {
   final BattleCowsGame game;
   final List<Player> players;
 
+  /// Extra top spacing (the ad banner height) so the timer/settings row sits
+  /// below the banner instead of being covered by it.
+  final double topInset;
+
   const HudOverlay({
     super.key,
     required this.game,
     required this.players,
+    this.topInset = 0,
   });
 
   @override
@@ -30,7 +35,7 @@ class HudOverlay extends StatelessWidget {
         child: SizedBox(
           width: double.infinity,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+            padding: EdgeInsets.fromLTRB(20, 8 + topInset, 20, 0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
