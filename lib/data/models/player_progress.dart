@@ -15,6 +15,7 @@ class PlayerProgress {
   String? lastQuestRefreshDate;
   bool tutorialCompleted;
   int ratePromptCount;
+  bool isPremium;
 
   PlayerProgress({
     this.coins = 0,
@@ -32,10 +33,19 @@ class PlayerProgress {
     this.tutorialCompleted = false,
     this.ratePromptCount = 0,
     this.equippedSkin = '',
+    this.isPremium = false,
+    this.equippedHat = '',
+    this.equippedTheme = '',
+    this.equippedEmoji = '',
+    this.equippedBoard = '',
   })  : ownedItems = ownedItems ?? [],
         dailyQuests = dailyQuests ?? [];
 
   String equippedSkin;
+  String equippedHat;
+  String equippedTheme;
+  String equippedEmoji;
+  String equippedBoard;
 
   int get xpForCurrentLevel => level * 100;
   int get xpForNextLevel => (level + 1) * 100;
@@ -78,6 +88,11 @@ class PlayerProgress {
         'tutorialCompleted': tutorialCompleted,
         'ratePromptCount': ratePromptCount,
         'equippedSkin': equippedSkin,
+        'isPremium': isPremium,
+        'equippedHat': equippedHat,
+        'equippedTheme': equippedTheme,
+        'equippedEmoji': equippedEmoji,
+        'equippedBoard': equippedBoard,
       };
 
   factory PlayerProgress.fromJson(Map<String, dynamic> json) {
@@ -100,6 +115,11 @@ class PlayerProgress {
       tutorialCompleted: json['tutorialCompleted'] ?? false,
       ratePromptCount: json['ratePromptCount'] ?? 0,
       equippedSkin: json['equippedSkin'] ?? '',
+      isPremium: json['isPremium'] ?? false,
+      equippedHat: json['equippedHat'] ?? '',
+      equippedTheme: json['equippedTheme'] ?? '',
+      equippedEmoji: json['equippedEmoji'] ?? '',
+      equippedBoard: json['equippedBoard'] ?? '',
     );
   }
 

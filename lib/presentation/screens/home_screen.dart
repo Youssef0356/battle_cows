@@ -3,10 +3,13 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../assets/asset_paths.dart';
 import '../../core/constants/colors.dart';
+import '../../data/services/premium_service.dart';
 import '../../data/services/progress_service.dart';
 import '../../game/models/player.dart';
 import '../dialogs/daily_quests_dialog.dart';
+import '../dialogs/premium_dialog.dart';
 import '../dialogs/shop_dialog.dart';
 import '../router/app_router.dart';
 import '../widgets/wood_button.dart';
@@ -76,6 +79,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   int _selectedDifficultyIndex = 1;
 
+  /// Home backdrop: the player's equipped theme, or the default farm scene.
+  String get _backgroundAsset =>
+      _progressService?.equippedThemeAsset ?? AssetPaths.background;
+
   void _launchGame({required int playerCount, required int tilesPerPlayer, required bool isMultiplayer, ChallengeMode challengeMode = ChallengeMode.standard}) {
     final difficulty = Difficulty.values[_selectedDifficultyIndex];
     final players = _createPlayers(count: playerCount, isMultiplayer: isMultiplayer, difficulty: difficulty);
@@ -91,7 +98,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         'boardSize': 7 + (5 - tilesPerPlayer) * 2,
         'challengeMode': challengeMode,
       },
-    );
+    ).then((_) {
+      // Returning from a match: refresh coins/level/theme on the home screen.
+      if (mounted) setState(() {});
+    });
   }
 
   void _showGameSetupDialog({required String title, required bool isMultiplayer, ChallengeMode challengeMode = ChallengeMode.standard}) {
@@ -446,10 +456,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Background pasture image
+          // Background pasture image (the equipped theme, or the default).
           Positioned.fill(
             child: Image.asset(
-              'assets/images/Background/background.jpg',
+              _backgroundAsset,
               fit: BoxFit.cover,
               errorBuilder: (context, error, stack) => Container(
                 decoration: const BoxDecoration(
@@ -597,7 +607,58 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         _buildWoodToolButton(icon: Icons.settings, label: 'SETTINGS', onTap: () => Navigator.pushNamed(context, AppRouter.settings)),
         const SizedBox(height: 6),
         _buildWoodToolButton(icon: Icons.shopping_cart, label: 'SHOP', onTap: _showShopDialog),
+        const SizedBox(height: 6),
+        _buildPremiumPromo(),
       ],
+    );
+  }
+
+  /// Gold "remove ads" promo, hidden once premium is owned.
+  Widget _buildPremiumPromo() {
+    return ListenableBuilder(
+      listenable: PremiumService.instance,
+      builder: (context, _) {
+        if (PremiumService.instance.isPremium) return const SizedBox.shrink();
+        return BouncyPressable(
+          key: const ValueKey('home-premium-promo'),
+          scaleDown: 0.90,
+          onTap: () => PremiumDialog.show(context),
+          child: Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFFFD54F), Color(0xFFFFA000)],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFFFF3C4), width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.4),
+                  offset: const Offset(0, 2),
+                  blurRadius: 4,
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.block_rounded, color: Color(0xFF3E2723), size: 18),
+                Text(
+                  'NO ADS',
+                  style: GoogleFonts.bangers(
+                    fontSize: 8,
+                    color: const Color(0xFF3E2723),
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 

@@ -19,11 +19,15 @@ class GameOverOverlay extends StatefulWidget {
   /// the local player's cow with their purchased skin.
   final String localSkin;
 
+  /// Coins earned from this match, shown as a reward line.
+  final int coinsEarned;
+
   const GameOverOverlay({
     super.key,
     required this.game,
     required this.players,
     this.localSkin = '',
+    this.coinsEarned = 0,
   });
 
   @override
@@ -321,6 +325,17 @@ class _GameOverOverlayState extends State<GameOverOverlay>
                 _buildStatItem('YOUR CAPTURES', '${game.capturesPerPlayer[widget.players.isNotEmpty ? widget.players[0].color : null] ?? 0}'),
                 _buildStatItem('CPU CAPTURES', '${game.capturesPerPlayer[widget.players.length > 1 ? widget.players[1].color : null] ?? 0}'),
               ],
+            ),
+          ],
+          if (widget.coinsEarned > 0) ...[
+            const SizedBox(height: 10),
+            Text(
+              '+${widget.coinsEarned} 💰 EARNED',
+              style: GoogleFonts.bangers(
+                fontSize: 16,
+                color: const Color(0xFF81C784),
+                letterSpacing: 1,
+              ),
             ),
           ],
         ],

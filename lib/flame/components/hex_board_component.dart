@@ -2,6 +2,7 @@ import 'dart:math';
 import 'dart:ui' as ui;
 import 'package:flutter/services.dart';
 import 'package:flame/components.dart';
+import '../../assets/asset_paths.dart';
 import '../../game/models/hex_position.dart';
 import '../../game/models/game_board.dart';
 import '../../game/models/hex_cell.dart';
@@ -19,8 +20,11 @@ class HexBoardComponent extends PositionComponent {
 
   /// Player color whose herds render with [skinOverride] (the local
   /// player's equipped shop skin). Null disables skin overrides.
-  final PlayerColor? skinOwnerColor;
-  final String? skinOverride;
+  PlayerColor? skinOwnerColor;
+  String? skinOverride;
+
+  /// Tile texture asset for the equipped board skin. Null uses the default.
+  final String? textureAsset;
 
   HexBoardComponent({
     required this.board,
@@ -28,20 +32,45 @@ class HexBoardComponent extends PositionComponent {
     required super.size,
     this.skinOwnerColor,
     this.skinOverride,
+    this.textureAsset,
   });
 
   Map<HexPosition, HexCellComponent> get cells => _cells;
 
-  @override
-  Future<void> onLoad() async {
-    await HexCellComponent.precacheAllAssets();
+  static Future<ui.Image?> _loadTexture(String? path) async {
+    final asset = path ?? AssetPaths.boardTextureWood;
     try {
-      final data = await rootBundle.load('assets/images/Tile Image/Tile Texture.jpg');
+      final data = await rootBundle.load(asset);
       final bytes = data.buffer.asUint8List();
       final codec = await ui.instantiateImageCodec(bytes);
       final frame = await codec.getNextFrame();
-      _texture = frame.image;
-    } catch (_) {}
+      return frame.image;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Swaps the board tile texture for every cell (equipped board skin).
+  Future<void> setTextureAsset(String? path) async {
+    _texture = await _loadTexture(path);
+    for (final cell in _cells.values) {
+      cell.applyTexture(_texture);
+    }
+  }
+
+  /// Swaps the equipped skin override for every cell.
+  void setSkinOverride(PlayerColor? owner, String? skin) {
+    skinOwnerColor = owner;
+    skinOverride = skin;
+    for (final cell in _cells.values) {
+      cell.applySkin(owner, skin);
+    }
+  }
+
+  @override
+  Future<void> onLoad() async {
+    await HexCellComponent.precacheAllAssets();
+    _texture = await _loadTexture(textureAsset);
 
     final hexSize = size.x / 15;
 

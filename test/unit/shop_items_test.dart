@@ -60,6 +60,17 @@ void main() {
       );
     });
 
+    test('every theme and board item maps to a real art asset', () {
+      final cosmetics = shopItems.where((i) =>
+          i.category == ShopCategory.themes ||
+          i.category == ShopCategory.boards);
+      expect(cosmetics, isNotEmpty);
+      for (final item in cosmetics) {
+        expect(item.imageAsset, isNotNull, reason: '${item.id} has no image');
+        expect(item.imageAsset, startsWith('assets/images/'));
+      }
+    });
+
     test('each player color has color art', () {
       for (final color in PlayerColor.values) {
         expect(CowSkins.byColor[color], isNotNull);

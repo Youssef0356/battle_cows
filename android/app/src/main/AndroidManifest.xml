@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Required for Google Play in-app purchases (Remove Ads premium). -->
+    <uses-permission android:name="com.android.vending.BILLING" />
     <supports-screens
         android:smallScreens="true"
         android:normalScreens="true"

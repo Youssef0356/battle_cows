@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:battle_cows/data/models/shop_item.dart';
+import 'package:battle_cows/data/services/premium_service.dart';
 import 'package:battle_cows/data/services/progress_service.dart';
 import 'package:battle_cows/presentation/dialogs/shop_dialog.dart';
 
@@ -12,6 +13,8 @@ void main() {
     setUp(() async {
       TestWidgetsFlutterBinding.ensureInitialized();
       SharedPreferences.setMockInitialValues({});
+      ProgressService.resetInstance();
+      PremiumService.instance.resetForTesting();
       progress = await ProgressService.getInstance();
       progress.progress.coins = 1000;
       progress.progress.ownedItems.clear();
@@ -33,7 +36,11 @@ void main() {
                   child: SizedBox(
                     width: 300,
                     height: 520,
-                    child: ShopDialog(progress: progress),
+                    // Mirrors CartoonDialog, which wraps the shop body in a
+                    // scroll view so a tall shop scrolls instead of overflowing.
+                    child: SingleChildScrollView(
+                      child: ShopDialog(progress: progress),
+                    ),
                   ),
                 ),
               ),
@@ -126,6 +133,31 @@ void main() {
       // The shop is taller than the dialog, so it must scroll.
       final scrollable = tester.state<ScrollableState>(find.byType(Scrollable).first);
       expect(scrollable.position.maxScrollExtent, greaterThan(0));
+    });
+
+    testWidgets('premium banner shows for free players', (tester) async {
+      tester.view.physicalSize = const Size(1080, 1920);
+      tester.view.devicePixelRatio = 3.0;
+      addTearDown(tester.view.reset);
+
+      await pumpShop(tester);
+
+      expect(find.byKey(const ValueKey('shop-premium-banner')), findsOneWidget);
+      expect(find.text('REMOVE ADS — GO PREMIUM'), findsOneWidget);
+    });
+
+    testWidgets('premium banner hides once premium is owned', (tester) async {
+      tester.view.physicalSize = const Size(1080, 1920);
+      tester.view.devicePixelRatio = 3.0;
+      addTearDown(tester.view.reset);
+
+      progress.unlockPremium();
+      await PremiumService.instance.loadEntitlement();
+
+      await pumpShop(tester);
+
+      expect(find.byKey(const ValueKey('shop-premium-banner')), findsNothing);
+      expect(find.text('REMOVE ADS — GO PREMIUM'), findsNothing);
     });
   });
 }

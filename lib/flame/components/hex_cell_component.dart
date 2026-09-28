@@ -15,7 +15,7 @@ class HexCellComponent extends PositionComponent {
   bool isValidMove;
   double pulseValue;
   final int flipMode;
-  final ui.Image? texture;
+  ui.Image? texture;
   PlayerColor? territoryOwner;
 
   /// Player whose turn it is. When it matches the rendered herd's owner,
@@ -70,8 +70,20 @@ class HexCellComponent extends PositionComponent {
 
   /// Shop skin id (e.g. `skin_cowboy`). When non-empty it replaces the
   /// color-based cow sprite for herds owned by [skinOwnerColor].
-  final String? skinOverride;
-  final PlayerColor? skinOwnerColor;
+  String? skinOverride;
+  PlayerColor? skinOwnerColor;
+
+  /// Swaps the equipped skin and re-resolves the cow sprite immediately.
+  void applySkin(PlayerColor? owner, String? skin) {
+    skinOwnerColor = owner;
+    skinOverride = skin;
+    refreshHerdImages();
+  }
+
+  /// Swaps the board tile texture immediately.
+  void applyTexture(ui.Image? image) {
+    texture = image;
+  }
 
   @override
   Future<void> onLoad() async {

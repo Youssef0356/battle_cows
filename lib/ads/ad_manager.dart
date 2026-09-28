@@ -10,6 +10,7 @@ class AdManager {
   InterstitialAd? _interstitialAd;
   BannerAd? _bannerAd;
   bool _bannerLoaded = false;
+  bool _adsEnabled = true;
 
   // Production IDs
   static const String _rewardedAdUnitId = 'ca-app-pub-6774620515484669/6141831508';
@@ -19,7 +20,25 @@ class AdManager {
   bool get bannerLoaded => _bannerLoaded;
   BannerAd? get bannerAd => _bannerAd;
 
+  /// False once the player owns the premium "Remove Ads" entitlement.
+  bool get adsEnabled => _adsEnabled;
+
+  /// Enables/disables all ad loading and display. Disabling disposes any
+  /// cached ads immediately so premium players never see a stale one.
+  void setAdsEnabled(bool enabled) {
+    if (_adsEnabled == enabled) return;
+    _adsEnabled = enabled;
+    if (!enabled) {
+      _rewardedAd?.dispose();
+      _rewardedAd = null;
+      _interstitialAd?.dispose();
+      _interstitialAd = null;
+      disposeBannerAd();
+    }
+  }
+
   void loadRewardedAd() {
+    if (!_adsEnabled) return;
     RewardedAd.load(
       adUnitId: _rewardedAdUnitId,
       request: const AdRequest(),
@@ -35,6 +54,7 @@ class AdManager {
   }
 
   void loadInterstitialAd() {
+    if (!_adsEnabled) return;
     InterstitialAd.load(
       adUnitId: _interstitialAdUnitId,
       request: const AdRequest(),
@@ -50,6 +70,7 @@ class AdManager {
   }
 
   void loadBannerAd({VoidCallback? onLoaded}) {
+    if (!_adsEnabled) return;
     _bannerAd?.dispose();
     _bannerAd = BannerAd(
       adUnitId: _bannerAdUnitId,
@@ -70,6 +91,10 @@ class AdManager {
   }
 
   void showInterstitialAd({Function()? onAdDismissed}) {
+    if (!_adsEnabled) {
+      onAdDismissed?.call();
+      return;
+    }
     if (_interstitialAd == null) {
       loadInterstitialAd();
       onAdDismissed?.call();
@@ -98,6 +123,10 @@ class AdManager {
     required void Function(RewardItem reward) onUserEarnedReward,
     Function()? onAdDismissed,
   }) {
+    if (!_adsEnabled) {
+      onAdDismissed?.call();
+      return;
+    }
     if (_rewardedAd == null) {
       loadRewardedAd();
       onAdDismissed?.call();

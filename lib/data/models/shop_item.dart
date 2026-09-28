@@ -1,3 +1,5 @@
+import '../../assets/asset_paths.dart';
+
 class ShopItem {
   final String id;
   final String name;
@@ -90,27 +92,30 @@ const List<ShopItem> shopItems = [
     category: ShopCategory.hats,
   ),
   ShopItem(
-    id: 'theme_sunset',
-    name: 'Sunset Theme',
-    description: 'Warm orange board skin',
-    icon: '🌅',
+    id: 'theme_valley',
+    name: 'Green Valley',
+    description: 'Sunny cartoon farm valley backdrop',
+    icon: '🏞️',
+    imageAsset: AssetPaths.backgroundValley,
     price: 400,
     category: ShopCategory.themes,
   ),
   ShopItem(
-    id: 'theme_night',
-    name: 'Night Mode',
-    description: 'Dark pasture for night owls',
-    icon: '🌙',
-    price: 600,
+    id: 'theme_field',
+    name: 'Flower Field',
+    description: 'Blooming meadow pasture backdrop',
+    icon: '🌻',
+    imageAsset: AssetPaths.backgroundFarmField,
+    price: 450,
     category: ShopCategory.themes,
   ),
   ShopItem(
-    id: 'theme_ocean',
-    name: 'Ocean Blue',
-    description: 'Cool blue waters of the sea',
-    icon: '🌊',
-    price: 450,
+    id: 'theme_wood',
+    name: 'Rustic Wood',
+    description: 'Cozy wooden tabletop backdrop',
+    icon: '🪵',
+    imageAsset: AssetPaths.backgroundWood,
+    price: 500,
     category: ShopCategory.themes,
   ),
   ShopItem(
@@ -139,18 +144,37 @@ const List<ShopItem> shopItems = [
   ),
   ShopItem(
     id: 'board_wood',
-    name: 'Classic Wood',
-    description: 'Rustic wooden board',
+    name: 'Wooden Tiles',
+    description: 'Warm carved wood hex tiles',
     icon: '🪵',
+    imageAsset: AssetPaths.boardTextureWood,
     price: 300,
     category: ShopCategory.boards,
   ),
   ShopItem(
-    id: 'board_marble',
-    name: 'Marble',
-    description: 'Elegant stone surface',
-    icon: '💎',
-    price: 800,
+    id: 'board_meadow',
+    name: 'Meadow Tiles',
+    description: 'Soft sunlit grass hex tiles',
+    icon: '🌿',
+    imageAsset: AssetPaths.boardTextureMeadow,
+    price: 500,
+    category: ShopCategory.boards,
+  ),
+  ShopItem(
+    id: 'board_flowers',
+    name: 'Flower Grass',
+    description: 'Lush grass dotted with wildflowers',
+    icon: '🌼',
+    imageAsset: AssetPaths.boardTextureFlowers,
+    price: 700,
     category: ShopCategory.boards,
   ),
 ];
+
+/// Looks up a catalog item by id, or null when it is unknown.
+ShopItem? shopItemById(String id) {
+  for (final item in shopItems) {
+    if (item.id == id) return item;
+  }
+  return null;
+}

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../data/models/shop_item.dart';
+import '../../data/services/premium_service.dart';
 import '../../data/services/progress_service.dart';
 import '../widgets/cartoon_dialog.dart';
 import '../widgets/kenney_button.dart';
+import 'premium_dialog.dart';
 
 class ShopDialog extends StatefulWidget {
   final ProgressService progress;
@@ -62,6 +64,7 @@ class _ShopDialogState extends State<ShopDialog> {
             ),
           ),
           const SizedBox(height: 10),
+          _buildPremiumBanner(),
           _buildCategoryTabs(),
           const SizedBox(height: 10),
           // The dialog body already provides the scroll view, so the grid
@@ -95,6 +98,59 @@ class _ShopDialogState extends State<ShopDialog> {
     );
   }
 
+  Widget _buildPremiumBanner() {
+    return ListenableBuilder(
+      listenable: PremiumService.instance,
+      builder: (context, _) {
+        if (PremiumService.instance.isPremium) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: GestureDetector(
+            key: const ValueKey('shop-premium-banner'),
+            onTap: () => PremiumDialog.show(context),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFFFD54F), Color(0xFFFFA000)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFFFF3C4), width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFFFA000).withValues(alpha: 0.35),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  const Text('🚫📺', style: TextStyle(fontSize: 20)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'REMOVE ADS — GO PREMIUM',
+                      style: GoogleFonts.bangers(
+                        fontSize: 15,
+                        color: const Color(0xFF3E2723),
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right, color: Color(0xFF3E2723)),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildCategoryTabs() {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -121,7 +177,22 @@ class _ShopDialogState extends State<ShopDialog> {
                 color: isSelected ? const Color(0xFFFFD54F) : Colors.white24,
               ),
             ),
-            child: Text(labels[cat]!, style: const TextStyle(fontSize: 20)),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Text(labels[cat]!, style: const TextStyle(fontSize: 20)),
+                if (widget.progress.equippedForCategory(cat).isNotEmpty)
+                  const Positioned(
+                    right: -5,
+                    top: -5,
+                    child: Icon(
+                      Icons.check_circle,
+                      size: 13,
+                      color: Color(0xFF43A047),
+                    ),
+                  ),
+              ],
+            ),
           ),
         );
         }).toList(),
@@ -130,35 +201,35 @@ class _ShopDialogState extends State<ShopDialog> {
   }
 
   Widget _buildShopTile(ShopItem item, bool isOwned, bool canBuy) {
-    final isEquipped = widget.progress.progress.equippedSkin == item.id;
-    // Single tap equips owned skins that aren't equipped yet; long-press
-    // still equips any owned item.
-    final canEquip = isOwned &&
-        item.category == ShopCategory.skins &&
-        !isEquipped;
+    final isEquipped = widget.progress.isEquipped(item.id);
+    // Owned items can be equipped/unequipped by tapping; unowned affordable
+    // items are bought.
     return GestureDetector(
-      onTap: canBuy
-          ? () => _buyItem(item)
-          : canEquip
-              ? () => _equipItem(item)
+      onTap: isOwned
+          ? () => _toggleEquip(item)
+          : canBuy
+              ? () => _buyItem(item)
               : null,
-      onLongPress: isOwned ? () => _equipItem(item) : null,
       child: Container(
         padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
-          color: isOwned
-              ? const Color(0xFF689F38).withValues(alpha: 0.15)
-              : canBuy
-                  ? Colors.black.withValues(alpha: 0.3)
-                  : Colors.black.withValues(alpha: 0.15),
+          color: isEquipped
+              ? const Color(0xFFFFD54F).withValues(alpha: 0.18)
+              : isOwned
+                  ? const Color(0xFF689F38).withValues(alpha: 0.15)
+                  : canBuy
+                      ? Colors.black.withValues(alpha: 0.3)
+                      : Colors.black.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isOwned
-                ? const Color(0xFF689F38)
-                : canBuy
-                    ? const Color(0xFFFFD54F)
-                    : Colors.white12,
-            width: isOwned ? 2 : 1,
+            color: isEquipped
+                ? const Color(0xFFFFD54F)
+                : isOwned
+                    ? const Color(0xFF689F38)
+                    : canBuy
+                        ? const Color(0xFFFFD54F)
+                        : Colors.white12,
+            width: (isEquipped || isOwned) ? 2 : 1,
           ),
         ),
         child: Column(
@@ -188,7 +259,7 @@ class _ShopDialogState extends State<ShopDialog> {
             const SizedBox(height: 1),
             if (isOwned)
               Text(
-                isEquipped ? 'EQUIPPED ✅' : 'OWNED',
+                isEquipped ? 'EQUIPPED ✅' : 'TAP TO USE',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.bangers(
@@ -215,11 +286,13 @@ class _ShopDialogState extends State<ShopDialog> {
   void _buyItem(ShopItem item) {
     final success = widget.progress.buyItem(item.id, item.price);
     if (success) {
+      // Auto-equip so the purchase is immediately visible.
+      widget.progress.equipItem(item.id);
       setState(() {});
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '${item.icon} ${item.name} purchased!',
+            '${item.icon} ${item.name} purchased & equipped!',
             style: GoogleFonts.bangers(fontSize: 16),
           ),
           backgroundColor: const Color(0xFF689F38),
@@ -240,16 +313,20 @@ class _ShopDialogState extends State<ShopDialog> {
     }
   }
 
-  void _equipItem(ShopItem item) {
+  void _toggleEquip(ShopItem item) {
+    final wasEquipped = widget.progress.isEquipped(item.id);
     widget.progress.equipItem(item.id);
     setState(() {});
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          '${item.icon} ${item.name} equipped!',
+          wasEquipped
+              ? '${item.icon} ${item.name} unequipped'
+              : '${item.icon} ${item.name} equipped!',
           style: GoogleFonts.bangers(fontSize: 16),
         ),
-        backgroundColor: const Color(0xFF43A047),
+        backgroundColor:
+            wasEquipped ? const Color(0xFF6D4C41) : const Color(0xFF43A047),
         duration: const Duration(seconds: 1),
       ),
     );

@@ -17,9 +17,19 @@ class AssetPaths {
   static const String logo = '$imagesPath/Background/Logo.png';
   static const String titleText = '$imagesPath/Background/Title Text.png';
 
+  // Selectable theme backgrounds (shop themes map onto these).
+  static const String backgroundValley = '$imagesPath/Background/Background.jpg';
+  static const String backgroundFarmField = '$imagesPath/Background/Farm field.jpg';
+  static const String backgroundWood = '$imagesPath/Background/Wood planks.jpg';
+
   // Tile & Pasture Textures
   static const String grassTexture = '$imagesPath/Tile Image/Grass Texture.jpg';
   static const String tileTexture = '$imagesPath/Tile Image/Tile Texture.png';
+
+  // Selectable board tile textures (shop boards map onto these).
+  static const String boardTextureWood = '$imagesPath/Tile Image/Tile Texture.jpg';
+  static const String boardTextureMeadow = '$imagesPath/Tile Image/Tile Texture.png';
+  static const String boardTextureFlowers = '$imagesPath/Tile Image/Grass Texture.jpg';
 
   // Sounds
   static const String soundTap = 'sounds/tap.mp3';

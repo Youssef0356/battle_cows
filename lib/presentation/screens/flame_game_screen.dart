@@ -21,6 +21,7 @@ import '../../game/tutorial/tutorial_data.dart';
 import '../widgets/capture_toast.dart';
 import '../widgets/banner_ad_widget.dart';
 import '../widgets/parallax_dust_layer.dart';
+import '../widgets/pan_indicators.dart';
 
 class FlameGameScreen extends StatefulWidget {
   final List<Player> players;
@@ -52,11 +53,24 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
   OverlayEntry? _captureToastEntry;
   ProgressService? _progressService;
   bool _showTutorialOverlay = false;
+  int _lastMatchCoins = 0;
 
   static const double _minZoom = 0.5;
   static const double _maxZoom = 3.0;
   double _baseZoom = 1.0;
   Offset _lastFocalPoint = Offset.zero;
+
+  /// Set on the first board drag so the edge pan hints can settle from a
+  /// bright pulse into a faint static marker.
+  bool _hasPanned = false;
+
+  /// Whether the fence action bar currently sits above the move-cows bar
+  /// (used to keep the bottom pan hint clear of it).
+  bool get _showFenceBar {
+    if (_game.challengeMode != ChallengeMode.fenceChallenge) return false;
+    if (_game.engine.players.isEmpty) return false;
+    return !_game.engine.currentPlayer.isAi && !_game.isGameOver;
+  }
 
   /// Height of the loaded ad banner (0 when absent), used to push the
   /// top-bar overlays below the banner instead of underneath it.
@@ -168,6 +182,17 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
 
   Future<void> _initProgress() async {
     _progressService = await ProgressService.getInstance();
+    if (!mounted) return;
+    // Progress loads after the game is built, so push the equipped cosmetics
+    // into the live game now (theme background, board texture, cow skin).
+    final progress = _progressService!;
+    final theme = progress.equippedThemeAsset;
+    if (theme != null) await _game.setBackgroundAsset(theme);
+    final board = progress.equippedBoardAsset;
+    if (board != null) await _game.setBoardTextureAsset(board);
+    final skin = progress.progress.equippedSkin;
+    if (skin.isNotEmpty) _game.setEquippedSkin(skin);
+    setState(() {});
   }
 
   void _recordGameResult(PlayerColor? winner) {
@@ -175,7 +200,8 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
     final playerColor = widget.players.isNotEmpty ? widget.players[0].color : null;
     final won = winner != null && winner == playerColor;
     final captures = _game.capturesPerPlayer[playerColor] ?? 0;
-    _progressService!.recordMatch(won: won, captures: captures);
+    _lastMatchCoins =
+        _progressService!.recordMatch(won: won, captures: captures);
   }
 
   @override
@@ -329,6 +355,7 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
       _game.notifyStateChanged();
     }
     _lastFocalPoint = details.focalPoint;
+    if (!_hasPanned) setState(() => _hasPanned = true);
   }
 
   void _onScaleEnd(ScaleEndDetails details) {}
@@ -348,6 +375,7 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
       body: Stack(
         children: [
           Positioned.fill(
+            key: const ValueKey('board-background'),
             child: Image.asset(
               _game.backgroundAsset,
               fit: BoxFit.cover,
@@ -355,9 +383,11 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
             ),
           ),
           Positioned.fill(
+            key: const ValueKey('board-scrim'),
             child: ColoredBox(color: Colors.black26),
           ),
           Positioned.fill(
+            key: const ValueKey('game-widget'),
             child: GestureDetector(
               behavior: HitTestBehavior.translucent,
               onTapUp: (details) {
@@ -395,6 +425,7 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
                     game: game as BattleCowsGame,
                     players: widget.players,
                     localSkin: _equippedSkin,
+                    coinsEarned: _lastMatchCoins,
                   ),
                 },
                 initialActiveOverlays: const [],
@@ -402,10 +433,21 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
             ),
           ),
           const Positioned.fill(
+            key: ValueKey('parallax-dust'),
             child: ParallaxDustLayer(),
           ),
+          if (!_game.isGameOver && _game.overlays.isActive('GameControls'))
+            Positioned.fill(
+              key: const ValueKey('pan-indicators'),
+              child: PanIndicators(
+                emphasized: !_hasPanned,
+                topInset: _bannerHeight + 62,
+                bottomInset: _showFenceBar ? 174 : 124,
+              ),
+            ),
           if (_showTutorialOverlay)
             Positioned.fill(
+              key: const ValueKey('tutorial-overlay'),
               child: TutorialOverlay(
                 steps: TutorialScenario.steps,
                 onComplete: _onTutorialComplete,
@@ -414,6 +456,7 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
             ),
           if (!widget.isTutorial)
             Positioned(
+              key: const ValueKey('banner-ad'),
               top: 0,
               left: 0,
               right: 0,

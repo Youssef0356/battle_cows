@@ -223,11 +223,30 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
     this.onPlacementComplete,
     this.onTilePlacementComplete,
     this.equippedSkin = '',
+    this.boardTextureAsset,
   }) : _tilesPerPlayer = tilesPerPlayer;
 
   /// The local player's equipped cow skin (shop item id, e.g.
   /// `skin_cowboy`), used to override their color-based cow sprite.
-  final String equippedSkin;
+  String equippedSkin;
+
+  /// Tile texture asset for the equipped board skin (null = default).
+  String? boardTextureAsset;
+
+  /// Applies a newly equipped cow skin to the live board (e.g. once progress
+  /// finishes loading, or after the shop changes it).
+  void setEquippedSkin(String skinId) {
+    equippedSkin = skinId;
+    final args = _skinArgs;
+    _boardComponent?.setSkinOverride(args.owner, args.skin);
+  }
+
+  /// Applies a newly equipped board texture to the live board and future
+  /// board rebuilds.
+  Future<void> setBoardTextureAsset(String? path) async {
+    boardTextureAsset = path;
+    await _boardComponent?.setTextureAsset(path);
+  }
 
   /// Difficulty for the AI opponent. Matches with no AI players
   /// (local multiplayer) fall back to [Difficulty.medium].
@@ -354,6 +373,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
         size: Vector2(fixedSize, fixedSize),
         skinOwnerColor: _skinArgs.owner,
         skinOverride: _skinArgs.skin,
+        textureAsset: boardTextureAsset,
       );
       world.add(_boardComponent!);
 
@@ -373,6 +393,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
         size: Vector2(boardSize, boardSize),
         skinOwnerColor: _skinArgs.owner,
         skinOverride: _skinArgs.skin,
+        textureAsset: boardTextureAsset,
       );
       world.add(_boardComponent!);
     }
@@ -574,6 +595,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
       size: Vector2(boardSize, boardSize),
       skinOwnerColor: _skinArgs.owner,
       skinOverride: _skinArgs.skin,
+      textureAsset: boardTextureAsset,
     );
     world.add(_boardComponent!);
 

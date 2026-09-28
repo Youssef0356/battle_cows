@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:in_app_review/in_app_review.dart';
+import '../../data/services/premium_service.dart';
+import '../../data/services/progress_service.dart';
+import '../dialogs/premium_dialog.dart';
 import '../widgets/kenney_button.dart';
 import '../widgets/cartoon_dialog.dart';
 
@@ -17,6 +20,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _musicEnabled = true;
   bool _hapticEnabled = true;
   int _difficultyIndex = 1;
+  ProgressService? _progress;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProgress();
+  }
+
+  Future<void> _loadProgress() async {
+    final progress = await ProgressService.getInstance();
+    if (mounted) setState(() => _progress = progress);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -79,6 +94,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: 20),
                   _buildSectionHeader('Account'),
                   _buildStatCard(),
+                  const SizedBox(height: 20),
+                  _buildSectionHeader('Premium'),
+                  _buildPremiumTile(),
                   const SizedBox(height: 20),
                   _buildSectionHeader('Support'),
                   _buildKenneyButton('SHARE', Icons.share, () {
@@ -143,6 +161,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildPremiumTile() {
+    return ListenableBuilder(
+      listenable: PremiumService.instance,
+      builder: (context, _) {
+        final premium = PremiumService.instance.isPremium;
+        return _buildKenneyButton(
+          premium ? 'PREMIUM ACTIVE' : 'REMOVE ADS',
+          premium ? Icons.workspace_premium_rounded : Icons.block_rounded,
+          () {
+            if (!premium) PremiumDialog.show(context);
+          },
+        );
+      },
     );
   }
 
@@ -215,6 +249,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildStatCard() {
+    final p = _progress?.progress;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -226,11 +261,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       child: Column(
         children: [
-          _buildStatRow('⭐ Level', '1'),
-          _buildStatRow('💰 Coins', '0'),
-          _buildStatRow('⚔️ Matches', '0'),
-          _buildStatRow('🥇 Wins', '0'),
-          _buildStatRow('🔥 Streak', '0'),
+          _buildStatRow('⭐ Level', '${p?.level ?? 1}'),
+          _buildStatRow('💰 Coins', '${p?.coins ?? 0}'),
+          _buildStatRow('⚔️ Matches', '${p?.matchesPlayed ?? 0}'),
+          _buildStatRow('🥇 Wins', '${p?.matchesWon ?? 0}'),
+          _buildStatRow('🔥 Streak', '${p?.dailyStreak ?? 0}'),
         ],
       ),
     );

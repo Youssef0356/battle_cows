@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:in_app_review/in_app_review.dart';
+import '../../assets/asset_paths.dart';
+import '../../data/models/shop_item.dart';
+import '../../data/services/progress_service.dart';
 import '../../flame/battle_cows_game.dart';
 import '../../game/models/player.dart';
 import '../../game/models/challenge_mode.dart';
@@ -252,28 +255,7 @@ class HudOverlay extends StatelessWidget {
                 style: GoogleFonts.bangers(fontSize: 12, color: Colors.white70, letterSpacing: 1),
               ),
               const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildBackgroundButton(
-                    context,
-                    'TABLE',
-                    'assets/images/Background/Table image.jpg',
-                  ),
-                  const SizedBox(width: 8),
-                   _buildBackgroundButton(
-                     context,
-                     'WOOD',
-                     'assets/images/Background/Wood planks.jpg',
-                   ),
-                  const SizedBox(width: 8),
-                  _buildBackgroundButton(
-                    context,
-                    'FARM',
-                    'assets/images/Background/Farm field.jpg',
-                  ),
-                ],
-              ),
+              _buildThemePicker(context),
               const SizedBox(height: 14),
               Row(
                 children: [
@@ -341,20 +323,89 @@ class HudOverlay extends StatelessWidget {
     );
   }
 
-  Widget _buildBackgroundButton(BuildContext context, String label, String asset) {
+  /// Lists the player's owned table themes (plus a default), so the in-game
+  /// picker doubles as an inventory and persists the choice.
+  Widget _buildThemePicker(BuildContext context) {
+    final progress = ProgressService.instanceOrNull;
+    final owned = progress?.progress.ownedItems ?? const <String>[];
+    final themes = shopItems
+        .where((i) =>
+            i.category == ShopCategory.themes && owned.contains(i.id))
+        .toList();
+    final equipped = progress?.progress.equippedTheme ?? '';
+
+    return Column(
+      children: [
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            _buildBackgroundButton(
+              context,
+              'DEFAULT',
+              AssetPaths.tableImage,
+              themeId: '',
+              isEquipped: equipped.isEmpty,
+            ),
+            ...themes.map(
+              (t) => _buildBackgroundButton(
+                context,
+                t.name.toUpperCase(),
+                t.imageAsset ?? AssetPaths.tableImage,
+                themeId: t.id,
+                isEquipped: equipped == t.id,
+              ),
+            ),
+          ],
+        ),
+        if (themes.isEmpty) ...[
+          const SizedBox(height: 6),
+          Text(
+            'Buy themes in the shop to unlock more tables',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.bangers(fontSize: 11, color: Colors.white38),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildBackgroundButton(
+    BuildContext context,
+    String label,
+    String asset, {
+    required String themeId,
+    required bool isEquipped,
+  }) {
     return GestureDetector(
-      onTap: () {
-        game.setBackgroundAsset(asset);
-        Navigator.pop(context);
+      onTap: () async {
+        final progress = ProgressService.instanceOrNull;
+        if (themeId.isEmpty) {
+          progress?.clearEquipped(ShopCategory.themes);
+        } else if (progress?.isEquipped(themeId) != true) {
+          // Don't toggle off from here — the picker only ever selects.
+          progress?.equipItem(themeId);
+        }
+        await game.setBackgroundAsset(asset);
+        if (context.mounted) Navigator.pop(context);
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFF5D4037),
+          color: isEquipped
+              ? const Color(0xFFFFD54F).withValues(alpha: 0.25)
+              : const Color(0xFF5D4037),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFF8D6E63)),
+          border: Border.all(
+            color: isEquipped ? const Color(0xFFFFD54F) : const Color(0xFF8D6E63),
+            width: isEquipped ? 2 : 1,
+          ),
         ),
-        child: Text(label, style: GoogleFonts.bangers(fontSize: 12, color: Colors.white)),
+        child: Text(
+          isEquipped ? '$label ✅' : label,
+          style: GoogleFonts.bangers(fontSize: 12, color: Colors.white),
+        ),
       ),
     );
   }

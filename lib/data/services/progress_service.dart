@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/player_progress.dart';
+import '../models/shop_item.dart';
 
 class ProgressService {
   static const _key = 'player_progress';
@@ -29,12 +30,27 @@ class ProgressService {
     _instance = null;
   }
 
+  /// The already-loaded instance, or null before [getInstance] resolves.
+  /// Lets synchronous UI read progress once the app has booted.
+  static ProgressService? get instanceOrNull => _instance;
+
   PlayerProgress get progress => _progress ?? PlayerProgress();
 
   bool get tutorialCompleted => progress.tutorialCompleted;
 
   void markTutorialCompleted() {
     progress.tutorialCompleted = true;
+    _save();
+  }
+
+  /// Whether the player owns the "Remove Ads" premium entitlement.
+  bool get isPremium => progress.isPremium;
+
+  /// Grants the premium entitlement locally and persists it. The Play Store
+  /// purchase is verified by [PremiumService] before this is called.
+  void unlockPremium() {
+    if (progress.isPremium) return;
+    progress.isPremium = true;
     _save();
   }
 
@@ -100,21 +116,75 @@ class ProgressService {
     final countBefore = owned.length;
     owned.removeWhere((id) => id.startsWith('cow_'));
     if (owned.length != countBefore) changed = true;
+
+    // Theme/board remap: the old placeholder Sunset/Night/Ocean themes and
+    // the Marble board had no art. Map any purchased/equipped copies onto
+    // the replacement items that render real assets.
+    const legacyCosmetics = {
+      'theme_sunset': 'theme_field',
+      'theme_night': 'theme_wood',
+      'theme_ocean': 'theme_valley',
+      'board_marble': 'board_meadow',
+    };
+    legacyCosmetics.forEach((legacyId, newId) {
+      if (owned.contains(legacyId)) {
+        owned.remove(legacyId);
+        if (!owned.contains(newId)) owned.add(newId);
+        changed = true;
+      }
+      if (_progress!.equippedTheme == legacyId) {
+        _progress!.equippedTheme = newId;
+        changed = true;
+      }
+      if (_progress!.equippedBoard == legacyId) {
+        _progress!.equippedBoard = newId;
+        changed = true;
+      }
+    });
+
+    // Clear any equipped slot pointing at an item the player no longer owns.
+    if (_pruneEquippedSlots(owned)) changed = true;
+
     if (changed) _save();
+  }
+
+  /// Blanks any equipped hat/theme/emoji/board that isn't owned. Returns true
+  /// when something changed.
+  bool _pruneEquippedSlots(List<String> owned) {
+    var changed = false;
+    void prune(String Function() get, void Function(String) set) {
+      final id = get();
+      if (id.isNotEmpty && !owned.contains(id)) {
+        set('');
+        changed = true;
+      }
+    }
+
+    prune(() => _progress!.equippedHat, (v) => _progress!.equippedHat = v);
+    prune(() => _progress!.equippedTheme, (v) => _progress!.equippedTheme = v);
+    prune(() => _progress!.equippedEmoji, (v) => _progress!.equippedEmoji = v);
+    prune(() => _progress!.equippedBoard, (v) => _progress!.equippedBoard = v);
+    return changed;
   }
 
   void _save() {
     _prefs.setString(_key, _progress!.encode());
   }
 
+  /// Coins granted the first time the game is opened each day, scaled by the
+  /// login streak and capped so long streaks stay reasonable.
+  static const int dailyLoginBaseCoins = 50;
+  static const int dailyLoginStreakBonusCoins = 25;
+  static const int dailyLoginMaxCoins = 250;
+
   void checkDailyLogin() {
     final today = DateTime.now().toIso8601String().substring(0, 10);
     final lastLogin = progress.lastLoginDate;
 
+    if (lastLogin == today) return;
+
     if (lastLogin == null) {
       progress.dailyStreak = 1;
-    } else if (lastLogin == today) {
-      return;
     } else {
       final lastDate = DateTime.parse(lastLogin);
       final todayDate = DateTime.parse(today);
@@ -126,8 +196,16 @@ class ProgressService {
       }
     }
 
+    progress.coins += dailyLoginReward(progress.dailyStreak);
     progress.lastLoginDate = today;
     _save();
+  }
+
+  /// Coin reward for a given login streak.
+  int dailyLoginReward(int streak) {
+    final reward =
+        dailyLoginBaseCoins + (streak - 1) * dailyLoginStreakBonusCoins;
+    return min(reward, dailyLoginMaxCoins);
   }
 
   void refreshDailyQuests() {
@@ -190,18 +268,109 @@ class ProgressService {
     return true;
   }
 
+  /// Equips an owned cosmetic into its category slot. Tapping an already
+  /// equipped item toggles it back off (unequips it).
   void equipItem(String itemId) {
     if (!progress.ownedItems.contains(itemId)) return;
-    // Only skins can be equipped; the equipped skin drives the in-game cow art.
-    if (!itemId.startsWith('skin_')) return;
-    progress.equippedSkin = itemId;
+    final prefix = _slotPrefixFor(itemId);
+    if (prefix == null) return;
+    _setEquipped(prefix, _equippedId(prefix) == itemId ? '' : itemId);
     _save();
   }
 
-  void recordMatch({required bool won, required int captures}) {
+  /// Whether [itemId] is currently equipped in its category slot.
+  bool isEquipped(String itemId) {
+    final prefix = _slotPrefixFor(itemId);
+    return prefix != null && _equippedId(prefix) == itemId;
+  }
+
+  /// Equipped item id for a shop category, or '' when nothing is equipped.
+  String equippedForCategory(ShopCategory category) =>
+      _equippedId(_prefixForCategory(category));
+
+  /// Clears the equipped item for a category (e.g. the "default" option).
+  void clearEquipped(ShopCategory category) {
+    _setEquipped(_prefixForCategory(category), '');
+    _save();
+  }
+
+  /// Resolved background image for the equipped theme (null = default).
+  String? get equippedThemeAsset =>
+      shopItemById(progress.equippedTheme)?.imageAsset;
+
+  /// Resolved tile texture for the equipped board skin (null = default).
+  String? get equippedBoardAsset =>
+      shopItemById(progress.equippedBoard)?.imageAsset;
+
+  static String _prefixForCategory(ShopCategory category) {
+    switch (category) {
+      case ShopCategory.skins:
+        return 'skin_';
+      case ShopCategory.hats:
+        return 'hat_';
+      case ShopCategory.themes:
+        return 'theme_';
+      case ShopCategory.emojis:
+        return 'emoji_';
+      case ShopCategory.boards:
+        return 'board_';
+    }
+  }
+
+  static String? _slotPrefixFor(String itemId) {
+    for (final prefix in const ['skin_', 'hat_', 'theme_', 'emoji_', 'board_']) {
+      if (itemId.startsWith(prefix)) return prefix;
+    }
+    return null;
+  }
+
+  String _equippedId(String prefix) {
+    switch (prefix) {
+      case 'skin_':
+        return progress.equippedSkin;
+      case 'hat_':
+        return progress.equippedHat;
+      case 'theme_':
+        return progress.equippedTheme;
+      case 'emoji_':
+        return progress.equippedEmoji;
+      case 'board_':
+        return progress.equippedBoard;
+      default:
+        return '';
+    }
+  }
+
+  void _setEquipped(String prefix, String itemId) {
+    switch (prefix) {
+      case 'skin_':
+        progress.equippedSkin = itemId;
+      case 'hat_':
+        progress.equippedHat = itemId;
+      case 'theme_':
+        progress.equippedTheme = itemId;
+      case 'emoji_':
+        progress.equippedEmoji = itemId;
+      case 'board_':
+        progress.equippedBoard = itemId;
+    }
+  }
+
+  /// Coins granted for playing, winning and capturing in a single match.
+  static const int coinsPerMatchPlayed = 25;
+  static const int coinsPerMatchWon = 75;
+  static const int coinsPerCapture = 5;
+
+  /// Records the result of a match and returns the coins earned.
+  int recordMatch({required bool won, required int captures}) {
     progress.matchesPlayed++;
     if (won) progress.matchesWon++;
     progress.totalCaptures += captures;
+
+    final earned = coinsPerMatchPlayed +
+        (won ? coinsPerMatchWon : 0) +
+        captures * coinsPerCapture;
+    progress.coins += earned;
 
     progress.addXp(won ? 50 : 20);
     progress.addXp(captures * 5);
@@ -213,6 +382,7 @@ class ProgressService {
     if (won) updateQuestProgress(QuestType.winStreak, 1);
 
     _save();
+    return earned;
   }
 
   static final _questPool = [
