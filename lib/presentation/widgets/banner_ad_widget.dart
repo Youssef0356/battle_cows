@@ -23,7 +23,9 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
 
   @override
   void dispose() {
-    AdManager().bannerAd?.dispose();
+    // Null the singleton too — otherwise a remount would see the disposed
+    // ad, skip reloading and build an AdWidget around a dead ad.
+    AdManager().disposeBannerAd();
     super.dispose();
   }
 
