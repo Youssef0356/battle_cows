@@ -16,6 +16,7 @@ import '../widgets/wood_button.dart';
 import '../widgets/rustic_decor.dart';
 import '../../game/models/challenge_mode.dart';
 import '../../game/ai/ai_player.dart';
+import '../../game/tutorial/tutorial_data.dart';
 import '../widgets/cartoon_dialog.dart';
 import '../widgets/kenney_button.dart';
 import '../widgets/bouncy_pressable.dart';
@@ -54,7 +55,44 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     _progressService!.refreshDailyQuests();
     if (mounted) {
       setState(() {});
+      // First-ever launch: drop the player straight into the guided tutorial
+      // mini-match before they can wander into a full game.
+      if (!_progressService!.tutorialCompleted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && !_progressService!.tutorialCompleted) _launchTutorial();
+        });
+      }
     }
+  }
+
+  /// Guided first-match tutorial: a tiny board vs a friendly easy AI, with
+  /// coach banners walking the player through placing tiles, dropping a herd,
+  /// moving, and capturing — and how to win.
+  void _launchTutorial() {
+    final players = [
+      const Player(id: 0, name: 'Player 1', color: PlayerColor.blue),
+      const Player(
+        id: 1,
+        name: 'Tutorial Cow',
+        color: PlayerColor.red,
+        isAi: true,
+        difficulty: Difficulty.easy,
+      ),
+    ];
+    Navigator.pushNamed(
+      context,
+      AppRouter.game,
+      arguments: {
+        'players': players,
+        'herdSize': TutorialScenario.herdSize,
+        'boardSize': TutorialScenario.boardSize,
+        'tilesPerPlayer': TutorialScenario.tilesPerPlayer,
+        'isTutorial': true,
+      },
+    ).then((_) {
+      // Returning from the tutorial: refresh coins/level on the home screen.
+      if (mounted) setState(() {});
+    });
   }
 
   @override
@@ -604,6 +642,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   Widget _buildSideToolButtons() {
     return Column(
       children: [
+        _buildWoodToolButton(icon: Icons.school_rounded, label: 'TUTORIAL', onTap: _launchTutorial),
+        const SizedBox(height: 6),
         _buildWoodToolButton(icon: Icons.settings, label: 'SETTINGS', onTap: () => Navigator.pushNamed(context, AppRouter.settings)),
         const SizedBox(height: 6),
         _buildWoodToolButton(icon: Icons.shopping_cart, label: 'SHOP', onTap: _showShopDialog),

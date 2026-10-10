@@ -182,9 +182,14 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
   final void Function()? onTimeUp;
   final void Function(String playerName, Color playerColor, bool isAi)? onTurnChanged;
   final void Function(int count, PlayerColor playerColor)? onCapture;
+  final void Function(Move move)? onMove;
   final void Function(int heartsLeft)? onHeartLost;
   final void Function()? onPlacementComplete;
   final void Function()? onTilePlacementComplete;
+
+  /// When true (tutorial matches), game over never preloads the interstitial
+  /// and [GameOverOverlay] skips showing one.
+  bool suppressAds;
 
   void notifyStateChanged() {
     if (!_callbacksEnabled) return;
@@ -219,11 +224,13 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
     this.onTimeUp,
     this.onTurnChanged,
     this.onCapture,
+    this.onMove,
     this.onHeartLost,
     this.onPlacementComplete,
     this.onTilePlacementComplete,
     this.equippedSkin = '',
     this.boardTextureAsset,
+    this.suppressAds = false,
   }) : _tilesPerPlayer = tilesPerPlayer;
 
   /// The local player's equipped cow skin (shop item id, e.g.
@@ -1092,6 +1099,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
     _boardComponent?.updateBoard(_engine.board!);
     AudioManager().playMove();
     shakeCamera(strength: 1.5);
+    onMove?.call(move);
 
     totalMoves++;
 
@@ -1136,7 +1144,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
     winner = _engine.determineWinner();
     _updateCounts();
     AudioManager().playGameOver();
-    AdManager().loadInterstitialAd();
+    if (!suppressAds) AdManager().loadInterstitialAd();
     onGameOver?.call(winner, territoryCounts);
     notifyStateChanged();
   }

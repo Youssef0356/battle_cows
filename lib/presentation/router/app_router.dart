@@ -27,6 +27,7 @@ class AppRouter {
         final boardSize = args?['boardSize'] as int? ?? 7;
         final tilesPerPlayer = args?['tilesPerPlayer'] as int? ?? 5;
         final challengeMode = args?['challengeMode'] as ChallengeMode? ?? ChallengeMode.standard;
+        final isTutorial = args?['isTutorial'] as bool? ?? false;
         return MaterialPageRoute(
           builder: (_) => FlameGameScreen(
             players: players,
@@ -35,6 +36,7 @@ class AppRouter {
             boardSize: boardSize,
             tilesPerPlayer: tilesPerPlayer,
             challengeMode: challengeMode,
+            isTutorial: isTutorial,
           ),
         );
       case '/tile-placement':

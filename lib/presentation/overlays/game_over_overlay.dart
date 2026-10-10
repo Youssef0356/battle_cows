@@ -242,6 +242,12 @@ class _GameOverOverlayState extends State<GameOverOverlay>
                             fontSize: 18,
                             height: 50,
                             onPressed: () {
+                              // Tutorial matches never show interstitials.
+                              if (widget.game.suppressAds) {
+                                widget.game.overlays.remove('GameOver');
+                                Navigator.of(context).pop();
+                                return;
+                              }
                               AdManager().showInterstitialAd(
                                 onAdDismissed: () {
                                   widget.game.overlays.remove('GameOver');
@@ -260,6 +266,12 @@ class _GameOverOverlayState extends State<GameOverOverlay>
                             fontSize: 18,
                             height: 50,
                             onPressed: () {
+                              // Tutorial matches never show interstitials.
+                              if (widget.game.suppressAds) {
+                                widget.game.overlays.remove('GameOver');
+                                widget.game.rematch();
+                                return;
+                              }
                               AdManager().showInterstitialAd(
                                 onAdDismissed: () {
                                   widget.game.overlays.remove('GameOver');

@@ -52,7 +52,12 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
   OverlayEntry? _turnBannerEntry;
   OverlayEntry? _captureToastEntry;
   ProgressService? _progressService;
-  bool _showTutorialOverlay = false;
+
+  /// Current tutorial step index; -1 = tutorial guidance finished/hidden.
+  int _tutorialStep = 0;
+  int get _lastTutorialStep => TutorialScenario.steps.length - 1;
+  bool get _showTutorialOverlay => widget.isTutorial && _tutorialStep >= 0;
+
   int _lastMatchCoins = 0;
 
   static const double _minZoom = 0.5;
@@ -113,6 +118,8 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
   void initState() {
     super.initState();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    // Tutorial mode never shows ads, so skip loading them entirely.
+    _tutorialStep = widget.isTutorial ? 0 : -1;
     if (!widget.isTutorial) {
       AdManager().loadRewardedAd();
       AdManager().loadBannerAd(
@@ -132,12 +139,13 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
       tilesPerPlayer: widget.tilesPerPlayer,
       challengeMode: widget.challengeMode,
       equippedSkin: _equippedSkin,
+      suppressAds: widget.isTutorial,
       onStateChanged: () {
         if (mounted) setState(() {});
       },
       onGameOver: (winner, scores) {
         if (mounted) {
-          _recordGameResult(winner);
+          if (!widget.isTutorial) _recordGameResult(winner);
           _game.overlays.add('GameOver');
         }
       },
@@ -147,6 +155,9 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
       onCapture: (int count, PlayerColor playerColor) {
         if (mounted) _showCaptureToast(count, playerColor);
       },
+      onMove: (move) {
+        if (mounted) _maybeAdvanceTutorial(TutorialEvent.playerMove, move.player);
+      },
       onHeartLost: (int heartsLeft) {
         if (mounted) _showHeartLostToast(heartsLeft);
       },
@@ -155,6 +166,7 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
           _game.overlays.remove('HerdPlacement');
           _game.overlays.add('HUD');
           _game.overlays.add('GameControls');
+          _maybeAdvanceTutorial(TutorialEvent.herdPlacementDone);
         }
       },
       onTilePlacementComplete: () {
@@ -162,6 +174,7 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
           _game.overlays.remove('HUD');
           _game.overlays.remove('Placement');
           _game.overlays.add('HerdPlacement');
+          _maybeAdvanceTutorial(TutorialEvent.tilePlacementDone);
         }
       },
     );
@@ -169,10 +182,7 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
     // Defer to after first frame so overlayBuilderMap is registered
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      if (widget.isTutorial) {
-        setState(() => _showTutorialOverlay = true);
-        _game.overlays.add('Placement');
-      } else if (widget.tiles == null || widget.tiles!.isEmpty) {
+      if (widget.isTutorial || widget.tiles == null || widget.tiles!.isEmpty) {
         _game.overlays.add('Placement');
       } else {
         _game.overlays.add('HerdPlacement');
@@ -309,20 +319,44 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
     });
   }
 
-  void _onTutorialComplete() {
-    setState(() => _showTutorialOverlay = false);
-    _game.overlays.remove('Placement');
-    _game.overlays.remove('HerdPlacement');
-    _game.overlays.remove('HUD');
-    _game.overlays.remove('GameControls');
-    if (widget.isTutorial && mounted) {
-      _progressService?.markTutorialCompleted();
-      Navigator.of(context).popUntil((route) => route.isFirst);
+  /// Local (first non-AI) player's color; the tutorial only reacts to the
+  /// human player's actions, never the AI opponent's.
+  PlayerColor? get _localPlayerColor {
+    for (final p in widget.players) {
+      if (!p.isAi) return p.color;
+    }
+    return null;
+  }
+
+  /// Advances the tutorial when the current step's target event fires for the
+  /// local player (events from the AI opponent are ignored).
+  void _maybeAdvanceTutorial(TutorialEvent event, [PlayerColor? actor]) {
+    if (!_showTutorialOverlay) return;
+    if (actor != null && actor != _localPlayerColor) return;
+    final step = TutorialScenario.steps[_tutorialStep];
+    if (step.advanceOn != event) return;
+    setState(() => _tutorialStep++);
+  }
+
+  /// The player tapped the coach banner button: skip ahead one step (or
+  /// finish, on the last step).
+  void _onTutorialNext() {
+    if (!_showTutorialOverlay) return;
+    if (_tutorialStep >= _lastTutorialStep) {
+      _onTutorialComplete();
+    } else {
+      setState(() => _tutorialStep++);
     }
   }
 
-  void _onTutorialStepChanged(int stepIndex, TutorialStep step) {
-    // Tutorial no longer manages game overlays — the game progresses naturally
+  /// SKIP button or last-step button: end guidance, remember it, and let the
+  /// player finish the practice match on their own (no progression, no ads).
+  void _onTutorialComplete() {
+    if (!mounted) return;
+    setState(() => _tutorialStep = -1);
+    if (widget.isTutorial) {
+      _progressService?.markTutorialCompleted();
+    }
   }
 
   void _onScaleStart(ScaleStartDetails details) {
@@ -450,8 +484,10 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
               key: const ValueKey('tutorial-overlay'),
               child: TutorialOverlay(
                 steps: TutorialScenario.steps,
+                currentStep: _tutorialStep,
+                onNext: _onTutorialNext,
                 onComplete: _onTutorialComplete,
-                onStepChanged: _onTutorialStepChanged,
+                onSkip: _onTutorialComplete,
               ),
             ),
           if (!widget.isTutorial)
