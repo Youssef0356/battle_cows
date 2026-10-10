@@ -119,7 +119,7 @@ class _HerdPlacementOverlayState extends State<HerdPlacementOverlay> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(player.isAi ? 'AI' : 'P1', style: GoogleFonts.bangers(fontSize: 10, color: Colors.white)),
+              Text(player.isAi ? 'AI' : player.name.toUpperCase(), style: GoogleFonts.bangers(fontSize: 10, color: Colors.white)),
               Text(isPlaced ? 'READY' : (isCurrent ? 'PLACE' : 'WAIT'),
                   style: GoogleFonts.bangers(fontSize: 8, color: isCurrent ? const Color(0xFFFFD54F) : Colors.white60)),
             ],

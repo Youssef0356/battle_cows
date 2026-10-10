@@ -144,6 +144,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   void _showGameSetupDialog({required String title, required bool isMultiplayer, ChallengeMode challengeMode = ChallengeMode.standard}) {
     int selectedTiles = _tilesPerPlayer;
+    // Multiplayer setup lets the players pick any mode; VS AI keeps the mode
+    // chosen upstream (standard from PLAY VS AI, timed/fence from CHALLENGES).
+    ChallengeMode selectedMode = challengeMode;
 
     showDialog(
       context: context,
@@ -184,6 +187,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   ),
                 ),
                 const SizedBox(height: 24),
+                if (!isMultiplayer) ...[
                 Text(
                   'CPU DIFFICULTY',
                   style: GoogleFonts.bangers(
@@ -252,6 +256,90 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     );
                   }).toList(),
                 ),
+                ] else ...[
+                  Text(
+                    'GAME MODE',
+                    style: GoogleFonts.bangers(
+                      fontSize: 16,
+                      color: Colors.white70,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 12,
+                    children: ChallengeMode.values.map((mode) {
+                      final isSel = selectedMode == mode;
+                      return GestureDetector(
+                        onTap: () => setDialogState(() => selectedMode = mode),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: 90,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            gradient: isSel
+                                ? const LinearGradient(
+                                    colors: [Color(0xFFFFD54F), Color(0xFFFFA000)],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  )
+                                : LinearGradient(
+                                    colors: [
+                                      Colors.white.withValues(alpha: 0.12),
+                                      Colors.white.withValues(alpha: 0.04),
+                                    ],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  ),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: isSel ? const Color(0xFFFFD54F) : Colors.white24,
+                              width: isSel ? 2.5 : 1.5,
+                            ),
+                            boxShadow: isSel
+                                ? [
+                                    BoxShadow(
+                                      color: const Color(0xFFFFD54F).withValues(alpha: 0.3),
+                                      blurRadius: 12,
+                                      spreadRadius: 1,
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(mode.icon, style: const TextStyle(fontSize: 22)),
+                              const SizedBox(height: 4),
+                              Text(
+                                mode.title
+                                    .replaceAll(' PASTURE', '')
+                                    .replaceAll(' STRATEGY', '')
+                                    .replaceAll(' BATTLE', ''),
+                                style: GoogleFonts.bangers(
+                                  fontSize: 11,
+                                  color: isSel ? const Color(0xFF3E2723) : Colors.white,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    selectedMode.description,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.bangers(
+                      fontSize: 11,
+                      color: Colors.white38,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 24),
                 Text(
                   'PASTURE TILES PER PLAYER',
@@ -383,7 +471,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             playerCount: 2,
                             tilesPerPlayer: selectedTiles,
                             isMultiplayer: isMultiplayer,
-                            challengeMode: challengeMode,
+                            challengeMode: selectedMode,
                           );
                         },
                         child: Container(

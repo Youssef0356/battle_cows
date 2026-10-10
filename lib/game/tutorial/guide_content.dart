@@ -155,7 +155,7 @@ class GuideContent {
       ],
     ),
     GuideMode(
-      startPath: 'HOME  >  CHALLENGES  >  TIMED STRATEGY',
+      startPath: 'HOME  >  CHALLENGES  >  TIMED STRATEGY   (or LOCAL MULTIPLAYER > GAME MODE)',
       rules: [
         '60 seconds per turn and the clock never stops.',
         'Run out of time: you lose a heart and one of your herds scrambles at random.',
@@ -169,7 +169,7 @@ class GuideContent {
       ],
     ),
     GuideMode(
-      startPath: 'HOME  >  CHALLENGES  >  FENCE BATTLE',
+      startPath: 'HOME  >  CHALLENGES  >  FENCE BATTLE   (or LOCAL MULTIPLAYER > GAME MODE)',
       rules: [
         'Each player owns 3 fences.',
         'Use FENCES, then tap an empty hex to place one, or tap your own fence to move it.',
