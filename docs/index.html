@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Battle Cows — Classic Board Game on Mobile</title>
+    <meta name="description" content="Battle Cows is a family-friendly hex tactics board game. Smart tactics, easy for kids, deep for adults. Pick up & play in 60s!">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cream: #FFF6E3;
+            --cream-deep: #F5E6C8;
+            --wood: #5D4037;
+            --wood-dark: #3E2723;
+            --wood-darkest: #1B0000;
+            --green: #7CB342;
+            --green-dark: #558B2F;
+            --green-light: #8BC34A;
+            --yellow: #FFD54F;
+            --yellow-deep: #F5B400;
+            --brown-text: #4E342E;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            color: var(--brown-text);
+            background:
+                radial-gradient(circle at 20% 10%, rgba(255, 213, 79, 0.18), transparent 40%),
+                radial-gradient(circle at 85% 30%, rgba(124, 179, 66, 0.12), transparent 45%),
+                linear-gradient(180deg, var(--cream) 0%, var(--cream-deep) 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .bangers { font-family: 'Bangers', cursive; letter-spacing: 2px; }
+
+        /* ---------- Header ---------- */
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: rgba(255, 246, 227, 0.92);
+            backdrop-filter: blur(8px);
+            border-bottom: 4px solid var(--wood);
+            box-shadow: 0 4px 0 rgba(93, 64, 55, 0.15);
+        }
+        .nav {
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+        .brand-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: linear-gradient(180deg, var(--green-light), var(--green-dark));
+            border: 3px solid var(--wood);
+            display: grid;
+            place-items: center;
+            font-size: 24px;
+            box-shadow: 0 3px 0 var(--wood-dark);
+        }
+        .brand-name {
+            font-family: 'Bangers', cursive;
+            font-size: 28px;
+            color: var(--wood-dark);
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 0 var(--yellow);
+        }
+        .nav-links { display: flex; gap: 8px; align-items: center; }
+        .nav-links a {
+            text-decoration: none;
+            font-weight: 800;
+            color: var(--wood);
+            padding: 8px 14px;
+            border-radius: 10px;
+            transition: background 0.15s;
+        }
+        .nav-links a:hover { background: rgba(93, 64, 55, 0.1); }
+
+        /* ---------- Buttons ---------- */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Bangers', cursive;
+            font-size: 20px;
+            letter-spacing: 1.5px;
+            text-decoration: none;
+            padding: 14px 28px;
+            border-radius: 14px;
+            border: 3px solid var(--wood-dark);
+            cursor: pointer;
+            transition: transform 0.12s, box-shadow 0.12s;
+            box-shadow: 0 5px 0 var(--wood-dark);
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 7px 0 var(--wood-dark); }
+        .btn:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--wood-dark); }
+        .btn-green {
+            background: linear-gradient(180deg, var(--green-light), var(--green-dark));
+            color: #fff;
+            text-shadow: 1px 2px 0 rgba(0,0,0,0.25);
+        }
+        .btn-yellow {
+            background: linear-gradient(180deg, #FFE082, var(--yellow-deep));
+            color: var(--wood-darkest);
+        }
+        .btn-wood {
+            background: linear-gradient(180deg, #8D6E63, var(--wood));
+            color: #fff;
+        }
+
+        /* ---------- Hero ---------- */
+        .hero {
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: 56px 20px 40px;
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 40px;
+            align-items: center;
+        }
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(180deg, #FFE082, var(--yellow-deep));
+            color: var(--wood-darkest);
+            font-weight: 800;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 8px 16px;
+            border-radius: 999px;
+            border: 2px solid var(--wood);
+            margin-bottom: 18px;
+        }
+        .hero h1 {
+            font-family: 'Bangers', cursive;
+            font-size: clamp(44px, 7vw, 76px);
+            line-height: 1.02;
+            color: var(--wood-dark);
+            letter-spacing: 3px;
+            text-shadow:
+                3px 3px 0 var(--yellow),
+                6px 6px 0 rgba(93, 64, 55, 0.25);
+            margin-bottom: 16px;
+        }
+        .hero h1 .green { color: var(--green-dark); text-shadow: 3px 3px 0 rgba(255, 213, 79, 0.8); }
+        .hero p.lead {
+            font-size: 19px;
+            font-weight: 600;
+            color: #6D4C41;
+            max-width: 46ch;
+            margin-bottom: 28px;
+            line-height: 1.55;
+        }
+        .hero-cta { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 22px; }
+        .hero-note { font-size: 14px; font-weight: 700; color: #8D6E63; }
+
+        .hero-art {
+            position: relative;
+            display: grid;
+            place-items: center;
+        }
+        .phone-frame {
+            width: min(280px, 70vw);
+            aspect-ratio: 9 / 17;
+            border: 6px solid var(--wood-dark);
+            border-radius: 36px;
+            overflow: hidden;
+            background: var(--wood);
+            box-shadow:
+                0 14px 0 rgba(62, 39, 35, 0.35),
+                0 30px 50px rgba(62, 39, 35, 0.3);
+            transform: rotate(3deg);
+        }
+        .phone-frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+        .float-chip {
+            position: absolute;
+            background: #fff;
+            border: 3px solid var(--wood);
+            border-radius: 999px;
+            padding: 10px 16px;
+            font-weight: 800;
+            font-size: 14px;
+            color: var(--wood-dark);
+            box-shadow: 0 5px 0 rgba(93, 64, 55, 0.25);
+            white-space: nowrap;
+        }
+        .chip-1 { top: 8%; left: -4%; transform: rotate(-6deg); }
+        .chip-2 { bottom: 14%; right: -6%; transform: rotate(5deg); }
+
+        /* ---------- Wood band ---------- */
+        .wood-band {
+            background:
+                repeating-linear-gradient(
+                    90deg,
+                    var(--wood-dark) 0px, var(--wood-dark) 48px,
+                    #4E342E 48px, #4E342E 96px
+                );
+            border-top: 5px solid var(--wood-darkest);
+            border-bottom: 5px solid var(--wood-darkest);
+            padding: 18px 20px;
+            overflow: hidden;
+        }
+        .marquee {
+            display: flex;
+            gap: 48px;
+            white-space: nowrap;
+            animation: scroll 28s linear infinite;
+            font-family: 'Bangers', cursive;
+            font-size: 24px;
+            letter-spacing: 2px;
+            color: var(--yellow);
+            text-shadow: 2px 2px 0 rgba(0,0,0,0.45);
+        }
+        .marquee span { display: inline-flex; align-items: center; gap: 12px; }
+        @keyframes scroll {
+            from { transform: translateX(0); }
+            to { transform: translateX(-50%); }
+        }
+
+        /* ---------- Sections ---------- */
+        section { max-width: 1080px; margin: 0 auto; padding: 64px 20px; }
+        .section-title {
+            font-family: 'Bangers', cursive;
+            font-size: clamp(32px, 5vw, 48px);
+            color: var(--wood-dark);
+            letter-spacing: 2px;
+            text-align: center;
+            text-shadow: 2px 2px 0 var(--yellow);
+            margin-bottom: 12px;
+        }
+        .section-sub {
+            text-align: center;
+            font-size: 17px;
+            font-weight: 600;
+            color: #795548;
+            max-width: 56ch;
+            margin: 0 auto 40px;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 20px;
+        }
+        .feature-card {
+            background: linear-gradient(180deg, #FFFDF6, var(--cream-deep));
+            border: 3px solid var(--wood);
+            border-radius: 18px;
+            padding: 26px 22px;
+            box-shadow: 0 6px 0 rgba(93, 64, 55, 0.2);
+            transition: transform 0.15s;
+        }
+        .feature-card:hover { transform: translateY(-4px); }
+        .feature-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
+            display: grid;
+            place-items: center;
+            font-size: 28px;
+            border: 3px solid var(--wood-dark);
+            margin-bottom: 14px;
+            box-shadow: 0 3px 0 var(--wood-dark);
+        }
+        .fi-green { background: linear-gradient(180deg, var(--green-light), var(--green-dark)); }
+        .fi-yellow { background: linear-gradient(180deg, #FFE082, var(--yellow-deep)); }
+        .fi-wood { background: linear-gradient(180deg, #A1887F, var(--wood)); }
+        .fi-red { background: linear-gradient(180deg, #EF9A9A, #E53935); }
+        .feature-card h3 {
+            font-family: 'Bangers', cursive;
+            font-size: 22px;
+            letter-spacing: 1px;
+            color: var(--wood-dark);
+            margin-bottom: 8px;
+        }
+        .feature-card p { font-size: 15px; font-weight: 600; color: #6D4C41; line-height: 1.5; }
+
+        /* ---------- Gallery ---------- */
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 18px;
+        }
+        .shot {
+            border: 4px solid var(--wood);
+            border-radius: 18px;
+            overflow: hidden;
+            background: #fff;
+            box-shadow: 0 6px 0 rgba(93, 64, 55, 0.25);
+            transition: transform 0.15s;
+        }
+        .shot:hover { transform: translateY(-4px) rotate(-0.5deg); }
+        .shot img { width: 100%; display: block; }
+
+        /* ---------- How to play ---------- */
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            counter-reset: step;
+        }
+        .step {
+            position: relative;
+            background: linear-gradient(180deg, #8D6E63, var(--wood-dark));
+            color: #FFF8E1;
+            border: 3px solid var(--wood-darkest);
+            border-radius: 18px;
+            padding: 26px 22px 22px;
+            box-shadow: 0 6px 0 rgba(27, 0, 0, 0.4);
+        }
+        .step::before {
+            counter-increment: step;
+            content: counter(step);
+            position: absolute;
+            top: -18px;
+            left: 18px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(180deg, #FFE082, var(--yellow-deep));
+            border: 3px solid var(--wood-darkest);
+            display: grid;
+            place-items: center;
+            font-family: 'Bangers', cursive;
+            font-size: 22px;
+            color: var(--wood-darkest);
+        }
+        .step h3 {
+            font-family: 'Bangers', cursive;
+            font-size: 21px;
+            letter-spacing: 1px;
+            color: var(--yellow);
+            margin: 6px 0 8px;
+        }
+        .step p { font-size: 15px; font-weight: 600; line-height: 1.5; color: #EFEBE9; }
+
+        /* ---------- CTA band ---------- */
+        .cta-band {
+            background: linear-gradient(180deg, var(--green-light), var(--green-dark));
+            border-top: 5px solid var(--wood-darkest);
+            border-bottom: 5px solid var(--wood-darkest);
+            text-align: center;
+            padding: 56px 20px;
+        }
+        .cta-band h2 {
+            font-family: 'Bangers', cursive;
+            font-size: clamp(32px, 5vw, 52px);
+            color: #fff;
+            letter-spacing: 2px;
+            text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.25);
+            margin-bottom: 12px;
+        }
+        .cta-band p {
+            color: #E8F5E9;
+            font-weight: 700;
+            font-size: 17px;
+            margin-bottom: 28px;
+        }
+
+        /* ---------- Footer ---------- */
+        footer {
+            background: var(--wood-darkest);
+            color: #D7CCC8;
+            padding: 36px 20px;
+            text-align: center;
+        }
+        footer .brand-name { color: var(--yellow); text-shadow: none; font-size: 24px; }
+        footer p { margin-top: 10px; font-size: 14px; font-weight: 600; }
+        footer a { color: var(--yellow); font-weight: 700; }
+        footer .foot-links {
+            margin-top: 14px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        /* ---------- Responsive ---------- */
+        @media (max-width: 820px) {
+            .hero { grid-template-columns: 1fr; text-align: center; padding-top: 36px; }
+            .hero p.lead { margin-left: auto; margin-right: auto; }
+            .hero-cta { justify-content: center; }
+            .hero-art { order: -1; }
+            .chip-1 { left: 2%; }
+            .chip-2 { right: 2%; }
+            .nav-links a:not(.btn) { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <nav class="nav">
+        <a class="brand" href="#top">
+            <span class="brand-icon" aria-hidden="true">🐄</span>
+            <span class="brand-name">Battle Cows</span>
+        </a>
+        <div class="nav-links">
+            <a href="#features">Features</a>
+            <a href="#gallery">Gallery</a>
+            <a href="#how">How to Play</a>
+            <a href="#download" class="btn btn-green" style="font-size:16px; padding:10px 18px;">Get the Game</a>
+        </div>
+    </nav>
+</header>
+
+<main id="top">
+    <div class="hero">
+        <div class="hero-copy">
+            <span class="hero-badge">★ The hit board game · Now on mobile!</span>
+            <h1>Classic Board Game<br><span class="green">Now on Mobile!</span></h1>
+            <p class="lead">Smart tactics — easy for kids, deep for adults. Grow your herd, claim the hexes, and outsmart every rival on the battlefield!</p>
+            <div class="hero-cta">
+                <a class="btn btn-green" href="#download">▶ Get it on Google Play</a>
+                <a class="btn btn-yellow" href="#how">How to Play</a>
+            </div>
+            <p class="hero-note">🐄 Moo-ve your herd! &nbsp;·&nbsp; 🧠 Outsmart everyone! &nbsp;·&nbsp; ⚡ 60s to learn</p>
+        </div>
+        <div class="hero-art">
+            <span class="float-chip chip-1">👨‍👩‍👧 Family friendly</span>
+            <div class="phone-frame">
+                <img src="assets/marketing-2.png" alt="Battle Cows gameplay on a hex board">
+            </div>
+            <span class="float-chip chip-2">🎯 Hex tactics</span>
+        </div>
+    </div>
+
+    <div class="wood-band" aria-hidden="true">
+        <div class="marquee">
+            <span>🐄 Grow your herd</span>
+            <span>⬡ Claim the hexes</span>
+            <span>🏆 Outsmart rivals</span>
+            <span>🎲 Zero-stress turn-based</span>
+            <span>👨‍👩‍👧 Family friendly</span>
+            <span>🐄 Grow your herd</span>
+            <span>⬡ Claim the hexes</span>
+            <span>🏆 Outsmart rivals</span>
+            <span>🎲 Zero-stress turn-based</span>
+            <span>👨‍👩‍👧 Family friendly</span>
+        </div>
+    </div>
+
+    <section id="features">
+        <h2 class="section-title">Why You'll Love It</h2>
+        <p class="section-sub">Pick up &amp; play in 60 seconds — zero stress, turn-based fun for every age.</p>
+        <div class="features">
+            <div class="feature-card">
+                <div class="feature-icon fi-green">🧠</div>
+                <h3>Smart Tactics</h3>
+                <p>Simple rules, deep strategy. Easy enough for kids, tricky enough to keep adults hooked.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon fi-yellow">🎲</div>
+                <h3>Turn-Based Fun</h3>
+                <p>No timers, no pressure. Plan your moves, grow your herd, and take your time.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon fi-wood">⚔️</div>
+                <h3>Battle Your Friends</h3>
+                <p>Pass-and-play multiplayer or take on clever AI cows. Who rules the board?</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon fi-red">🌍</div>
+                <h3>Classic Board Game</h3>
+                <p>The beloved hex-territory board game, rebuilt beautifully for your phone.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="gallery">
+        <h2 class="section-title">See It In Action</h2>
+        <p class="section-sub">Colorful boards, charming cows, and satisfying tactics — every match tells a story.</p>
+        <div class="gallery">
+            <div class="shot"><img src="assets/marketing-1.png" alt="Battle Cows — classic board game now on mobile" loading="lazy"></div>
+            <div class="shot"><img src="assets/marketing-2.png" alt="Battle Cows gameplay screenshot" loading="lazy"></div>
+            <div class="shot"><img src="assets/marketing-3.png" alt="Battle Cows features" loading="lazy"></div>
+            <div class="shot"><img src="assets/marketing-5.png" alt="Battle Cows promotional art" loading="lazy"></div>
+        </div>
+    </section>
+
+    <section id="how">
+        <h2 class="section-title">How to Play</h2>
+        <p class="section-sub">Three steps to bovine board-game glory.</p>
+        <div class="steps">
+            <div class="step">
+                <h3>Place Your Tiles</h3>
+                <p>Take turns placing hex tiles on the board to claim territory for your herd.</p>
+            </div>
+            <div class="step">
+                <h3>Grow Your Herd</h3>
+                <p>Every tile you control adds cows to your herd. Bigger herd, bigger bite!</p>
+            </div>
+            <div class="step">
+                <h3>Outsmart Everyone</h3>
+                <p>Flank, expand, and conquer. When the board is full, the biggest herd wins!</p>
+            </div>
+        </div>
+    </section>
+</main>
+
+<div class="cta-band" id="download">
+    <h2>Ready to Moo-ve?</h2>
+    <p>Download Battle Cows free and start your first match in under a minute.</p>
+    <a class="btn btn-yellow" href="https://play.google.com/store/apps/details?id=com.the356company.battlecows" rel="noopener">▶ Download on Google Play</a>
+</div>
+
+<footer>
+    <span class="brand-name bangers">Battle Cows</span>
+    <p>&copy; 2026 Battle Cows. All rights reserved.</p>
+    <div class="foot-links">
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="mailto:nejiyoussef081@gmail.com">Contact</a>
+    </div>
+    <p style="margin-top:16px; font-size:12px; color:#8D6E63;">Questions? <a href="mailto:nejiyoussef081@gmail.com">nejiyoussef081@gmail.com</a></p>
+</footer>
+
+</body>
+</html>
