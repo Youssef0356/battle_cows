@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../core/localization/app_fonts.dart';
+import '../../core/localization/app_localizations.dart';
 
 class CaptureToast extends StatefulWidget {
   final int count;
@@ -69,11 +70,12 @@ class _CaptureToastState extends State<CaptureToast>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final message = widget.count >= 5
-        ? 'STAMPede! +${widget.count}'
+        ? l10n.toastStampede(widget.count)
         : widget.count >= 3
-            ? 'MOO-VELOUS! +${widget.count}'
-            : 'PASTURE RAID! +${widget.count}';
+            ? l10n.toastMoovelous(widget.count)
+            : l10n.toastPastureRaid(widget.count);
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
@@ -113,16 +115,16 @@ class _CaptureToastState extends State<CaptureToast>
                       height: 34,
                     ),
                     const SizedBox(width: 8),
-                     Text(
-                       message,
-                      style: GoogleFonts.bangers(
+                    Text(
+                      message,
+                      style: AppFonts.bangers(
                         fontSize: 18,
                         color: Colors.white,
                         letterSpacing: 1.5,
                         shadows: [
-                          Shadow(
-                            color: Colors.black.withValues(alpha: 0.5),
-                            offset: const Offset(1, 1),
+                          const Shadow(
+                            color: Colors.black54,
+                            offset: Offset(1, 1),
                             blurRadius: 2,
                           ),
                         ],

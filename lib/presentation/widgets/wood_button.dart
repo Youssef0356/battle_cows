@@ -1,7 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../core/localization/app_fonts.dart';
 
 /// A premium wood-carved style button matching the Battle Cows rustic aesthetic.
 /// Features authentic wood grain, bevelled edges, carved text, and press animation.
@@ -231,7 +231,7 @@ class _WoodButtonState extends State<WoodButton>
                     Flexible(
                       child: Text(
                         widget.label.toUpperCase(),
-                        style: GoogleFonts.bangers(
+                        style: AppFonts.bangers(
                           fontSize: widget.isSmall
                               ? widget.fontSize * 0.8
                               : widget.fontSize,

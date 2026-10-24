@@ -1,7 +1,8 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../core/localization/app_fonts.dart';
+import '../../core/localization/app_localizations.dart';
 import 'dart:math';
 import '../../core/constants/colors.dart';
 import '../../core/theme/game_button_styles.dart';
@@ -268,6 +269,7 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
   }
 
   Widget _buildTopBar() {
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
@@ -282,8 +284,8 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
               border: Border.all(color: const Color(0xFFFFD54F), width: 1.5),
             ),
             child: Text(
-              _allTilesPlaced ? 'PASTURE COMPLETE!' : 'BUILD THE PASTURE',
-              style: GoogleFonts.bangers(
+              _allTilesPlaced ? l10n.startBattle : l10n.buildThePasture.toUpperCase(),
+              style: AppFonts.bangers(
                 fontSize: 18,
                 color: const Color(0xFFFFD54F),
                 letterSpacing: 1.5,
@@ -293,7 +295,7 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
           const Spacer(),
           if (_allTilesPlaced)
             GameButtonStyles.primaryButton(
-              text: 'START BATTLE',
+              text: l10n.startBattle,
               onPressed: _startGame,
               width: 150,
               height: 44,
@@ -346,14 +348,14 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
                   children: [
                     Text(
                       player.name,
-                      style: GoogleFonts.bangers(
+                      style: AppFonts.bangers(
                         fontSize: 12,
                         color: Colors.white,
                       ),
                     ),
                     Text(
                       '$tilesLeft TILES',
-                      style: GoogleFonts.bangers(
+                      style: AppFonts.bangers(
                         fontSize: 11,
                         color: isCurrent ? const Color(0xFFFFD54F) : Colors.white70,
                       ),
@@ -425,7 +427,7 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
                           Text(
                             'DRAG TILE ONTO THE BOARD\nOR TAP TO PLACE',
                             textAlign: TextAlign.center,
-                            style: GoogleFonts.bangers(
+                            style: AppFonts.bangers(
                               fontSize: 16,
                               color: Colors.white70,
                               letterSpacing: 1.5,
@@ -560,7 +562,7 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
                     children: [
                       Text(
                         '4-HEX PASTURE',
-                        style: GoogleFonts.bangers(
+                        style: AppFonts.bangers(
                           fontSize: 14,
                           color: Colors.white,
                           letterSpacing: 1,
@@ -568,7 +570,7 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
                       ),
                       Text(
                         'TAP TO ROTATE 🔄',
-                        style: GoogleFonts.bangers(
+                        style: AppFonts.bangers(
                           fontSize: 11,
                           color: const Color(0xFFFFD54F),
                         ),
@@ -595,8 +597,8 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
                   const Icon(Icons.rotate_right_rounded, color: Colors.white, size: 20),
                   const SizedBox(width: 4),
                   Text(
-                    'ROTATE',
-                    style: GoogleFonts.bangers(fontSize: 14, color: Colors.white),
+                    AppLocalizations.of(context).rotate.toUpperCase(),
+                    style: AppFonts.bangers(fontSize: 14, color: Colors.white),
                   ),
                 ],
               ),
@@ -623,8 +625,8 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
                 ),
               ),
               child: Text(
-                'PLACE',
-                style: GoogleFonts.bangers(
+                AppLocalizations.of(context).place.toUpperCase(),
+                style: AppFonts.bangers(
                   fontSize: 16,
                   color: canPlace ? Colors.white : Colors.white38,
                   letterSpacing: 1.5,

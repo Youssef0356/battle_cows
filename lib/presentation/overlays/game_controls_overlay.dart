@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../core/localization/app_fonts.dart';
+import '../../core/localization/app_localizations.dart';
 import '../../flame/battle_cows_game.dart';
 import '../../core/constants/colors.dart';
 import '../../game/models/challenge_mode.dart';
@@ -37,6 +38,7 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final game = widget.game;
     final selectedPos = game.selectedPosition;
     final herd = selectedPos != null ? game.engine.board?.getHerdAt(selectedPos) : null;
@@ -58,20 +60,21 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
           if (isFenceChallenge && isMyTurn)
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-              child: _buildFenceActionBar(game, currentPlayer, remainingFences),
+              child: _buildFenceActionBar(game, currentPlayer, remainingFences, l10n),
             ),
           _buildMoveBar(
             herd: herd,
             totalCows: totalCows,
             maxMoving: maxMoving,
             movingCount: movingCount,
+            l10n: l10n,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFenceActionBar(BattleCowsGame game, dynamic currentPlayer, int remainingFences) {
+  Widget _buildFenceActionBar(BattleCowsGame game, dynamic currentPlayer, int remainingFences, AppLocalizations l10n) {
     final isFenceMode = game.isFenceMode;
     final hasSelectedFence = game.selectedFencePosition != null;
 
@@ -121,9 +124,9 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
               children: [
                 Text(
                   isFenceMode
-                      ? (hasSelectedFence ? 'RELOCATE FENCE' : 'PLACE FENCE')
-                      : 'FENCES: $remainingFences/3',
-                  style: GoogleFonts.bangers(
+                      ? (hasSelectedFence ? l10n.relocateFence : l10n.placeFence)
+                      : l10n.fencesCount(remainingFences, 3),
+                  style: AppFonts.bangers(
                     fontSize: 14,
                     color: isFenceMode ? const Color(0xFFFFD54F) : Colors.white,
                     letterSpacing: 1,
@@ -132,10 +135,10 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
                 Text(
                   isFenceMode
                       ? (hasSelectedFence
-                          ? 'Tap empty hex to drop fence'
-                          : (remainingFences > 0 ? 'Tap empty hex to place' : 'Tap your fence to move'))
-                      : 'Block enemy paths or move',
-                  style: GoogleFonts.bangers(
+                          ? l10n.tapEmptyToDrop
+                          : (remainingFences > 0 ? l10n.tapEmptyToPlace : l10n.tapFenceToMove))
+                      : l10n.blockEnemyPaths,
+                  style: AppFonts.bangers(
                     fontSize: 10,
                     color: Colors.white70,
                     letterSpacing: 0.5,
@@ -171,8 +174,8 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
                 ],
               ),
               child: Text(
-                isFenceMode ? 'CANCEL' : 'USE',
-                style: GoogleFonts.bangers(
+                isFenceMode ? l10n.cancel : l10n.use,
+                style: AppFonts.bangers(
                   fontSize: 12,
                   color: Colors.white,
                   letterSpacing: 1,
@@ -185,126 +188,41 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
     );
   }
 
-  // Kept for the compact control layout used by older saved sessions.
-  // ignore: unused_element
-  Widget _buildTopBar(dynamic currentPlayer, int hearts) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.getPlayerPrimary(currentPlayer.color),
-                  AppColors.getPlayerDark(currentPlayer.color),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.white24, width: 1),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 14,
-                  height: 14,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Text(
-                      '🐮',
-                      style: const TextStyle(fontSize: 10),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  currentPlayer.name.toUpperCase(),
-                  style: GoogleFonts.bangers(
-                    fontSize: 14,
-                    color: Colors.white,
-                    letterSpacing: 1,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Spacer(),
-          _buildHeartsDisplay(hearts),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeartsDisplay(int hearts) {
-    return Row(
-      children: List.generate(3, (index) {
-        final isLost = index >= hearts;
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 2),
-          child: Container(
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: isLost ? Colors.grey.shade800 : const Color(0xFFD32F2F),
-              border: Border.all(
-                color: isLost ? Colors.grey.shade600 : const Color(0xFFFF5252),
-                width: 1.5,
-              ),
-            ),
-            child: Center(
-              child: Text(
-                '❤',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: isLost ? Colors.grey.shade600 : Colors.white,
-                ),
-              ),
-            ),
-          ),
-        );
-      }),
-    );
-  }
-
   Widget _buildMoveBar({
     dynamic herd,
     required int totalCows,
     required int maxMoving,
     required int movingCount,
+    required AppLocalizations l10n,
   }) {
     final hasHerd = herd != null && totalCows >= 2;
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xFF3E2723),
-            Color(0xFF4E342E),
-            Color(0xFF3E2723),
-          ],
+        gradient: LinearGradient(
+          colors: hasHerd
+              ? [const Color(0xFF4E342E), const Color(0xFF2E1C0C)]
+              : [const Color(0xFF3E2723), const Color(0xFF24140E)],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: herd != null
-              ? AppColors.getPlayerPrimary(herd.owner).withValues(alpha: 0.6)
+              ? AppColors.getPlayerPrimary(herd.owner)
               : const Color(0xFF6D4C41),
-          width: 2,
+          width: hasHerd ? 2.5 : 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.5),
+            color: herd != null
+                ? AppColors.getPlayerPrimary(herd.owner).withValues(alpha: 0.3)
+                : Colors.black.withValues(alpha: 0.5),
             blurRadius: 10,
-            spreadRadius: 2,
+            spreadRadius: 1,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -312,77 +230,75 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
           ? Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  'MOVE COWS',
-                  style: GoogleFonts.bangers(
-                    fontSize: 11,
-                    color: const Color(0xFFFFD54F),
-                    letterSpacing: 1.5,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Text('🐮 ', style: TextStyle(fontSize: 14)),
+                        Text(
+                          l10n.splitHerdTotal(totalCows),
+                          style: AppFonts.bangers(
+                            fontSize: 13,
+                            color: const Color(0xFFFFD54F),
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        widget.game.clearSelection();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.white24),
+                        ),
+                        child: Text(
+                          l10n.deselect,
+                          style: AppFonts.bangers(
+                            fontSize: 10,
+                            color: Colors.white70,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 8),
                 Row(
                   children: [
-                    // Total cows display
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: AppColors.getPlayerPrimary(herd.owner)
-                            .withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: AppColors.getPlayerPrimary(herd.owner),
-                          width: 1.5,
+                    // Stepper minus
+                    GestureDetector(
+                      onTap: movingCount > 1
+                          ? () => widget.game.setSplitCount(movingCount - 1)
+                          : null,
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: movingCount > 1
+                              ? const Color(0xFF5D4037)
+                              : Colors.white.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: movingCount > 1 ? const Color(0xFFFFD54F) : Colors.white12,
+                          ),
+                        ),
+                        child: Center(
+                          child: Icon(
+                            Icons.remove,
+                            size: 18,
+                            color: movingCount > 1 ? Colors.white : Colors.white24,
+                          ),
                         ),
                       ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text('🐮', style: TextStyle(fontSize: 14)),
-                          Text(
-                            '$totalCows',
-                            style: GoogleFonts.bangers(
-                              fontSize: 13,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
-                      ),
                     ),
-                    const SizedBox(width: 6),
-                    Icon(
-                      Icons.arrow_forward,
-                      color: const Color(0xFFFFD54F).withValues(alpha: 0.7),
-                      size: 16,
-                    ),
-                    const SizedBox(width: 6),
-                    // Move count display
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1B5E20).withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: const Color(0xFF66BB6A),
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text('➡', style: TextStyle(fontSize: 12)),
-                          Text(
-                            '$movingCount/$maxMoving',
-                            style: GoogleFonts.bangers(
-                              fontSize: 13,
-                              color: const Color(0xFF66BB6A),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    const SizedBox(width: 8),
                     // Split slider (horizontal)
                     Expanded(
                       child: SliderTheme(
@@ -394,7 +310,7 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
                               const Color(0xFFFFD54F).withValues(alpha: 0.25),
                           trackHeight: 6,
                           thumbShape:
-                              const RoundSliderThumbShape(enabledThumbRadius: 9),
+                              const RoundSliderThumbShape(enabledThumbRadius: 10),
                         ),
                         child: Slider(
                           value: movingCount.toDouble(),
@@ -406,22 +322,75 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 4),
-                    // Stay count label
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        '${totalCows - movingCount} STAY',
-                        style: GoogleFonts.bangers(
-                          fontSize: 13,
-                          color: Colors.white70,
-                          letterSpacing: 0.5,
+                    const SizedBox(width: 8),
+                    // Stepper plus
+                    GestureDetector(
+                      onTap: movingCount < maxMoving
+                          ? () => widget.game.setSplitCount(movingCount + 1)
+                          : null,
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: movingCount < maxMoving
+                              ? const Color(0xFF5D4037)
+                              : Colors.white.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: movingCount < maxMoving ? const Color(0xFFFFD54F) : Colors.white12,
+                          ),
                         ),
+                        child: Center(
+                          child: Icon(
+                            Icons.add,
+                            size: 18,
+                            color: movingCount < maxMoving ? Colors.white : Colors.white24,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                // Quick preset buttons and summary
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Quick preset buttons
+                    Row(
+                      children: [
+                        _buildQuickSplitChip(l10n.quickOneCow, 1, movingCount),
+                        if (maxMoving >= 4) ...[
+                          const SizedBox(width: 6),
+                          _buildQuickSplitChip(l10n.quickHalf, totalCows ~/ 2, movingCount),
+                        ],
+                        if (maxMoving >= 2) ...[
+                          const SizedBox(width: 6),
+                          _buildQuickSplitChip(l10n.quickMax(maxMoving), maxMoving, movingCount),
+                        ],
+                      ],
+                    ),
+                    // Visual breakdown badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.4),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFF66BB6A).withValues(alpha: 0.5)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            l10n.stayCount(totalCows - movingCount),
+                            style: AppFonts.bangers(fontSize: 11, color: Colors.white70),
+                          ),
+                          const Text(' ➜ ', style: TextStyle(fontSize: 10, color: Color(0xFFFFD54F))),
+                          Text(
+                            l10n.moveCount(movingCount),
+                            style: AppFonts.bangers(fontSize: 12, color: const Color(0xFF66BB6A)),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -432,32 +401,61 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  width: 36,
-                  height: 36,
+                  width: 32,
+                  height: 32,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
-                    borderRadius: BorderRadius.circular(12),
+                    color: const Color(0xFFFFD54F).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.15),
+                      color: const Color(0xFFFFD54F).withValues(alpha: 0.4),
                       width: 1,
                     ),
                   ),
                   child: const Center(
-                    child: Text('🐮',
-                        style: TextStyle(fontSize: 18, color: Colors.white24)),
+                    child: Text('🐮', style: TextStyle(fontSize: 16)),
                   ),
                 ),
                 const SizedBox(width: 10),
-                Text(
-                  'TAP HERD',
-                  style: GoogleFonts.bangers(
-                    fontSize: 11,
-                    color: Colors.white38,
-                    letterSpacing: 1.5,
+                Expanded(
+                  child: Text(
+                    l10n.tapHerdPrompt,
+                    style: AppFonts.bangers(
+                      fontSize: 12,
+                      color: const Color(0xFFFFD54F),
+                      letterSpacing: 1,
+                    ),
                   ),
                 ),
               ],
             ),
+    );
+  }
+
+  Widget _buildQuickSplitChip(String label, int targetValue, int currentCount) {
+    final isSelected = targetValue == currentCount;
+    return GestureDetector(
+      onTap: () => widget.game.setSplitCount(targetValue),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? const Color(0xFF2E7D32)
+              : Colors.white.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF81C784) : Colors.white24,
+            width: 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: AppFonts.bangers(
+            fontSize: 10,
+            color: isSelected ? Colors.white : Colors.white70,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ),
     );
   }
 }

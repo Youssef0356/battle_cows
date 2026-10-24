@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../core/localization/app_fonts.dart';
+import '../../core/localization/app_localizations.dart';
 import '../../game/tutorial/tutorial_data.dart';
 
 /// First-match tutorial coach. The parent owns the step index so game events
@@ -57,10 +58,11 @@ class _TutorialOverlayState extends State<TutorialOverlay>
 
   bool get _isLast => widget.currentStep >= widget.steps.length - 1;
 
-  String get _buttonLabel {
-    if (_isLast) return "LET'S PLAY!";
-    if (widget.currentStep == 0) return 'START!';
-    return 'GOT IT';
+  String _buttonLabel(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    if (_isLast) return l10n.letsPlay;
+    if (widget.currentStep == 0) return l10n.startExclamation;
+    return l10n.doneBtn;
   }
 
   void _handleButton() {
@@ -74,6 +76,7 @@ class _TutorialOverlayState extends State<TutorialOverlay>
   @override
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.of(context).padding.top;
+    final l10n = AppLocalizations.of(context);
 
     return Stack(
       children: [
@@ -99,8 +102,8 @@ class _TutorialOverlayState extends State<TutorialOverlay>
                   border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
                 ),
                 child: Text(
-                  'TUTORIAL · ${widget.currentStep + 1} / ${widget.steps.length}',
-                  style: GoogleFonts.bangers(
+                  l10n.tutorialStepCounter(widget.currentStep + 1, widget.steps.length),
+                  style: AppFonts.bangers(
                     color: _step.accentColor,
                     fontSize: 14,
                     letterSpacing: 1,
@@ -124,8 +127,8 @@ class _TutorialOverlayState extends State<TutorialOverlay>
                 border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
               ),
               child: Text(
-                'SKIP',
-                style: GoogleFonts.bangers(
+                l10n.skip,
+                style: AppFonts.bangers(
                   color: Colors.white.withValues(alpha: 0.8),
                   fontSize: 14,
                   letterSpacing: 1,
@@ -135,16 +138,16 @@ class _TutorialOverlayState extends State<TutorialOverlay>
           ),
         ),
         if (_step.blocking)
-          _buildBlockingCard(topPadding)
+          _buildBlockingCard(topPadding, l10n)
         else
-          _buildCoachBanner(topPadding),
+          _buildCoachBanner(topPadding, l10n),
       ],
     );
   }
 
   /// Full card for intro/outro steps; the dim scrim is a separate layer under
   /// the counter/SKIP chips so they remain tappable.
-  Widget _buildBlockingCard(double topPadding) {
+  Widget _buildBlockingCard(double topPadding, AppLocalizations l10n) {
     return Positioned(
       top: 0,
       left: 0,
@@ -189,8 +192,8 @@ class _TutorialOverlayState extends State<TutorialOverlay>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        _step.title,
-                        style: GoogleFonts.bangers(
+                        _step.localizedTitle(widget.currentStep, context),
+                        style: AppFonts.bangers(
                           fontSize: 22,
                           color: _step.accentColor,
                           letterSpacing: 1.5,
@@ -199,8 +202,8 @@ class _TutorialOverlayState extends State<TutorialOverlay>
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        _step.description,
-                        style: GoogleFonts.bangers(
+                        _step.localizedDescription(widget.currentStep, context),
+                        style: AppFonts.bangers(
                           fontSize: 14,
                           color: Colors.white.withValues(alpha: 0.9),
                           letterSpacing: 0.5,
@@ -224,8 +227,8 @@ class _TutorialOverlayState extends State<TutorialOverlay>
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
-                            _buttonLabel,
-                            style: GoogleFonts.bangers(
+                            _buttonLabel(context),
+                            style: AppFonts.bangers(
                               fontSize: 18,
                               color: Colors.white,
                               letterSpacing: 2,
@@ -248,7 +251,7 @@ class _TutorialOverlayState extends State<TutorialOverlay>
   /// Compact coach banner for actionable steps: sits above the bottom
   /// controls (place/rotate bar, move slider) and never blocks board taps
   /// outside its own bounds.
-  Widget _buildCoachBanner(double topPadding) {
+  Widget _buildCoachBanner(double topPadding, AppLocalizations l10n) {
     return Positioned(
       left: 12,
       right: 12,
@@ -306,7 +309,7 @@ class _TutorialOverlayState extends State<TutorialOverlay>
                       child: Center(
                         child: Text(
                           '${widget.currentStep + 1}',
-                          style: GoogleFonts.bangers(
+                          style: AppFonts.bangers(
                             fontSize: 16,
                             color: const Color(0xFF1B0000),
                           ),
@@ -320,8 +323,8 @@ class _TutorialOverlayState extends State<TutorialOverlay>
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            _step.title,
-                            style: GoogleFonts.bangers(
+                            _step.localizedTitle(widget.currentStep, context),
+                            style: AppFonts.bangers(
                               fontSize: 15,
                               color: _step.accentColor,
                               letterSpacing: 1.2,
@@ -329,8 +332,8 @@ class _TutorialOverlayState extends State<TutorialOverlay>
                           ),
                           const SizedBox(height: 3),
                           Text(
-                            _step.description,
-                            style: GoogleFonts.bangers(
+                            _step.localizedDescription(widget.currentStep, context),
+                            style: AppFonts.bangers(
                               fontSize: 12,
                               color: Colors.white.withValues(alpha: 0.88),
                               letterSpacing: 0.4,
@@ -352,8 +355,8 @@ class _TutorialOverlayState extends State<TutorialOverlay>
                         ),
                       ),
                       child: Text(
-                        'DONE ›',
-                        style: GoogleFonts.bangers(
+                        '${l10n.doneBtn} ›',
+                        style: AppFonts.bangers(
                           fontSize: 12,
                           color: _step.accentColor,
                           letterSpacing: 1,

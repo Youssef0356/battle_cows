@@ -216,7 +216,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       if (herd != null && herd.owner == _engine.currentPlayer.color && herd.size >= 2) {
         setState(() {
           _selectedPosition = position;
-          _validMoves = _engine.board!.getReachablePositions(position, herd.size)
+          _validMoves = _engine.board!.getReachablePositions(position, max(herd.size, 5))
               .where((p) => _engine.board!.isEmpty(p))
               .toList();
         });

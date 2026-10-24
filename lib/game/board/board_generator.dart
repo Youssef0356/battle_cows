@@ -31,10 +31,24 @@ class BoardGenerator {
     for (final tile in tiles) {
       cells.addAll(tile.hexes);
     }
-    final sorted = cells.toList()..sort((a, b) => a.distanceTo(const HexPosition(0, 0)).compareTo(b.distanceTo(const HexPosition(0, 0))));
+    final sorted = cells.toList()
+      ..sort((a, b) => a.distanceTo(const HexPosition(0, 0)).compareTo(b.distanceTo(const HexPosition(0, 0))));
     if (sorted.isEmpty) return {};
     final specials = <HexPosition, SpecialTileType>{};
-    if (mode == ChallengeMode.timed) {
+
+    if (mode == ChallengeMode.goldenPasture) {
+      // The innermost hex is the Golden Pasture
+      specials[sorted.first] = SpecialTileType.goldenPasture;
+      if (sorted.length > 6) {
+        specials[sorted[sorted.length ~/ 3]] = SpecialTileType.hayBale;
+        specials[sorted[sorted.length * 2 ~/ 3]] = SpecialTileType.hayBale;
+      }
+    } else if (mode == ChallengeMode.stampedeRush) {
+      if (sorted.length > 4) specials[sorted[sorted.length ~/ 4]] = SpecialTileType.hayBale;
+      if (sorted.length > 8) specials[sorted[sorted.length ~/ 2]] = SpecialTileType.hayBale;
+      if (sorted.length > 12) specials[sorted[sorted.length * 3 ~/ 4]] = SpecialTileType.hayBale;
+      if (sorted.length > 10) specials[sorted[sorted.length ~/ 3]] = SpecialTileType.mud;
+    } else if (mode == ChallengeMode.timed) {
       if (sorted.length > 3) specials[sorted[sorted.length ~/ 3]] = SpecialTileType.hayBale;
     }
     return specials;

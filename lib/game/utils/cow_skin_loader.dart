@@ -1,4 +1,4 @@
-﻿// Central lookup for cow sprite assets.
+// Central lookup for cow sprite assets.
 //
 // The four cow sprites (cowboy / viking / farmer / disco) are tied to
 // [PlayerColor] by the Flame renderer and the UI overlays. The shop's

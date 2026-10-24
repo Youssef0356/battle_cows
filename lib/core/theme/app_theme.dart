@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../constants/colors.dart';
+import '../localization/app_fonts.dart';
+import '../localization/locale_controller.dart';
 
 class AppTheme {
   static ThemeData get darkTheme {
+    final isArabic = LocaleController.instance.isArabic;
+    final baseTextTheme = isArabic
+        ? GoogleFonts.cairoTextTheme(ThemeData.dark().textTheme)
+        : GoogleFonts.bangersTextTheme(ThemeData.dark().textTheme);
+
     return ThemeData(
       brightness: Brightness.dark,
       primaryColor: AppColors.primaryAction,
@@ -20,7 +27,7 @@ class AppTheme {
         backgroundColor: Colors.transparent,
         foregroundColor: AppColors.lightText,
         elevation: 0,
-        titleTextStyle: GoogleFonts.bangers(
+        titleTextStyle: AppFonts.bangers(
           fontSize: 24,
           color: AppColors.lightText,
           letterSpacing: 2,
@@ -34,7 +41,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: GoogleFonts.bangers(
+          textStyle: AppFonts.bangers(
             fontSize: 18,
             letterSpacing: 1.5,
           ),
@@ -47,28 +54,28 @@ class AppTheme {
         ),
         elevation: 4,
       ),
-      textTheme: GoogleFonts.bangersTextTheme().copyWith(
-        headlineLarge: GoogleFonts.bangers(
+      textTheme: baseTextTheme.copyWith(
+        headlineLarge: AppFonts.bangers(
           fontSize: 32,
           color: AppColors.lightText,
           letterSpacing: 2,
         ),
-        headlineMedium: GoogleFonts.bangers(
+        headlineMedium: AppFonts.bangers(
           fontSize: 24,
           color: AppColors.lightText,
           letterSpacing: 1.5,
         ),
-        titleLarge: GoogleFonts.bangers(
+        titleLarge: AppFonts.bangers(
           fontSize: 20,
           color: AppColors.lightText,
           letterSpacing: 1,
         ),
-        bodyLarge: GoogleFonts.bangers(
+        bodyLarge: AppFonts.bangers(
           fontSize: 16,
           color: AppColors.lightText,
           letterSpacing: 1,
         ),
-        bodyMedium: GoogleFonts.bangers(
+        bodyMedium: AppFonts.bangers(
           fontSize: 14,
           color: AppColors.lightText,
           letterSpacing: 0.5,

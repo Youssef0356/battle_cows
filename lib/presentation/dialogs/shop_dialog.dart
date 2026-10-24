@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../core/localization/app_fonts.dart';
+import '../../core/localization/app_localizations.dart';
 import '../../data/models/shop_item.dart';
 import '../../data/services/premium_service.dart';
 import '../../data/services/progress_service.dart';
@@ -16,9 +17,10 @@ class ShopDialog extends StatefulWidget {
     required BuildContext context,
     required ProgressService progress,
   }) {
+    final l10n = AppLocalizations.of(context);
     return CartoonDialog.show(
       context: context,
-      title: 'COW BARN SHOP',
+      title: l10n.shopTitle,
       maxWidth: 380,
       child: ShopDialog(progress: progress),
     );
@@ -33,6 +35,7 @@ class _ShopDialogState extends State<ShopDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final coins = widget.progress.progress.coins;
     final owned = widget.progress.progress.ownedItems;
     final filtered = shopItems.where((i) => i.category == _selectedCategory).toList();
@@ -55,7 +58,7 @@ class _ShopDialogState extends State<ShopDialog> {
                 const SizedBox(width: 6),
                 Text(
                   '$coins',
-                  style: GoogleFonts.bangers(
+                  style: AppFonts.bangers(
                     fontSize: 18,
                     color: const Color(0xFFFFD54F),
                   ),
@@ -64,11 +67,9 @@ class _ShopDialogState extends State<ShopDialog> {
             ),
           ),
           const SizedBox(height: 10),
-          _buildPremiumBanner(),
+          _buildPremiumBanner(l10n),
           _buildCategoryTabs(),
           const SizedBox(height: 10),
-          // The dialog body already provides the scroll view, so the grid
-          // shrink-wraps and the whole shop scrolls as a single list.
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -83,12 +84,12 @@ class _ShopDialogState extends State<ShopDialog> {
               final item = filtered[index];
               final isOwned = owned.contains(item.id);
               final canBuy = coins >= item.price && !isOwned;
-              return _buildShopTile(item, isOwned, canBuy);
+              return _buildShopTile(item, isOwned, canBuy, l10n);
             },
           ),
           const SizedBox(height: 8),
           KenneyButton(
-            label: 'CLOSE',
+            label: l10n.close,
             isWide: true,
             style: KenneyBtnStyle.neutral,
             onPressed: () => Navigator.pop(context),
@@ -98,7 +99,7 @@ class _ShopDialogState extends State<ShopDialog> {
     );
   }
 
-  Widget _buildPremiumBanner() {
+  Widget _buildPremiumBanner(AppLocalizations l10n) {
     return ListenableBuilder(
       listenable: PremiumService.instance,
       builder: (context, _) {
@@ -133,8 +134,8 @@ class _ShopDialogState extends State<ShopDialog> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'REMOVE ADS — GO PREMIUM',
-                      style: GoogleFonts.bangers(
+                      l10n.removeAdsGoPremium,
+                      style: AppFonts.bangers(
                         fontSize: 15,
                         color: const Color(0xFF3E2723),
                         letterSpacing: 1,
@@ -157,58 +158,56 @@ class _ShopDialogState extends State<ShopDialog> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: ShopCategory.values.map((cat) {
-        final isSelected = _selectedCategory == cat;
-        final labels = {
-          ShopCategory.skins: '🐄',
-          ShopCategory.hats: '🤠',
-          ShopCategory.themes: '🎨',
-          ShopCategory.emojis: '💬',
-          ShopCategory.boards: '🪵',
-        };
-        return GestureDetector(
-          key: ValueKey('shop-tab-${cat.name}'),
-          onTap: () => setState(() => _selectedCategory = cat),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: isSelected ? const Color(0xFFFFD54F).withValues(alpha: 0.2) : Colors.transparent,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: isSelected ? const Color(0xFFFFD54F) : Colors.white24,
+          final isSelected = _selectedCategory == cat;
+          final labels = {
+            ShopCategory.skins: '🐄',
+            ShopCategory.hats: '🤠',
+            ShopCategory.themes: '🎨',
+            ShopCategory.emojis: '💬',
+            ShopCategory.boards: '🪵',
+          };
+          return GestureDetector(
+            key: ValueKey('shop-tab-${cat.name}'),
+            onTap: () => setState(() => _selectedCategory = cat),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: isSelected ? const Color(0xFFFFD54F).withValues(alpha: 0.2) : Colors.transparent,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: isSelected ? const Color(0xFFFFD54F) : Colors.white24,
+                ),
+              ),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Text(labels[cat]!, style: const TextStyle(fontSize: 20)),
+                  if (widget.progress.equippedForCategory(cat).isNotEmpty)
+                    const Positioned(
+                      right: -5,
+                      top: -5,
+                      child: Icon(
+                        Icons.check_circle,
+                        size: 13,
+                        color: Color(0xFF43A047),
+                      ),
+                    ),
+                ],
               ),
             ),
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Text(labels[cat]!, style: const TextStyle(fontSize: 20)),
-                if (widget.progress.equippedForCategory(cat).isNotEmpty)
-                  const Positioned(
-                    right: -5,
-                    top: -5,
-                    child: Icon(
-                      Icons.check_circle,
-                      size: 13,
-                      color: Color(0xFF43A047),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        );
+          );
         }).toList(),
       ),
     );
   }
 
-  Widget _buildShopTile(ShopItem item, bool isOwned, bool canBuy) {
+  Widget _buildShopTile(ShopItem item, bool isOwned, bool canBuy, AppLocalizations l10n) {
     final isEquipped = widget.progress.isEquipped(item.id);
-    // Owned items can be equipped/unequipped by tapping; unowned affordable
-    // items are bought.
     return GestureDetector(
       onTap: isOwned
-          ? () => _toggleEquip(item)
+          ? () => _toggleEquip(item, l10n)
           : canBuy
-              ? () => _buyItem(item)
+              ? () => _buyItem(item, l10n)
               : null,
       child: Container(
         padding: const EdgeInsets.all(6),
@@ -236,8 +235,6 @@ class _ShopDialogState extends State<ShopDialog> {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Flexible image area: it shrinks to whatever height the grid
-            // tile actually has, so the tile can never overflow.
             Expanded(
               child: Center(
                 child: item.imageAsset != null
@@ -247,8 +244,8 @@ class _ShopDialogState extends State<ShopDialog> {
             ),
             const SizedBox(height: 2),
             Text(
-              item.name,
-              style: GoogleFonts.bangers(
+              item.localizedName(context),
+              style: AppFonts.bangers(
                 fontSize: 9,
                 color: isOwned ? const Color(0xFF689F38) : Colors.white,
               ),
@@ -259,10 +256,10 @@ class _ShopDialogState extends State<ShopDialog> {
             const SizedBox(height: 1),
             if (isOwned)
               Text(
-                isEquipped ? 'EQUIPPED ✅' : 'TAP TO USE',
+                isEquipped ? l10n.equippedCheck : l10n.tapToUse,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.bangers(
+                style: AppFonts.bangers(
                   fontSize: 8,
                   color: isEquipped ? const Color(0xFF43A047) : const Color(0xFF689F38),
                 ),
@@ -272,28 +269,27 @@ class _ShopDialogState extends State<ShopDialog> {
                 '💰 ${item.price}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.bangers(
+                style: AppFonts.bangers(
                   fontSize: 9,
                   color: canBuy ? const Color(0xFFFFD54F) : Colors.white38,
                 ),
               ),
           ],
         ),
-                      ),
-                    );
-                  }
+      ),
+    );
+  }
 
-  void _buyItem(ShopItem item) {
+  void _buyItem(ShopItem item, AppLocalizations l10n) {
     final success = widget.progress.buyItem(item.id, item.price);
     if (success) {
-      // Auto-equip so the purchase is immediately visible.
       widget.progress.equipItem(item.id);
       setState(() {});
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '${item.icon} ${item.name} purchased & equipped!',
-            style: GoogleFonts.bangers(fontSize: 16),
+            '${item.icon} ${l10n.itemPurchasedAndEquipped(item.localizedName(context))}',
+            style: AppFonts.bangers(fontSize: 16),
           ),
           backgroundColor: const Color(0xFF689F38),
           duration: const Duration(seconds: 2),
@@ -303,8 +299,8 @@ class _ShopDialogState extends State<ShopDialog> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Cannot purchase — check coins or already owned',
-            style: GoogleFonts.bangers(fontSize: 14),
+            l10n.cannotPurchase,
+            style: AppFonts.bangers(fontSize: 14),
           ),
           backgroundColor: const Color(0xFFD32F2F),
           duration: const Duration(seconds: 2),
@@ -313,7 +309,7 @@ class _ShopDialogState extends State<ShopDialog> {
     }
   }
 
-  void _toggleEquip(ShopItem item) {
+  void _toggleEquip(ShopItem item, AppLocalizations l10n) {
     final wasEquipped = widget.progress.isEquipped(item.id);
     widget.progress.equipItem(item.id);
     setState(() {});
@@ -321,9 +317,9 @@ class _ShopDialogState extends State<ShopDialog> {
       SnackBar(
         content: Text(
           wasEquipped
-              ? '${item.icon} ${item.name} unequipped'
-              : '${item.icon} ${item.name} equipped!',
-          style: GoogleFonts.bangers(fontSize: 16),
+              ? '${item.icon} ${l10n.itemUnequipped(item.localizedName(context))}'
+              : '${item.icon} ${l10n.itemEquipped(item.localizedName(context))}',
+          style: AppFonts.bangers(fontSize: 16),
         ),
         backgroundColor:
             wasEquipped ? const Color(0xFF6D4C41) : const Color(0xFF43A047),

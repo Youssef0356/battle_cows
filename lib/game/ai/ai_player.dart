@@ -1,5 +1,6 @@
 import 'dart:math';
 import '../models/hex_position.dart';
+import '../models/hex_cell.dart';
 import '../models/move.dart';
 import '../logic/game_engine.dart';
 import '../models/player_color.dart';
@@ -36,6 +37,8 @@ class AiPlayer {
 
       score += _scoreExpansion(move, engine, playerColor);
       score += _scoreBlocking(move, engine, playerColor);
+      score += _scoreObjectiveTiles(move, engine);
+      score += _scoreFutureMobility(move);
 
       return _ScoredMove(move, score);
     }).toList();
@@ -54,6 +57,8 @@ class AiPlayer {
       score += _scoreBlocking(move, engine, playerColor) * 2.0;
       score += _scoreCenterControl(move, engine) * 1.0;
       score += _scoreStackPreservation(move) * 0.5;
+      score += _scoreObjectiveTiles(move, engine) * 2.5;
+      score += _scoreFutureMobility(move) * 1.5;
 
       return _ScoredMove(move, score);
     }).toList();
@@ -111,6 +116,25 @@ class AiPlayer {
     if (move.stayCount >= 3) return 2.0;
     if (move.stayCount >= 2) return 1.0;
     return 0.0;
+  }
+
+  double _scoreObjectiveTiles(Move move, GameEngine engine) {
+    final cell = engine.board?.getCell(move.to);
+    if (cell == null) return 0.0;
+    if (cell.specialType == SpecialTileType.goldenPasture) {
+      return 15.0; // Prime priority
+    } else if (cell.specialType == SpecialTileType.hayBale) {
+      return 6.0; // Bonus cow boost
+    }
+    return 0.0;
+  }
+
+  double _scoreFutureMobility(Move move) {
+    double score = 0.0;
+    if (move.stayCount >= 2) score += 2.0;
+    if (move.splitCount >= 2) score += 2.0;
+    if (move.stayCount == 1 && move.splitCount == 1) score -= 2.5;
+    return score;
   }
 }
 

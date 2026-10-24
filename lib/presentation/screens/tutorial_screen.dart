@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../core/localization/app_fonts.dart';
+import '../../core/localization/app_localizations.dart';
 import '../../game/models/challenge_mode.dart';
 import '../../game/tutorial/guide_content.dart';
 import '../widgets/wood_button.dart';
@@ -37,6 +38,14 @@ class _TutorialScreenState extends State<TutorialScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final tabLabels = [
+      l10n.guideSetupTab,
+      l10n.guideMovesTab,
+      l10n.guideBattleTab,
+      l10n.guideModesTab,
+    ];
+
     return Scaffold(
       backgroundColor: _dark,
       appBar: AppBar(
@@ -46,8 +55,8 @@ class _TutorialScreenState extends State<TutorialScreen>
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'HOW TO PLAY',
-          style: GoogleFonts.bangers(
+          l10n.howToPlay,
+          style: AppFonts.bangers(
             fontSize: 22,
             color: _accent,
             letterSpacing: 2,
@@ -70,13 +79,13 @@ class _TutorialScreenState extends State<TutorialScreen>
               child: TabBar(
                 controller: _tabController,
                 tabs: [
-                  for (final label in GuideContent.tabLabels) Tab(text: label),
+                  for (final label in tabLabels) Tab(text: label),
                 ],
-                labelStyle: GoogleFonts.bangers(
+                labelStyle: AppFonts.bangers(
                   fontSize: 15,
                   letterSpacing: 1.2,
                 ),
-                unselectedLabelStyle: GoogleFonts.bangers(
+                unselectedLabelStyle: AppFonts.bangers(
                   fontSize: 15,
                   letterSpacing: 1.2,
                 ),
@@ -100,7 +109,7 @@ class _TutorialScreenState extends State<TutorialScreen>
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
               child: WoodButton.gold(
-                label: 'GOT IT!',
+                label: l10n.gotIt,
                 width: 220,
                 height: 52,
                 fontSize: 22,
@@ -121,8 +130,18 @@ class _GuideTabPage extends StatelessWidget {
 
   const _GuideTabPage({required this.section});
 
+  String _getSectionHeadline(String id, AppLocalizations l10n) {
+    switch (id) {
+      case 'setup': return l10n.guideSetupHeadline;
+      case 'moves': return l10n.guideMovesHeadline;
+      case 'battle': return l10n.guideBattleHeadline;
+      default: return section.headline;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
       children: [
@@ -132,8 +151,8 @@ class _GuideTabPage extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                section.headline.toUpperCase(),
-                style: GoogleFonts.bangers(
+                _getSectionHeadline(section.id, l10n).toUpperCase(),
+                style: AppFonts.bangers(
                   fontSize: 16,
                   color: const Color(0xFFFFD54F),
                   letterSpacing: 1.2,
@@ -147,9 +166,22 @@ class _GuideTabPage extends StatelessWidget {
           _StepCard(step: step),
           const SizedBox(height: 16),
         ],
-        _TipsCard(tips: section.tips),
+        _TipsCard(tips: _getSectionTips(section.id, l10n, section.tips)),
       ],
     );
+  }
+
+  List<String> _getSectionTips(String id, AppLocalizations l10n, List<String> fallback) {
+    switch (id) {
+      case 'setup':
+        return [l10n.guideTip1, l10n.guideTip2, l10n.guideTip3];
+      case 'moves':
+        return [l10n.guideTip4, l10n.guideTip5, l10n.guideTip6];
+      case 'battle':
+        return [l10n.guideTip7, l10n.guideTip8, l10n.guideTip9];
+      default:
+        return fallback;
+    }
   }
 }
 
@@ -159,8 +191,39 @@ class _StepCard extends StatelessWidget {
 
   const _StepCard({required this.step});
 
+  String _getStepTitle(int number, AppLocalizations l10n) {
+    switch (number) {
+      case 1: return l10n.guideStep1Title;
+      case 2: return l10n.guideStep2Title;
+      case 3: return l10n.guideStep3Title;
+      case 4: return l10n.guideStep4Title;
+      case 5: return l10n.guideStep5Title;
+      case 6: return l10n.guideStep6Title;
+      case 7: return l10n.guideStep7Title;
+      case 8: return l10n.guideStep8Title;
+      case 9: return l10n.guideStep9Title;
+      default: return step.title;
+    }
+  }
+
+  String _getStepBody(int number, AppLocalizations l10n) {
+    switch (number) {
+      case 1: return l10n.guideStep1Body;
+      case 2: return l10n.guideStep2Body;
+      case 3: return l10n.guideStep3Body;
+      case 4: return l10n.guideStep4Body;
+      case 5: return l10n.guideStep5Body;
+      case 6: return l10n.guideStep6Body;
+      case 7: return l10n.guideStep7Body;
+      case 8: return l10n.guideStep8Body;
+      case 9: return l10n.guideStep9Body;
+      default: return step.body;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: _cardDecoration(),
@@ -179,7 +242,7 @@ class _StepCard extends StatelessWidget {
                 ),
                 child: Text(
                   '${step.number}',
-                  style: GoogleFonts.bangers(
+                  style: AppFonts.bangers(
                     fontSize: 16,
                     color: const Color(0xFF1B0000),
                   ),
@@ -188,8 +251,8 @@ class _StepCard extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  step.title,
-                  style: GoogleFonts.bangers(
+                  _getStepTitle(step.number, l10n),
+                  style: AppFonts.bangers(
                     fontSize: 16,
                     color: const Color(0xFFFFD54F),
                     letterSpacing: 1.5,
@@ -200,8 +263,8 @@ class _StepCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            step.body,
-            style: GoogleFonts.bangers(
+            _getStepBody(step.number, l10n),
+            style: AppFonts.bangers(
               fontSize: 13,
               color: Colors.white.withValues(alpha: 0.85),
               letterSpacing: 0.5,
@@ -232,7 +295,7 @@ class _TipsCard extends StatelessWidget {
         children: [
           Text(
             'PRO TIPS',
-            style: GoogleFonts.bangers(
+            style: AppFonts.bangers(
               fontSize: 15,
               color: const Color(0xFF81C784),
               letterSpacing: 1.5,
@@ -250,7 +313,7 @@ class _TipsCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       tip,
-                      style: GoogleFonts.bangers(
+                      style: AppFonts.bangers(
                         fontSize: 12.5,
                         color: Colors.white.withValues(alpha: 0.8),
                         letterSpacing: 0.4,
@@ -274,6 +337,7 @@ class _ModesTabPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
       children: [
@@ -283,8 +347,8 @@ class _ModesTabPage extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                GuideContent.modesHeadline.toUpperCase(),
-                style: GoogleFonts.bangers(
+                l10n.guideModesHeadline.toUpperCase(),
+                style: AppFonts.bangers(
                   fontSize: 16,
                   color: const Color(0xFFFFD54F),
                   letterSpacing: 1.2,
@@ -329,7 +393,7 @@ class _ModeCard extends StatelessWidget {
             ),
             child: Text(
               mode.startPath,
-              style: GoogleFonts.bangers(
+              style: AppFonts.bangers(
                 fontSize: 12,
                 color: const Color(0xFFFFD54F),
                 letterSpacing: 1,
@@ -348,7 +412,7 @@ class _ModeCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       rule,
-                      style: GoogleFonts.bangers(
+                      style: AppFonts.bangers(
                         fontSize: 12.5,
                         color: Colors.white.withValues(alpha: 0.85),
                         letterSpacing: 0.4,
@@ -371,7 +435,7 @@ class _ModeCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       tip,
-                      style: GoogleFonts.bangers(
+                      style: AppFonts.bangers(
                         fontSize: 12,
                         color: Colors.white.withValues(alpha: 0.65),
                         letterSpacing: 0.4,

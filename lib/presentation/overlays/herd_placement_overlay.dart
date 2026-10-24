@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../core/localization/app_fonts.dart';
+import '../../core/localization/app_localizations.dart';
 import '../../flame/battle_cows_game.dart';
 import '../../game/models/player.dart';
 import '../../core/constants/colors.dart';
@@ -42,6 +43,7 @@ class _HerdPlacementOverlayState extends State<HerdPlacementOverlay> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final game = widget.game;
     final playerIndex = game.herdPlacementPlayerIndex;
     final players = game.players;
@@ -53,15 +55,15 @@ class _HerdPlacementOverlayState extends State<HerdPlacementOverlay> {
     return SafeArea(
       child: Column(
         children: [
-          _buildTopBar(playerIndex, players),
+          _buildTopBar(playerIndex, players, l10n),
           const Expanded(child: IgnorePointer(child: SizedBox.expand())),
-          _buildInstructions(currentPlayer),
+          _buildInstructions(currentPlayer, l10n),
         ],
-       ),
-     );
+      ),
+    );
   }
 
-  Widget _buildTopBar(int currentPlayerIndex, List<Player> players) {
+  Widget _buildTopBar(int currentPlayerIndex, List<Player> players, AppLocalizations l10n) {
     return Container(
       margin: EdgeInsets.fromLTRB(12, 8 + widget.topInset, 12, 0),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
@@ -79,11 +81,14 @@ class _HerdPlacementOverlayState extends State<HerdPlacementOverlay> {
           const SizedBox(width: 10),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            child: Text('PLACE HERD', style: GoogleFonts.bangers(
-              fontSize: 15,
-              color: const Color(0xFFFFD54F),
-              letterSpacing: 1.2,
-            )),
+            child: Text(
+              l10n.placeHerd.toUpperCase(),
+              style: AppFonts.bangers(
+                fontSize: 15,
+                color: const Color(0xFFFFD54F),
+                letterSpacing: 1.2,
+              ),
+            ),
           ),
           const Spacer(),
           ...List.generate(players.length, (index) {
@@ -93,7 +98,7 @@ class _HerdPlacementOverlayState extends State<HerdPlacementOverlay> {
 
             return Padding(
               padding: const EdgeInsets.only(left: 6),
-              child: _buildPlayerCard(player, isCurrent, isPlaced),
+              child: _buildPlayerCard(player, isCurrent, isPlaced, l10n),
             );
           }),
         ],
@@ -101,7 +106,7 @@ class _HerdPlacementOverlayState extends State<HerdPlacementOverlay> {
     );
   }
 
-  Widget _buildPlayerCard(Player player, bool isCurrent, bool isPlaced) {
+  Widget _buildPlayerCard(Player player, bool isCurrent, bool isPlaced, AppLocalizations l10n) {
     final color = AppColors.getPlayerPrimary(player.color);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
@@ -119,9 +124,11 @@ class _HerdPlacementOverlayState extends State<HerdPlacementOverlay> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(player.isAi ? 'AI' : player.name.toUpperCase(), style: GoogleFonts.bangers(fontSize: 10, color: Colors.white)),
-              Text(isPlaced ? 'READY' : (isCurrent ? 'PLACE' : 'WAIT'),
-                  style: GoogleFonts.bangers(fontSize: 8, color: isCurrent ? const Color(0xFFFFD54F) : Colors.white60)),
+              Text(player.isAi ? 'AI' : player.name.toUpperCase(), style: AppFonts.bangers(fontSize: 10, color: Colors.white)),
+              Text(
+                isPlaced ? l10n.ready.toUpperCase() : (isCurrent ? l10n.place.toUpperCase() : l10n.wait.toUpperCase()),
+                style: AppFonts.bangers(fontSize: 8, color: isCurrent ? const Color(0xFFFFD54F) : Colors.white60),
+              ),
             ],
           ),
         ],
@@ -142,7 +149,7 @@ class _HerdPlacementOverlayState extends State<HerdPlacementOverlay> {
     }
   }
 
-  Widget _buildInstructions(Player currentPlayer) {
+  Widget _buildInstructions(Player currentPlayer, AppLocalizations l10n) {
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 8, 12, 12),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
@@ -154,26 +161,26 @@ class _HerdPlacementOverlayState extends State<HerdPlacementOverlay> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-           Container(
-             width: 16,
-             height: 16,
+          Container(
+            width: 16,
+            height: 16,
             decoration: BoxDecoration(
               color: AppColors.getPlayerPrimary(currentPlayer.color),
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white, width: 1.5),
             ),
           ),
-           const SizedBox(width: 9),
-           Expanded(
-             child: Text(
-               '${currentPlayer.name}, tap a highlighted hex to place your herd',
-               style: GoogleFonts.bangers(
-                 fontSize: 12,
-                 color: Colors.white,
-                 letterSpacing: 0.7,
-               ),
-             ),
-           ),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Text(
+              l10n.tapHighlightedHexToPlace(currentPlayer.name),
+              style: AppFonts.bangers(
+                fontSize: 12,
+                color: Colors.white,
+                letterSpacing: 0.7,
+              ),
+            ),
+          ),
         ],
       ),
     );

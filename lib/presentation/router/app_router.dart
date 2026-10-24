@@ -5,6 +5,7 @@ import '../screens/tutorial_screen.dart';
 import '../screens/result_screen.dart';
 import '../screens/tile_placement_screen.dart';
 import '../screens/settings_screen.dart';
+import '../screens/campaign_screen.dart';
 import '../../game/models/player.dart';
 import '../../game/models/pasture_tile.dart';
 import '../../game/models/challenge_mode.dart';
@@ -12,6 +13,7 @@ import '../../game/models/challenge_mode.dart';
 class AppRouter {
   static const String home = '/home';
   static const String game = '/game';
+  static const String campaign = '/campaign';
   static const String tutorial = '/tutorial';
   static const String result = '/result';
   static const String tilePlacement = '/tile-placement';
@@ -28,6 +30,7 @@ class AppRouter {
         final tilesPerPlayer = args?['tilesPerPlayer'] as int? ?? 5;
         final challengeMode = args?['challengeMode'] as ChallengeMode? ?? ChallengeMode.standard;
         final isTutorial = args?['isTutorial'] as bool? ?? false;
+        final campaignLevelId = args?['campaignLevelId'] as int?;
         return MaterialPageRoute(
           builder: (_) => FlameGameScreen(
             players: players,
@@ -37,8 +40,11 @@ class AppRouter {
             tilesPerPlayer: tilesPerPlayer,
             challengeMode: challengeMode,
             isTutorial: isTutorial,
+            campaignLevelId: campaignLevelId,
           ),
         );
+      case '/campaign':
+        return MaterialPageRoute(builder: (_) => const CampaignScreen());
       case '/tile-placement':
         final args = settings.arguments as Map<String, dynamic>?;
         final players = args?['players'] as List<Player>? ?? [];

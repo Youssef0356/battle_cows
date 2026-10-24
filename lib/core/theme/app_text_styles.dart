@@ -1,51 +1,51 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../constants/colors.dart';
+import '../localization/app_fonts.dart';
 
 class AppTextStyles {
-  static TextStyle heading = GoogleFonts.bangers(
+  static TextStyle get heading => AppFonts.bangers(
     fontSize: 32,
     fontWeight: FontWeight.w400,
     color: AppColors.lightText,
     letterSpacing: 2,
   );
 
-  static TextStyle subheading = GoogleFonts.bangers(
+  static TextStyle get subheading => AppFonts.bangers(
     fontSize: 24,
     fontWeight: FontWeight.w400,
     color: AppColors.lightText,
     letterSpacing: 1.5,
   );
 
-  static TextStyle body = GoogleFonts.bangers(
+  static TextStyle get body => AppFonts.bangers(
     fontSize: 16,
     color: AppColors.lightText,
     letterSpacing: 1,
   );
 
-  static TextStyle button = GoogleFonts.bangers(
+  static TextStyle get button => AppFonts.bangers(
     fontSize: 18,
     color: AppColors.lightText,
     letterSpacing: 1.5,
   );
 
-  static TextStyle score = GoogleFonts.bangers(
+  static TextStyle get score => AppFonts.bangers(
     fontSize: 24,
     color: AppColors.lightText,
     letterSpacing: 1,
   );
 
-  static TextStyle timer = GoogleFonts.bangers(
+  static TextStyle get timer => AppFonts.bangers(
     fontSize: 20,
     color: AppColors.lightText,
   );
 
-  static TextStyle herdCount = GoogleFonts.bangers(
+  static TextStyle get herdCount => AppFonts.bangers(
     fontSize: 14,
     color: Colors.white,
   );
 
-  static TextStyle title = GoogleFonts.bangers(
+  static TextStyle get title => AppFonts.bangers(
     fontSize: 48,
     color: AppColors.lightText,
     letterSpacing: 4,
@@ -58,7 +58,7 @@ class AppTextStyles {
     ],
   );
 
-  static TextStyle gameButton = GoogleFonts.bangers(
+  static TextStyle get gameButton => AppFonts.bangers(
     fontSize: 20,
     color: AppColors.lightText,
     letterSpacing: 2,
@@ -71,7 +71,7 @@ class AppTextStyles {
     ],
   );
 
-  static TextStyle cardTitle = GoogleFonts.bangers(
+  static TextStyle get cardTitle => AppFonts.bangers(
     fontSize: 18,
     color: AppColors.darkText,
     letterSpacing: 1,

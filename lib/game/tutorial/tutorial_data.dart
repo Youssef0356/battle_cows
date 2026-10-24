@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/localization/app_localizations.dart';
 
 enum TutorialPhase {
   tilePlacement,
@@ -95,4 +96,32 @@ class TutorialScenario {
       blocking: true,
     ),
   ];
+}
+
+extension TutorialStepLocalization on TutorialStep {
+  String localizedTitle(int stepIndex, [BuildContext? context]) {
+    final l10n = context != null ? AppLocalizations.of(context) : AppLocalizations.current;
+    switch (stepIndex) {
+      case 0: return l10n.tutStep1Title;
+      case 1: return l10n.tutStep2Title;
+      case 2: return l10n.tutStep3Title;
+      case 3: return l10n.tutScenarioStep4Title;
+      case 4: return l10n.tutScenarioStep5Title;
+      case 5: return l10n.tutScenarioStep6Title;
+      default: return title;
+    }
+  }
+
+  String localizedDescription(int stepIndex, [BuildContext? context]) {
+    final l10n = context != null ? AppLocalizations.of(context) : AppLocalizations.current;
+    switch (stepIndex) {
+      case 0: return l10n.tutStep1Desc;
+      case 1: return l10n.tutStep2Desc;
+      case 2: return l10n.tutStep3Desc;
+      case 3: return l10n.tutScenarioStep4Desc;
+      case 4: return l10n.tutScenarioStep5Desc;
+      case 5: return l10n.tutScenarioStep6Desc;
+      default: return description;
+    }
+  }
 }

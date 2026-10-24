@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../core/localization/app_fonts.dart';
+import '../../core/localization/app_localizations.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:in_app_review/in_app_review.dart';
 import '../../assets/asset_paths.dart';
@@ -8,6 +9,7 @@ import '../../data/services/progress_service.dart';
 import '../../flame/battle_cows_game.dart';
 import '../../game/models/player.dart';
 import '../../game/models/challenge_mode.dart';
+import '../../core/constants/colors.dart';
 import '../widgets/cartoon_dialog.dart';
 import '../widgets/kenney_button.dart';
 
@@ -49,6 +51,7 @@ class HudOverlay extends StatelessWidget {
                     Expanded(child: Align(alignment: Alignment.centerRight, child: buildSettingsButton(context))),
                   ],
                 ),
+                _buildLiveScoreBar(),
               ],
             ),
           ),
@@ -108,7 +111,7 @@ class HudOverlay extends StatelessWidget {
                       ),
                       Text(
                         '',
-                        style: GoogleFonts.bangers(
+                        style: AppFonts.bangers(
                           fontSize: 11,
                           color: isLowTime ? const Color(0xFFFF5252) : Colors.white,
                         ),
@@ -123,7 +126,7 @@ class HudOverlay extends StatelessWidget {
                   children: [
                     Text(
                       '⏱️ TIME',
-                      style: GoogleFonts.bangers(
+                      style: AppFonts.bangers(
                         fontSize: 9,
                         color: Colors.white70,
                         letterSpacing: 1,
@@ -131,7 +134,7 @@ class HudOverlay extends StatelessWidget {
                     ),
                     Text(
                       isLowTime ? 'HURRY!' : 'RUNNING',
-                      style: GoogleFonts.bangers(
+                      style: AppFonts.bangers(
                         fontSize: 10,
                         color: isLowTime ? const Color(0xFFFF8A80) : const Color(0xFFFFD54F),
                       ),
@@ -145,7 +148,7 @@ class HudOverlay extends StatelessWidget {
               children: [
                 Text(
                   isFenceBattle ? '🪵 FENCES' : '🎮 FREE PLAY',
-                  style: GoogleFonts.bangers(
+                  style: AppFonts.bangers(
                     fontSize: 10,
                     color: Colors.white70,
                     letterSpacing: 1,
@@ -153,7 +156,7 @@ class HudOverlay extends StatelessWidget {
                 ),
                 Text(
                   isFenceBattle ? 'BATTLE' : '∞',
-                  style: GoogleFonts.bangers(
+                  style: AppFonts.bangers(
                     fontSize: 18,
                     color: const Color(0xFFFFD54F),
                     letterSpacing: 1,
@@ -188,7 +191,7 @@ class HudOverlay extends StatelessWidget {
         children: [
           Text(
             'TURN',
-            style: GoogleFonts.bangers(
+            style: AppFonts.bangers(
               fontSize: 10,
               color: Colors.white70,
               letterSpacing: 1,
@@ -196,7 +199,7 @@ class HudOverlay extends StatelessWidget {
           ),
           Text(
             '$turn',
-            style: GoogleFonts.bangers(
+            style: AppFonts.bangers(
               fontSize: 16,
               color: const Color(0xFFFFD54F),
               letterSpacing: 1,
@@ -207,19 +210,106 @@ class HudOverlay extends StatelessWidget {
     );
   }
 
+  Widget _buildLiveScoreBar() {
+    final territoryCounts = game.territoryCounts;
+    final currentP = game.engine.players.isNotEmpty ? game.engine.currentPlayer : null;
+
+    return Container(
+      margin: const EdgeInsets.only(top: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 4,
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: players.map((p) {
+          final isTurn = currentP != null && currentP.color == p.color;
+          final count = territoryCounts[p.color] ?? 0;
+          final primary = AppColors.getPlayerPrimary(p.color);
+          return Container(
+            margin: const EdgeInsets.symmetric(horizontal: 3),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: isTurn
+                    ? [primary, primary.withValues(alpha: 0.75)]
+                    : [Colors.black38, Colors.black45],
+              ),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: isTurn ? const Color(0xFFFFD54F) : primary.withValues(alpha: 0.4),
+                width: isTurn ? 2.0 : 1.0,
+              ),
+              boxShadow: isTurn
+                  ? [
+                      BoxShadow(
+                        color: primary.withValues(alpha: 0.4),
+                        blurRadius: 6,
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  p.isAi ? '🤖' : '🐮',
+                  style: const TextStyle(fontSize: 12),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  p.name.length > 8 ? p.name.substring(0, 8) : p.name,
+                  style: AppFonts.bangers(
+                    fontSize: 11,
+                    color: isTurn ? Colors.white : Colors.white70,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(width: 5),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.45),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    '$count',
+                    style: AppFonts.bangers(
+                      fontSize: 12,
+                      color: const Color(0xFFFFD54F),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
   Widget buildSettingsButton(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return GestureDetector(
       onTap: () {
         CartoonDialog.show(
           context: context,
-          title: 'GAME PAUSED',
+          title: l10n.gamePaused,
           maxWidth: 340,
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 KenneyButton(
-                label: 'RESTART MATCH',
+                label: l10n.restartMatch,
                 icon: Icons.refresh_rounded,
                 isWide: true,
                 onPressed: () {
@@ -229,7 +319,7 @@ class HudOverlay extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               KenneyButton(
-                label: 'RESET BOARD',
+                label: l10n.resetBoard,
                 icon: Icons.restart_alt_rounded,
                 isWide: true,
                 style: KenneyBtnStyle.neutral,
@@ -240,7 +330,7 @@ class HudOverlay extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               KenneyButton(
-                label: 'EXIT TO MAIN MENU',
+                label: l10n.exitToMainMenu,
                 icon: Icons.exit_to_app_rounded,
                 isWide: true,
                 style: KenneyBtnStyle.danger,
@@ -251,8 +341,8 @@ class HudOverlay extends StatelessWidget {
               ),
               const SizedBox(height: 14),
               Text(
-                'TABLE BACKGROUND',
-                style: GoogleFonts.bangers(fontSize: 12, color: Colors.white70, letterSpacing: 1),
+                l10n.tableBackground,
+                style: AppFonts.bangers(fontSize: 12, color: Colors.white70, letterSpacing: 1),
               ),
               const SizedBox(height: 8),
               _buildThemePicker(context),
@@ -261,23 +351,21 @@ class HudOverlay extends StatelessWidget {
                 children: [
                   Expanded(
                     child: KenneyButton(
-                      label: 'SHARE',
+                      label: l10n.share,
                       icon: Icons.share_rounded,
                       style: KenneyBtnStyle.neutral,
                       fontSize: 13,
                       height: 42,
                       isWide: true,
                       onPressed: () {
-                        Share.share(
-                          'Check out Battle Cows! Round up, rampage, repeat! 🐮 https://play.google.com/store/apps/details?id=com.battlecows.game',
-                        );
+                        Share.share(l10n.shareMessage);
                       },
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: KenneyButton(
-                      label: 'RATE',
+                      label: l10n.rate,
                       icon: Icons.star_rounded,
                       fontSize: 13,
                       height: 42,
@@ -326,6 +414,7 @@ class HudOverlay extends StatelessWidget {
   /// Lists the player's owned table themes (plus a default), so the in-game
   /// picker doubles as an inventory and persists the choice.
   Widget _buildThemePicker(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final progress = ProgressService.instanceOrNull;
     final owned = progress?.progress.ownedItems ?? const <String>[];
     final themes = shopItems
@@ -343,7 +432,7 @@ class HudOverlay extends StatelessWidget {
           children: [
             _buildBackgroundButton(
               context,
-              'DEFAULT',
+              l10n.defaultTheme,
               AssetPaths.tableImage,
               themeId: '',
               isEquipped: equipped.isEmpty,
@@ -351,7 +440,7 @@ class HudOverlay extends StatelessWidget {
             ...themes.map(
               (t) => _buildBackgroundButton(
                 context,
-                t.name.toUpperCase(),
+                t.localizedName(context).toUpperCase(),
                 t.imageAsset ?? AssetPaths.tableImage,
                 themeId: t.id,
                 isEquipped: equipped == t.id,
@@ -362,9 +451,9 @@ class HudOverlay extends StatelessWidget {
         if (themes.isEmpty) ...[
           const SizedBox(height: 6),
           Text(
-            'Buy themes in the shop to unlock more tables',
+            l10n.buyThemesInShop,
             textAlign: TextAlign.center,
-            style: GoogleFonts.bangers(fontSize: 11, color: Colors.white38),
+            style: AppFonts.bangers(fontSize: 11, color: Colors.white38),
           ),
         ],
       ],
@@ -404,7 +493,7 @@ class HudOverlay extends StatelessWidget {
         ),
         child: Text(
           isEquipped ? '$label ✅' : label,
-          style: GoogleFonts.bangers(fontSize: 12, color: Colors.white),
+          style: AppFonts.bangers(fontSize: 12, color: Colors.white),
         ),
       ),
     );

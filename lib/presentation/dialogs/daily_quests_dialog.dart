@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../core/localization/app_fonts.dart';
+import '../../core/localization/app_localizations.dart';
 import '../../data/models/player_progress.dart';
 import '../../data/services/progress_service.dart';
 import '../widgets/cartoon_dialog.dart';
@@ -14,9 +15,10 @@ class DailyQuestsDialog extends StatefulWidget {
     required BuildContext context,
     required ProgressService progress,
   }) {
+    final l10n = AppLocalizations.of(context);
     return CartoonDialog.show(
       context: context,
-      title: 'DAILY QUESTS',
+      title: l10n.dailyQuestsTitle,
       accentColor: const Color(0xFF81C784),
       child: DailyQuestsDialog(progress: progress),
     );
@@ -29,6 +31,7 @@ class DailyQuestsDialog extends StatefulWidget {
 class _DailyQuestsDialogState extends State<DailyQuestsDialog> {
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     widget.progress.refreshDailyQuests();
     final quests = widget.progress.progress.dailyQuests;
 
@@ -38,17 +41,17 @@ class _DailyQuestsDialogState extends State<DailyQuestsDialog> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            'Complete tactics, claim coins, and level up your herd.',
+            l10n.dailyQuestsSubtitle,
             textAlign: TextAlign.center,
-            style: GoogleFonts.bangers(fontSize: 12, color: Colors.white54),
+            style: AppFonts.bangers(fontSize: 12, color: Colors.white54),
           ),
           const SizedBox(height: 10),
-          _buildProgressSummary(quests),
+          _buildProgressSummary(quests, l10n),
           const SizedBox(height: 12),
-          ...quests.map((quest) => _buildQuestTile(quest)),
+          ...quests.map((quest) => _buildQuestTile(quest, l10n)),
           const SizedBox(height: 12),
           KenneyButton(
-            label: 'CLOSE',
+            label: l10n.close,
             isWide: true,
             style: KenneyBtnStyle.neutral,
             onPressed: () => Navigator.pop(context),
@@ -58,7 +61,7 @@ class _DailyQuestsDialogState extends State<DailyQuestsDialog> {
     );
   }
 
-  Widget _buildProgressSummary(List<QuestProgress> quests) {
+  Widget _buildProgressSummary(List<QuestProgress> quests, AppLocalizations l10n) {
     final complete = quests.where((quest) => quest.isComplete).length;
     return Container(
       padding: const EdgeInsets.all(12),
@@ -71,14 +74,22 @@ class _DailyQuestsDialogState extends State<DailyQuestsDialog> {
         children: [
           const Text('🐮', style: TextStyle(fontSize: 26)),
           const SizedBox(width: 10),
-          Expanded(child: Text('$complete/${quests.length} tactics ready', style: GoogleFonts.bangers(fontSize: 16, color: Colors.white))),
-          Text('TODAY', style: GoogleFonts.bangers(fontSize: 12, color: const Color(0xFFFFD54F), letterSpacing: 1)),
+          Expanded(
+            child: Text(
+              l10n.tacticsReady(complete, quests.length),
+              style: AppFonts.bangers(fontSize: 16, color: Colors.white),
+            ),
+          ),
+          Text(
+            l10n.today,
+            style: AppFonts.bangers(fontSize: 12, color: const Color(0xFFFFD54F), letterSpacing: 1),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildQuestTile(QuestProgress quest) {
+  Widget _buildQuestTile(QuestProgress quest, AppLocalizations l10n) {
     final canClaim = quest.isComplete && !quest.claimed;
 
     return Container(
@@ -109,16 +120,16 @@ class _DailyQuestsDialogState extends State<DailyQuestsDialog> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  quest.title,
-                  style: GoogleFonts.bangers(
+                  quest.localizedTitle(context),
+                  style: AppFonts.bangers(
                     fontSize: 14,
                     color: quest.claimed ? Colors.white38 : Colors.white,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  quest.description,
-                  style: GoogleFonts.bangers(
+                  quest.localizedDescription(context),
+                  style: AppFonts.bangers(
                     fontSize: 11,
                     color: Colors.white60,
                   ),
@@ -142,7 +153,7 @@ class _DailyQuestsDialogState extends State<DailyQuestsDialog> {
                     const SizedBox(width: 8),
                     Text(
                       '${quest.current}/${quest.target}',
-                      style: GoogleFonts.bangers(
+                      style: AppFonts.bangers(
                         fontSize: 11,
                         color: Colors.white60,
                       ),
@@ -177,7 +188,7 @@ class _DailyQuestsDialogState extends State<DailyQuestsDialog> {
                 ),
                 child: Text(
                   canClaim ? '+${quest.coinReward}' : '💰${quest.coinReward}',
-                  style: GoogleFonts.bangers(
+                  style: AppFonts.bangers(
                     fontSize: 13,
                     color: canClaim ? Colors.black : Colors.white54,
                   ),

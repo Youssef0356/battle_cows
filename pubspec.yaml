@@ -1,7 +1,7 @@
 name: battle_cows
 description: "Battle Cows - A hex-based territory strategy game"
 publish_to: 'https://flutter.dev'
-version: 1.0.1+6
+version: 1.2.0+10
 
 environment:
   sdk: ^3.11.1
@@ -9,6 +9,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
   cupertino_icons: ^1.0.8
   provider: ^6.1.2
   google_fonts: ^6.2.1

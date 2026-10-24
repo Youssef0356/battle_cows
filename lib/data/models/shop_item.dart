@@ -1,4 +1,6 @@
+import 'package:flutter/material.dart';
 import '../../assets/asset_paths.dart';
+import '../../core/localization/app_localizations.dart';
 
 class ShopItem {
   final String id;
@@ -177,4 +179,67 @@ ShopItem? shopItemById(String id) {
     if (item.id == id) return item;
   }
   return null;
+}
+
+extension ShopItemLocalization on ShopItem {
+  String localizedName([BuildContext? context]) {
+    final l10n = context != null ? AppLocalizations.of(context) : AppLocalizations.current;
+    switch (id) {
+      case 'skin_cowboy': return l10n.shopItemCowboyName;
+      case 'skin_viking': return l10n.shopItemVikingName;
+      case 'skin_farmer': return l10n.shopItemFarmerName;
+      case 'skin_disco': return l10n.shopItemDiscoName;
+      case 'hat_cowboy': return l10n.shopItemHatCowboyName;
+      case 'hat_crown': return l10n.shopItemHatCrownName;
+      case 'hat_party': return l10n.shopItemHatPartyName;
+      case 'hat_superhero': return l10n.shopItemHatSuperheroName;
+      case 'theme_valley': return l10n.shopItemThemeValleyName;
+      case 'theme_field': return l10n.shopItemThemeFieldName;
+      case 'theme_wood': return l10n.shopItemThemeWoodName;
+      case 'emoji_fire': return l10n.shopItemEmojiFireName;
+      case 'emoji_lightning': return l10n.shopItemEmojiLightningName;
+      case 'emoji_star': return l10n.shopItemEmojiStarName;
+      case 'board_wood': return l10n.shopItemBoardWoodTilesName;
+      case 'board_meadow': return l10n.shopItemBoardMeadowTilesName;
+      case 'board_flowers': return l10n.shopItemBoardFlowerGrassName;
+      default: return name;
+    }
+  }
+
+  String localizedDescription([BuildContext? context]) {
+    final l10n = context != null ? AppLocalizations.of(context) : AppLocalizations.current;
+    switch (id) {
+      case 'skin_cowboy': return l10n.shopItemCowboyDesc;
+      case 'skin_viking': return l10n.shopItemVikingDesc;
+      case 'skin_farmer': return l10n.shopItemFarmerDesc;
+      case 'skin_disco': return l10n.shopItemDiscoDesc;
+      case 'hat_cowboy': return l10n.shopItemHatCowboyDesc;
+      case 'hat_crown': return l10n.shopItemHatCrownDesc;
+      case 'hat_party': return l10n.shopItemHatPartyDesc;
+      case 'hat_superhero': return l10n.shopItemHatSuperheroDesc;
+      case 'theme_valley': return l10n.shopItemThemeValleyDesc;
+      case 'theme_field': return l10n.shopItemThemeFieldDesc;
+      case 'theme_wood': return l10n.shopItemThemeWoodDesc;
+      case 'emoji_fire': return l10n.shopItemEmojiFireDesc;
+      case 'emoji_lightning': return l10n.shopItemEmojiLightningDesc;
+      case 'emoji_star': return l10n.shopItemEmojiStarDesc;
+      case 'board_wood': return l10n.shopItemBoardWoodTilesDesc;
+      case 'board_meadow': return l10n.shopItemBoardMeadowTilesDesc;
+      case 'board_flowers': return l10n.shopItemBoardFlowerGrassDesc;
+      default: return description;
+    }
+  }
+}
+
+extension ShopCategoryLocalization on ShopCategory {
+  String localizedName([BuildContext? context]) {
+    final l10n = context != null ? AppLocalizations.of(context) : AppLocalizations.current;
+    switch (this) {
+      case ShopCategory.skins: return l10n.categorySkins;
+      case ShopCategory.hats: return l10n.categoryHats;
+      case ShopCategory.themes: return l10n.categoryThemes;
+      case ShopCategory.emojis: return l10n.categoryEmojis;
+      case ShopCategory.boards: return l10n.categoryBoards;
+    }
+  }
 }

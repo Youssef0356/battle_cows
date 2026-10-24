@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:in_app_review/in_app_review.dart';
+import '../../core/localization/app_fonts.dart';
+import '../../core/localization/app_localizations.dart';
+import '../../core/localization/locale_controller.dart';
 import '../../data/services/premium_service.dart';
 import '../../data/services/progress_service.dart';
 import '../dialogs/premium_dialog.dart';
@@ -35,14 +37,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         foregroundColor: const Color(0xFFFFD54F),
         title: Text(
-          'SETTINGS',
-          style: GoogleFonts.bangers(fontSize: 24, letterSpacing: 2),
+          l10n.settingsTitle.toUpperCase(),
+          style: AppFonts.bangers(fontSize: 24, letterSpacing: 2),
         ),
         centerTitle: true,
         elevation: 0,
@@ -72,56 +76,57 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSectionHeader('Audio'),
+                  _buildSectionHeader(l10n.languageSection),
+                  _buildLanguageSelector(l10n),
+                  const SizedBox(height: 20),
+                  _buildSectionHeader(l10n.audioSection),
                   _buildToggleRow(
-                    '🔊 Sound Effects',
+                    l10n.soundEffects,
                     _soundEnabled,
                     () => setState(() => _soundEnabled = !_soundEnabled),
                   ),
                   _buildToggleRow(
-                    '🎵 Music',
+                    l10n.music,
                     _musicEnabled,
                     () => setState(() => _musicEnabled = !_musicEnabled),
                   ),
                   _buildToggleRow(
-                    '📳 Haptic Feedback',
+                    l10n.hapticFeedback,
                     _hapticEnabled,
                     () => setState(() => _hapticEnabled = !_hapticEnabled),
                   ),
                   const SizedBox(height: 20),
-                  _buildSectionHeader('Game'),
-                  _buildDifficultySelector(),
+                  _buildSectionHeader(l10n.gameSection),
+                  _buildDifficultySelector(l10n),
                   const SizedBox(height: 20),
-                  _buildSectionHeader('Account'),
-                  _buildStatCard(),
+                  _buildSectionHeader(l10n.accountSection),
+                  _buildStatCard(l10n),
                   const SizedBox(height: 20),
-                  _buildSectionHeader('Premium'),
-                  _buildPremiumTile(),
+                  _buildSectionHeader(l10n.premiumSection),
+                  _buildPremiumTile(l10n),
                   const SizedBox(height: 20),
-                  _buildSectionHeader('Support'),
-                  _buildKenneyButton('SHARE', Icons.share, () {
-                    Share.share(
-                      'Check out Battle Cows! 🐮 https://play.google.com/store/apps/details?id=com.battlecows.game',
-                    );
+                  _buildSectionHeader(l10n.supportSection),
+                  _buildKenneyButton(l10n.share, Icons.share, () {
+                    Share.share(l10n.shareMessage);
                   }),
                   const SizedBox(height: 10),
-                  _buildKenneyButton('RATE', Icons.star, () async {
+                  _buildKenneyButton(l10n.rate, Icons.star, () async {
                     final inAppReview = InAppReview.instance;
                     if (await inAppReview.isAvailable()) {
                       inAppReview.requestReview();
                     }
                   }),
                   const SizedBox(height: 10),
-                  _buildKenneyButton('EXIT', Icons.exit_to_app_rounded, () {
+                  _buildKenneyButton(l10n.exit, Icons.exit_to_app_rounded, () {
                     CartoonDialog.show(
                       context: context,
-                      title: 'EXIT GAME?',
+                      title: l10n.exitGameTitle,
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            'Are you sure you want to exit?',
-                            style: GoogleFonts.bangers(
+                            l10n.exitGameConfirm,
+                            style: AppFonts.bangers(
                               fontSize: 16,
                               color: Colors.white70,
                             ),
@@ -132,7 +137,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             children: [
                               Expanded(
                                 child: KenneyButton(
-                                  label: 'CANCEL',
+                                  label: l10n.cancel,
                                   isWide: true,
                                   style: KenneyBtnStyle.neutral,
                                   onPressed: () => Navigator.pop(context),
@@ -142,7 +147,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               Expanded(
                                 child: Builder(
                                   builder: (context) => KenneyButton(
-                                    label: 'EXIT',
+                                    label: l10n.exit,
                                     isWide: true,
                                     style: KenneyBtnStyle.danger,
                                     onPressed: () => Navigator.pop(context),
@@ -164,13 +169,89 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildPremiumTile() {
+  Widget _buildLanguageSelector(AppLocalizations l10n) {
+    final currentCode = LocaleController.instance.languageCode;
+    final languages = [
+      {'code': 'en', 'label': l10n.languageEnglish, 'flag': '🇬🇧'},
+      {'code': 'fr', 'label': l10n.languageFrench, 'flag': '🇫🇷'},
+      {'code': 'ar', 'label': l10n.languageArabic, 'flag': '🇸🇦'},
+    ];
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: languages.map((lang) {
+        final code = lang['code']!;
+        final label = lang['label']!;
+        final flag = lang['flag']!;
+        final isSelected = currentCode == code;
+
+        return Expanded(
+          child: GestureDetector(
+            onTap: () {
+              LocaleController.instance.setLocale(Locale(code));
+              setState(() {});
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              decoration: BoxDecoration(
+                gradient: isSelected
+                    ? const LinearGradient(
+                        colors: [Color(0xFFFFD54F), Color(0xFFFFA000)],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      )
+                    : LinearGradient(
+                        colors: [
+                          Colors.white.withValues(alpha: 0.12),
+                          Colors.white.withValues(alpha: 0.05),
+                        ],
+                      ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isSelected ? const Color(0xFFFFD54F) : Colors.white24,
+                  width: isSelected ? 2 : 1,
+                ),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: const Color(0xFFFFD54F).withValues(alpha: 0.35),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(flag, style: const TextStyle(fontSize: 20)),
+                  const SizedBox(height: 4),
+                  Text(
+                    label,
+                    style: AppFonts.bangers(
+                      fontSize: 13,
+                      color: isSelected ? const Color(0xFF3E2723) : Colors.white,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildPremiumTile(AppLocalizations l10n) {
     return ListenableBuilder(
       listenable: PremiumService.instance,
       builder: (context, _) {
         final premium = PremiumService.instance.isPremium;
         return _buildKenneyButton(
-          premium ? 'PREMIUM ACTIVE' : 'REMOVE ADS',
+          premium ? l10n.premiumActive : l10n.removeAds,
           premium ? Icons.workspace_premium_rounded : Icons.block_rounded,
           () {
             if (!premium) PremiumDialog.show(context);
@@ -185,7 +266,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(
         title.toUpperCase(),
-        style: GoogleFonts.bangers(
+        style: AppFonts.bangers(
           fontSize: 14,
           color: const Color(0xFFFFD54F),
           letterSpacing: 2,
@@ -202,7 +283,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           Text(
             label,
-            style: GoogleFonts.bangers(fontSize: 16, color: Colors.white70),
+            style: AppFonts.bangers(fontSize: 16, color: Colors.white70),
           ),
           Switch(
             value: value,
@@ -214,10 +295,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildDifficultySelector() {
+  Widget _buildDifficultySelector(AppLocalizations l10n) {
+    final difficulties = [l10n.easy, l10n.medium, l10n.hard];
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: ['EASY', 'MEDIUM', 'HARD'].asMap().entries.map((entry) {
+      children: difficulties.asMap().entries.map((entry) {
         final idx = entry.key;
         final isSel = _difficultyIndex == idx;
         final colors = [
@@ -229,15 +311,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
           onTap: () => setState(() => _difficultyIndex = idx),
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 4),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
               color: isSel ? colors[idx] : Colors.black54,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: isSel ? colors[idx] : Colors.white24),
             ),
             child: Text(
-              entry.value,
-              style: GoogleFonts.bangers(
+              entry.value.toUpperCase(),
+              style: AppFonts.bangers(
                 fontSize: 12,
                 color: isSel ? Colors.black : Colors.white,
               ),
@@ -248,7 +330,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildStatCard() {
+  Widget _buildStatCard(AppLocalizations l10n) {
     final p = _progress?.progress;
     return Container(
       padding: const EdgeInsets.all(16),
@@ -261,11 +343,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       child: Column(
         children: [
-          _buildStatRow('⭐ Level', '${p?.level ?? 1}'),
-          _buildStatRow('💰 Coins', '${p?.coins ?? 0}'),
-          _buildStatRow('⚔️ Matches', '${p?.matchesPlayed ?? 0}'),
-          _buildStatRow('🥇 Wins', '${p?.matchesWon ?? 0}'),
-          _buildStatRow('🔥 Streak', '${p?.dailyStreak ?? 0}'),
+          _buildStatRow(l10n.statLevel, '${p?.level ?? 1}'),
+          _buildStatRow(l10n.statCoins, '${p?.coins ?? 0}'),
+          _buildStatRow(l10n.statMatches, '${p?.matchesPlayed ?? 0}'),
+          _buildStatRow(l10n.statWins, '${p?.matchesWon ?? 0}'),
+          _buildStatRow(l10n.statStreak, '${p?.dailyStreak ?? 0}'),
         ],
       ),
     );
@@ -279,11 +361,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           Text(
             label,
-            style: GoogleFonts.bangers(fontSize: 14, color: Colors.white70),
+            style: AppFonts.bangers(fontSize: 14, color: Colors.white70),
           ),
           Text(
             value,
-            style: GoogleFonts.bangers(
+            style: AppFonts.bangers(
               fontSize: 14,
               color: const Color(0xFFFFD54F),
             ),

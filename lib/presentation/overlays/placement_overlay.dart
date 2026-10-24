@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../core/localization/app_fonts.dart';
+import '../../core/localization/app_localizations.dart';
 import '../../flame/battle_cows_game.dart';
 import '../../game/models/player.dart';
 import '../../core/constants/colors.dart';
@@ -42,6 +43,7 @@ class _PlacementOverlayState extends State<PlacementOverlay> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final game = widget.game;
     final currentPlayerIndex = game.currentPlayerIndex;
     final players = game.players;
@@ -54,16 +56,16 @@ class _PlacementOverlayState extends State<PlacementOverlay> {
       child: Column(
         children: [
           // Top bar with player info
-          _buildTopBar(currentPlayerIndex, players, tilesRemaining),
+          _buildTopBar(currentPlayerIndex, players, tilesRemaining, l10n),
           const Expanded(child: IgnorePointer(child: SizedBox.expand())),
           if (!isAi && currentTile != null)
-            _buildBottomControls(canPlace),
+            _buildBottomControls(canPlace, l10n),
         ],
       ),
     );
   }
 
-  Widget _buildTopBar(int currentPlayerIndex, List<Player> players, List<int> tilesRemaining) {
+  Widget _buildTopBar(int currentPlayerIndex, List<Player> players, List<int> tilesRemaining, AppLocalizations l10n) {
     return Container(
       margin: EdgeInsets.only(top: widget.topInset),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -84,8 +86,8 @@ class _PlacementOverlayState extends State<PlacementOverlay> {
                 border: Border.all(color: const Color(0xFFFFD54F), width: 1.5),
               ),
               child: Text(
-                'BUILD THE PASTURE',
-                style: GoogleFonts.bangers(
+                l10n.buildThePasture.toUpperCase(),
+                style: AppFonts.bangers(
                   fontSize: 16,
                   color: const Color(0xFFFFD54F),
                   letterSpacing: 1.5,
@@ -93,58 +95,57 @@ class _PlacementOverlayState extends State<PlacementOverlay> {
               ),
             ),
             const SizedBox(width: 12),
-          // Player indicators
-          ...List.generate(players.length, (index) {
-            final player = players[index];
-            final isCurrent = index == currentPlayerIndex;
-            final tilesLeft = tilesRemaining[index];
+            ...List.generate(players.length, (index) {
+              final player = players[index];
+              final isCurrent = index == currentPlayerIndex;
+              final tilesLeft = tilesRemaining[index];
 
-            return Container(
-              margin: const EdgeInsets.only(left: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: isCurrent
-                    ? AppColors.getPlayerPrimary(player.color).withValues(alpha: 0.35)
-                    : Colors.black45,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
+              return Container(
+                margin: const EdgeInsets.only(left: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
                   color: isCurrent
-                      ? AppColors.getPlayerPrimary(player.color)
-                      : Colors.white24,
-                  width: isCurrent ? 2 : 1,
+                      ? AppColors.getPlayerPrimary(player.color).withValues(alpha: 0.35)
+                      : Colors.black45,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isCurrent
+                        ? AppColors.getPlayerPrimary(player.color)
+                        : Colors.white24,
+                    width: isCurrent ? 2 : 1,
+                  ),
                 ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 16,
-                    height: 16,
-                    decoration: BoxDecoration(
-                      color: AppColors.getPlayerPrimary(player.color),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 1),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 16,
+                      height: 16,
+                      decoration: BoxDecoration(
+                        color: AppColors.getPlayerPrimary(player.color),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 1),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    '$tilesLeft',
-                    style: GoogleFonts.bangers(
-                      fontSize: 14,
-                      color: isCurrent ? const Color(0xFFFFD54F) : Colors.white70,
+                    const SizedBox(width: 6),
+                    Text(
+                      '$tilesLeft',
+                      style: AppFonts.bangers(
+                        fontSize: 14,
+                        color: isCurrent ? const Color(0xFFFFD54F) : Colors.white70,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            );
-          }),
-        ],
-      ),
+                  ],
+                ),
+              );
+            }),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildBottomControls(bool canPlace) {
+  Widget _buildBottomControls(bool canPlace, AppLocalizations l10n) {
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -158,13 +159,13 @@ class _PlacementOverlayState extends State<PlacementOverlay> {
         children: [
           // Rotate button
           _buildControlButton(
-            label: 'ROTATE',
+            label: l10n.rotate.toUpperCase(),
             icon: Icons.rotate_right_rounded,
             onTap: () => widget.game.rotateCurrentTile(),
           ),
           // Place button
           _buildControlButton(
-            label: 'PLACE',
+            label: l10n.place.toUpperCase(),
             icon: Icons.add_circle_outline,
             color: canPlace ? const Color(0xFF66BB6A) : Colors.grey,
             onTap: canPlace ? () => widget.game.placeCurrentTile() : null,
@@ -198,7 +199,7 @@ class _PlacementOverlayState extends State<PlacementOverlay> {
             const SizedBox(width: 8),
             Text(
               label,
-              style: GoogleFonts.bangers(
+              style: AppFonts.bangers(
                 fontSize: 14,
                 color: Colors.white,
                 letterSpacing: 1,

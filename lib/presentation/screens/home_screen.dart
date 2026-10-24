@@ -2,9 +2,10 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../assets/asset_paths.dart';
 import '../../core/constants/colors.dart';
+import '../../core/localization/app_fonts.dart';
+import '../../core/localization/app_localizations.dart';
 import '../../data/services/premium_service.dart';
 import '../../data/services/progress_service.dart';
 import '../../game/models/player.dart';
@@ -29,7 +30,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
-  int _tilesPerPlayer = 4;
+  int _tilesPerPlayer = 5;
   late AnimationController _animController;
   late Animation<double> _titleScale;
   ProgressService? _progressService;
@@ -69,11 +70,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   /// coach banners walking the player through placing tiles, dropping a herd,
   /// moving, and capturing — and how to win.
   void _launchTutorial() {
+    final l10n = AppLocalizations.of(context);
     final players = [
-      const Player(id: 0, name: 'Player 1', color: PlayerColor.blue),
-      const Player(
+      Player(id: 0, name: l10n.defaultPlayerName(1), color: PlayerColor.blue),
+      Player(
         id: 1,
-        name: 'Tutorial Cow',
+        name: l10n.tutorialCowName,
         color: PlayerColor.red,
         isAi: true,
         difficulty: Difficulty.easy,
@@ -102,11 +104,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   List<Player> _createPlayers({required int count, required bool isMultiplayer, Difficulty difficulty = Difficulty.medium}) {
+    final l10n = AppLocalizations.of(context);
     final players = <Player>[];
     for (var i = 0; i < count; i++) {
       players.add(Player(
         id: i,
-        name: isMultiplayer ? 'Player ${i + 1}' : (i == 0 ? 'Player 1' : 'AI Cow $i'),
+        name: isMultiplayer ? l10n.defaultPlayerName(i + 1) : (i == 0 ? l10n.defaultPlayerName(1) : l10n.aiPlayerName(i)),
         color: PlayerColor.values[i % 4],
         isAi: isMultiplayer ? false : (i > 0),
         difficulty: isMultiplayer ? null : difficulty,
@@ -132,8 +135,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         'players': players,
         'herdSize': 16,
         'tilesPerPlayer': tilesPerPlayer,
-        // 5 tiles → small hex field (7), 4 → medium (9), 3 → large hexes (11).
-        'boardSize': 7 + (5 - tilesPerPlayer) * 2,
+        // Scale viewport density with pasture size: 4 tiles -> 7, 5 tiles -> 9, 6 tiles -> 11.
+        'boardSize': 7 + ((tilesPerPlayer - 4).clamp(0, 2)) * 2,
         'challengeMode': challengeMode,
       },
     ).then((_) {
@@ -147,6 +150,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     // Multiplayer setup lets the players pick any mode; VS AI keeps the mode
     // chosen upstream (standard from PLAY VS AI, timed/fence from CHALLENGES).
     ChallengeMode selectedMode = challengeMode;
+    final l10n = AppLocalizations.of(context);
 
     showDialog(
       context: context,
@@ -176,111 +180,213 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                  title,
-                  style: GoogleFonts.bangers(
-                    fontSize: 28,
-                    color: const Color(0xFFFFD54F),
-                    letterSpacing: 2,
-                    shadows: [
-                      const Shadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 4),
-                    ],
+                    title,
+                    textAlign: TextAlign.center,
+                    style: AppFonts.bangers(
+                      fontSize: 28,
+                      color: const Color(0xFFFFD54F),
+                      letterSpacing: 2,
+                      shadows: [
+                        const Shadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 4),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 24),
-                if (!isMultiplayer) ...[
-                Text(
-                  'CPU DIFFICULTY',
-                  style: GoogleFonts.bangers(
-                    fontSize: 16,
-                    color: Colors.white70,
-                    letterSpacing: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 12,
-                  children: ['EASY', 'MEDIUM', 'HARD'].asMap().entries.map((entry) {
-                    final idx = entry.key;
-                    final label = entry.value;
-                    final isSel = _selectedDifficultyIndex == idx;
-                    final colors = [const Color(0xFF689F38), const Color(0xFFFFA000), const Color(0xFFD32F2F)];
-                    return GestureDetector(
-                      onTap: () => setDialogState(() => _selectedDifficultyIndex = idx),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        margin: const EdgeInsets.symmetric(horizontal: 6),
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          gradient: isSel
-                              ? LinearGradient(
-                                  colors: [colors[idx], colors[idx].withValues(alpha: 0.7)],
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                )
-                              : LinearGradient(
-                                  colors: [
-                                    Colors.white.withValues(alpha: 0.12),
-                                    Colors.white.withValues(alpha: 0.04),
-                                  ],
-                                ),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: isSel ? colors[idx] : Colors.white24,
-                            width: isSel ? 2.5 : 1.5,
-                          ),
-                          boxShadow: isSel
-                              ? [
-                                  BoxShadow(
-                                    color: colors[idx].withValues(alpha: 0.3),
-                                    blurRadius: 12,
-                                    spreadRadius: 1,
-                                  ),
-                                ]
-                              : null,
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              label,
-                              style: GoogleFonts.bangers(
-                                fontSize: 12,
-                                color: isSel ? Colors.black : Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
+                  const SizedBox(height: 24),
+                  if (!isMultiplayer) ...[
+                    Text(
+                      l10n.cpuDifficulty,
+                      style: AppFonts.bangers(
+                        fontSize: 16,
+                        color: Colors.white70,
+                        letterSpacing: 1.5,
                       ),
-                    );
-                  }).toList(),
-                ),
-                ] else ...[
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 12,
+                      children: [l10n.easy, l10n.medium, l10n.hard].asMap().entries.map((entry) {
+                        final idx = entry.key;
+                        final label = entry.value;
+                        final isSel = _selectedDifficultyIndex == idx;
+                        final colors = [const Color(0xFF689F38), const Color(0xFFFFA000), const Color(0xFFD32F2F)];
+                        return GestureDetector(
+                          onTap: () => setDialogState(() => _selectedDifficultyIndex = idx),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            margin: const EdgeInsets.symmetric(horizontal: 6),
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              gradient: isSel
+                                  ? LinearGradient(
+                                      colors: [colors[idx], colors[idx].withValues(alpha: 0.7)],
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                    )
+                                  : LinearGradient(
+                                      colors: [
+                                        Colors.white.withValues(alpha: 0.12),
+                                        Colors.white.withValues(alpha: 0.04),
+                                      ],
+                                    ),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isSel ? colors[idx] : Colors.white24,
+                                width: isSel ? 2.5 : 1.5,
+                              ),
+                              boxShadow: isSel
+                                  ? [
+                                      BoxShadow(
+                                        color: colors[idx].withValues(alpha: 0.3),
+                                        blurRadius: 12,
+                                        spreadRadius: 1,
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  label,
+                                  style: AppFonts.bangers(
+                                    fontSize: 12,
+                                    color: isSel ? Colors.black : Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ] else ...[
+                    Text(
+                      l10n.gameMode,
+                      style: AppFonts.bangers(
+                        fontSize: 16,
+                        color: Colors.white70,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 12,
+                      children: ChallengeMode.values.map((mode) {
+                        final isSel = selectedMode == mode;
+                        return GestureDetector(
+                          onTap: () => setDialogState(() => selectedMode = mode),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            width: 90,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              gradient: isSel
+                                  ? const LinearGradient(
+                                      colors: [Color(0xFFFFD54F), Color(0xFFFFA000)],
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                    )
+                                  : LinearGradient(
+                                      colors: [
+                                        Colors.white.withValues(alpha: 0.12),
+                                        Colors.white.withValues(alpha: 0.04),
+                                      ],
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                    ),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isSel ? const Color(0xFFFFD54F) : Colors.white24,
+                                width: isSel ? 2.5 : 1.5,
+                              ),
+                              boxShadow: isSel
+                                  ? [
+                                      BoxShadow(
+                                        color: const Color(0xFFFFD54F).withValues(alpha: 0.3),
+                                        blurRadius: 12,
+                                        spreadRadius: 1,
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(mode.icon, style: const TextStyle(fontSize: 22)),
+                                const SizedBox(height: 4),
+                                Text(
+                                  mode.localizedTitle(context)
+                                      .replaceAll(' PASTURE', '')
+                                      .replaceAll(' STRATEGY', '')
+                                      .replaceAll(' BATTLE', ''),
+                                  textAlign: TextAlign.center,
+                                  style: AppFonts.bangers(
+                                    fontSize: 11,
+                                    color: isSel ? const Color(0xFF3E2723) : Colors.white,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      selectedMode.localizedDescription(context),
+                      textAlign: TextAlign.center,
+                      style: AppFonts.bangers(
+                        fontSize: 11,
+                        color: Colors.white38,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 24),
                   Text(
-                    'GAME MODE',
-                    style: GoogleFonts.bangers(
+                    l10n.pastureTilesPerPlayer,
+                    style: AppFonts.bangers(
                       fontSize: 16,
                       color: Colors.white70,
                       letterSpacing: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    l10n.pastureTilesSubtitle,
+                    textAlign: TextAlign.center,
+                    style: AppFonts.bangers(
+                      fontSize: 11,
+                      color: Colors.white38,
+                      letterSpacing: 1,
                     ),
                   ),
                   const SizedBox(height: 12),
                   Wrap(
                     alignment: WrapAlignment.center,
                     spacing: 12,
-                    children: ChallengeMode.values.map((mode) {
-                      final isSel = selectedMode == mode;
+                    children: [
+                      (4, l10n.fastTiles),
+                      (5, l10n.balancedTiles),
+                      (6, l10n.epicTiles),
+                    ].map((entry) {
+                      final (tiles, label) = entry;
+                      final isSel = selectedTiles == tiles;
                       return GestureDetector(
-                        onTap: () => setDialogState(() => selectedMode = mode),
+                        onTap: () => setDialogState(() => selectedTiles = tiles),
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
-                          width: 90,
+                          margin: const EdgeInsets.symmetric(horizontal: 6),
+                          width: 80,
                           height: 80,
                           decoration: BoxDecoration(
                             gradient: isSel
                                 ? const LinearGradient(
-                                    colors: [Color(0xFFFFD54F), Color(0xFFFFA000)],
+                                    colors: [Color(0xFF66BB6A), Color(0xFF2E7D32)],
                                     begin: Alignment.topCenter,
                                     end: Alignment.bottomCenter,
                                   )
@@ -289,18 +395,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                       Colors.white.withValues(alpha: 0.12),
                                       Colors.white.withValues(alpha: 0.04),
                                     ],
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
                                   ),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: isSel ? const Color(0xFFFFD54F) : Colors.white24,
+                              color: isSel ? const Color(0xFF66BB6A) : Colors.white24,
                               width: isSel ? 2.5 : 1.5,
                             ),
                             boxShadow: isSel
                                 ? [
                                     BoxShadow(
-                                      color: const Color(0xFFFFD54F).withValues(alpha: 0.3),
+                                      color: const Color(0xFF66BB6A).withValues(alpha: 0.3),
                                       blurRadius: 12,
                                       spreadRadius: 1,
                                     ),
@@ -310,16 +414,23 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(mode.icon, style: const TextStyle(fontSize: 22)),
+                              SizedBox(
+                                width: 56,
+                                height: 36,
+                                child: CustomPaint(
+                                  painter: _PasturePreviewPainter(
+                                    hexCount: tiles,
+                                    color: isSel ? Colors.white : Colors.white70,
+                                  ),
+                                ),
+                              ),
                               const SizedBox(height: 4),
                               Text(
-                                mode.title
-                                    .replaceAll(' PASTURE', '')
-                                    .replaceAll(' STRATEGY', '')
-                                    .replaceAll(' BATTLE', ''),
-                                style: GoogleFonts.bangers(
+                                label,
+                                textAlign: TextAlign.center,
+                                style: AppFonts.bangers(
                                   fontSize: 11,
-                                  color: isSel ? const Color(0xFF3E2723) : Colors.white,
+                                  color: isSel ? Colors.white : Colors.white60,
                                   letterSpacing: 0.5,
                                 ),
                               ),
@@ -329,202 +440,100 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       );
                     }).toList(),
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    selectedMode.description,
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.bangers(
-                      fontSize: 11,
-                      color: Colors.white38,
-                      letterSpacing: 0.5,
-                    ),
+                  const SizedBox(height: 28),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => Navigator.pop(ctx),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade800,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: Colors.white24, width: 1.5),
+                            ),
+                            child: Center(
+                              child: Text(
+                                l10n.cancel,
+                                style: AppFonts.bangers(
+                                  fontSize: 18,
+                                  color: Colors.white70,
+                                  letterSpacing: 1.5,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 2,
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            setState(() {
+                              _tilesPerPlayer = selectedTiles;
+                            });
+                            _launchGame(
+                              playerCount: 2,
+                              tilesPerPlayer: selectedTiles,
+                              isMultiplayer: isMultiplayer,
+                              challengeMode: selectedMode,
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFFF8F00), Color(0xFFE65100)],
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                              ),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: const Color(0xFFFFD54F), width: 2),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFFFF8F00).withValues(alpha: 0.4),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 24),
+                                const SizedBox(width: 4),
+                                Text(
+                                  l10n.start,
+                                  style: AppFonts.bangers(
+                                    fontSize: 22,
+                                    color: Colors.white,
+                                    letterSpacing: 2,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
-                const SizedBox(height: 24),
-                Text(
-                  'PASTURE TILES PER PLAYER',
-                  style: GoogleFonts.bangers(
-                    fontSize: 16,
-                    color: Colors.white70,
-                    letterSpacing: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Bigger pasture = bigger hexes, fewer tiles!',
-                  style: GoogleFonts.bangers(
-                    fontSize: 11,
-                    color: Colors.white38,
-                    letterSpacing: 1,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 12,
-                  children: [
-                    (5, 'SMALL'),
-                    (4, 'MEDIUM'),
-                    (3, 'LARGE'),
-                  ].map((entry) {
-                    final (tiles, label) = entry;
-                    final isSel = selectedTiles == tiles;
-                    return GestureDetector(
-                      onTap: () => setDialogState(() => selectedTiles = tiles),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        margin: const EdgeInsets.symmetric(horizontal: 6),
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          gradient: isSel
-                              ? const LinearGradient(
-                                  colors: [Color(0xFF66BB6A), Color(0xFF2E7D32)],
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                )
-                              : LinearGradient(
-                                  colors: [
-                                    Colors.white.withValues(alpha: 0.12),
-                                    Colors.white.withValues(alpha: 0.04),
-                                  ],
-                                ),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: isSel ? const Color(0xFF66BB6A) : Colors.white24,
-                            width: isSel ? 2.5 : 1.5,
-                          ),
-                          boxShadow: isSel
-                              ? [
-                                  BoxShadow(
-                                    color: const Color(0xFF66BB6A).withValues(alpha: 0.3),
-                                    blurRadius: 12,
-                                    spreadRadius: 1,
-                                  ),
-                                ]
-                              : null,
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SizedBox(
-                              width: 56,
-                              height: 36,
-                              child: CustomPaint(
-                                painter: _PasturePreviewPainter(
-                                  hexCount: tiles,
-                                  color: isSel ? Colors.white : Colors.white70,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              label,
-                              style: GoogleFonts.bangers(
-                                fontSize: 11,
-                                color: isSel ? Colors.white : Colors.white60,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 28),
-                Row(
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => Navigator.pop(ctx),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade800,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: Colors.white24, width: 1.5),
-                          ),
-                          child: Center(
-                            child: Text(
-                              'CANCEL',
-                              style: GoogleFonts.bangers(
-                                fontSize: 18,
-                                color: Colors.white70,
-                                letterSpacing: 1.5,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      flex: 2,
-                      child: GestureDetector(
-                        onTap: () {
-                          Navigator.pop(ctx);
-                          setState(() {
-                            _tilesPerPlayer = selectedTiles;
-                          });
-                          _launchGame(
-                            playerCount: 2,
-                            tilesPerPlayer: selectedTiles,
-                            isMultiplayer: isMultiplayer,
-                            challengeMode: selectedMode,
-                          );
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFFFF8F00), Color(0xFFE65100)],
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                            ),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: const Color(0xFFFFD54F), width: 2),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFFFF8F00).withValues(alpha: 0.4),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 24),
-                              const SizedBox(width: 4),
-                              Text(
-                                'START',
-                                style: GoogleFonts.bangers(
-                                  fontSize: 22,
-                                  color: Colors.white,
-                                  letterSpacing: 2,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                   ],
-                 ),
-               ],
-               ),
-             ),
-           ),
-         ),
-       ),
-     );
-   }
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
-   void _showChallengePicker() {
+  void _showChallengePicker() {
+    final l10n = AppLocalizations.of(context);
     CartoonDialog.show(
       context: context,
-      title: 'CHOOSE YOUR CHALLENGE',
+      title: l10n.chooseYourChallenge,
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -533,7 +542,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               .map((mode) => GestureDetector(
                     onTap: () {
                       Navigator.pop(context);
-                      _showGameSetupDialog(title: mode.title, isMultiplayer: false, challengeMode: mode);
+                      _showGameSetupDialog(title: mode.localizedTitle(context), isMultiplayer: false, challengeMode: mode);
                     },
                     child: Container(
                       margin: const EdgeInsets.only(bottom: 10),
@@ -551,9 +560,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(mode.title, style: GoogleFonts.bangers(fontSize: 16, color: Colors.white)),
+                                Text(mode.localizedTitle(context), style: AppFonts.bangers(fontSize: 16, color: Colors.white)),
                                 const SizedBox(height: 2),
-                                Text(mode.description, style: GoogleFonts.bangers(fontSize: 11, color: Colors.white60)),
+                                Text(mode.localizedDescription(context), style: AppFonts.bangers(fontSize: 11, color: Colors.white60)),
                               ],
                             ),
                           ),
@@ -674,6 +683,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   Widget _buildProfilePlaque() {
     final p = _progressService?.progress;
     final coins = p?.coins ?? 0;
+    final l10n = AppLocalizations.of(context);
 
     return RusticPlank(
       color: const Color(0xFF4E342E),
@@ -702,8 +712,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               Row(
                 children: [
                   Text(
-                    'Player 1',
-                    style: GoogleFonts.bangers(
+                    l10n.defaultPlayerName(1),
+                    style: AppFonts.bangers(
                       fontSize: 16,
                       color: Colors.white,
                       letterSpacing: 1,
@@ -713,9 +723,18 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   const Text('💰', style: TextStyle(fontSize: 12)),
                   Text(
                     ' $coins',
-                    style: GoogleFonts.bangers(
+                    style: AppFonts.bangers(
                       fontSize: 14,
                       color: const Color(0xFFFFD54F),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Text('⭐', style: TextStyle(fontSize: 12)),
+                  Text(
+                    ' ${p?.totalCampaignStars ?? 0}',
+                    style: AppFonts.bangers(
+                      fontSize: 14,
+                      color: const Color(0xFFFFD700),
                     ),
                   ),
                 ],
@@ -728,13 +747,14 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildSideToolButtons() {
+    final l10n = AppLocalizations.of(context);
     return Column(
       children: [
-        _buildWoodToolButton(icon: Icons.school_rounded, label: 'TUTORIAL', onTap: _launchTutorial),
+        _buildWoodToolButton(icon: Icons.school_rounded, label: l10n.tutorialBtn, onTap: _launchTutorial),
         const SizedBox(height: 6),
-        _buildWoodToolButton(icon: Icons.settings, label: 'SETTINGS', onTap: () => Navigator.pushNamed(context, AppRouter.settings)),
+        _buildWoodToolButton(icon: Icons.settings, label: l10n.settingsBtn, onTap: () => Navigator.pushNamed(context, AppRouter.settings)),
         const SizedBox(height: 6),
-        _buildWoodToolButton(icon: Icons.shopping_cart, label: 'SHOP', onTap: _showShopDialog),
+        _buildWoodToolButton(icon: Icons.shopping_cart, label: l10n.shopBtn, onTap: _showShopDialog),
         const SizedBox(height: 6),
         _buildPremiumPromo(),
       ],
@@ -743,6 +763,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   /// Gold "remove ads" promo, hidden once premium is owned.
   Widget _buildPremiumPromo() {
+    final l10n = AppLocalizations.of(context);
     return ListenableBuilder(
       listenable: PremiumService.instance,
       builder: (context, _) {
@@ -775,8 +796,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               children: [
                 const Icon(Icons.block_rounded, color: Color(0xFF3E2723), size: 18),
                 Text(
-                  'NO ADS',
-                  style: GoogleFonts.bangers(
+                  l10n.noAdsBtn,
+                  textAlign: TextAlign.center,
+                  style: AppFonts.bangers(
                     fontSize: 8,
                     color: const Color(0xFF3E2723),
                     letterSpacing: 0.5,
@@ -823,7 +845,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             Icon(icon, color: Colors.white, size: 18),
             Text(
               label,
-              style: GoogleFonts.bangers(
+              textAlign: TextAlign.center,
+              style: AppFonts.bangers(
                 fontSize: 8,
                 color: Colors.white70,
                 letterSpacing: 0.5,
@@ -846,7 +869,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             const Text('🐮', style: TextStyle(fontSize: 50)),
             Text(
               'BATTLE COWS',
-              style: GoogleFonts.bangers(
+              style: AppFonts.bangers(
                 fontSize: 42,
                 color: const Color(0xFFFFD54F),
                 letterSpacing: 4,
@@ -859,32 +882,46 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildMenuButtons() {
+    final l10n = AppLocalizations.of(context);
     final screenWidth = MediaQuery.of(context).size.width;
     final btnWidth = (screenWidth * 0.75).clamp(240.0, 360.0);
     return Column(
       children: [
+        WoodButton(
+          label: l10n.barnyardCampaign,
+          icon: Icons.map_rounded,
+          width: btnWidth,
+          height: 64,
+          fontSize: 25,
+          baseColor: const Color(0xFFE65100),
+          borderColor: const Color(0xFFFFB74D),
+          onPressed: () => Navigator.pushNamed(context, AppRouter.campaign).then((_) {
+            if (mounted) setState(() {});
+          }),
+        ),
+        const SizedBox(height: 12),
         WoodButton.gold(
-          label: 'PLAY VS AI',
+          label: l10n.playVsAi,
           icon: Icons.play_arrow_rounded,
           width: btnWidth,
           height: 62,
           fontSize: 26,
-          onPressed: () => _showGameSetupDialog(title: 'PLAY VS AI', isMultiplayer: false),
+          onPressed: () => _showGameSetupDialog(title: l10n.playVsAi, isMultiplayer: false),
         ),
         const SizedBox(height: 12),
         WoodButton(
-          label: 'LOCAL MULTIPLAYER',
+          label: l10n.localMultiplayer,
           icon: Icons.people_rounded,
           width: btnWidth,
           height: 58,
           fontSize: 24,
           baseColor: const Color(0xFF1565C0),
           borderColor: const Color(0xFF42A5F5),
-          onPressed: () => _showGameSetupDialog(title: 'LOCAL MULTIPLAYER', isMultiplayer: true),
+          onPressed: () => _showGameSetupDialog(title: l10n.localMultiplayer, isMultiplayer: true),
         ),
         const SizedBox(height: 12),
         WoodButton.purple(
-          label: 'HOW TO PLAY',
+          label: l10n.howToPlay,
           icon: Icons.menu_book_rounded,
           width: btnWidth,
           height: 54,
@@ -893,7 +930,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         ),
         const SizedBox(height: 12),
         WoodButton(
-          label: 'CHALLENGES',
+          label: l10n.challenges,
           icon: Icons.shield_rounded,
           width: btnWidth,
           height: 54,
@@ -904,7 +941,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         ),
         const SizedBox(height: 12),
         WoodButton.red(
-          label: 'EXIT',
+          label: l10n.exit,
           icon: Icons.exit_to_app_rounded,
           width: btnWidth,
           height: 54,
@@ -912,13 +949,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           onPressed: () {
             CartoonDialog.show(
               context: context,
-              title: 'EXIT GAME?',
+              title: l10n.exitGameTitle,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Are you sure you want to exit?',
-                    style: GoogleFonts.bangers(fontSize: 16, color: Colors.white70),
+                    l10n.exitGameConfirm,
+                    style: AppFonts.bangers(fontSize: 16, color: Colors.white70),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
@@ -926,7 +963,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     children: [
                       Expanded(
                         child: KenneyButton(
-                          label: 'CANCEL',
+                          label: l10n.cancel,
                           isWide: true,
                           style: KenneyBtnStyle.neutral,
                           onPressed: () => Navigator.pop(context),
@@ -935,7 +972,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       const SizedBox(width: 12),
                       Expanded(
                         child: KenneyButton(
-                          label: 'EXIT',
+                          label: l10n.exit,
                           isWide: true,
                           style: KenneyBtnStyle.danger,
                           onPressed: () {
@@ -955,11 +992,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-
-
   Widget _buildBottomRusticBar() {
     final p = _progressService?.progress;
     final readyQuests = p?.dailyQuests.where((q) => q.isComplete && !q.claimed).length ?? 0;
+    final l10n = AppLocalizations.of(context);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -977,8 +1013,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           },
           child: _buildBottomItem(
             iconText: '📅',
-            title: 'DAILY QUESTS',
-            subtitle: readyQuests > 0 ? '$readyQuests READY' : 'PLAY MORE',
+            title: l10n.dailyQuests,
+            subtitle: readyQuests > 0 ? l10n.questsReady(readyQuests) : l10n.playMore,
             color: readyQuests > 0 ? const Color(0xFF81C784) : Colors.white54,
           ),
         ),
@@ -1002,7 +1038,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           children: [
             Text(
               title,
-              style: GoogleFonts.bangers(
+              style: AppFonts.bangers(
                 fontSize: 11,
                 color: Colors.white70,
                 letterSpacing: 1,
@@ -1010,7 +1046,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
             Text(
               subtitle,
-              style: GoogleFonts.bangers(
+              style: AppFonts.bangers(
                 fontSize: 12,
                 color: color,
                 letterSpacing: 1,

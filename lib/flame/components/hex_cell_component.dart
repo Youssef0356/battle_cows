@@ -112,6 +112,8 @@ class HexCellComponent extends PositionComponent {
         return 'assets/images/Board Tiles/tile_hay_bale.png';
       case SpecialTileType.fenceGate:
         return 'assets/images/Board Tiles/tile_fence_gate.png';
+      case SpecialTileType.goldenPasture:
+        return 'assets/images/Board Tiles/tile_golden_pasture.png';
       case SpecialTileType.none:
         return null;
     }
@@ -184,6 +186,15 @@ class HexCellComponent extends PositionComponent {
 
     _draw3DDepth(canvas, path, center, hexRadius);
     _drawHexFill(canvas, path, center, hexRadius);
+    if (cell.specialType == SpecialTileType.goldenPasture) {
+      final goldenPulse = (sin(_lifeTime * 3.5) + 1.0) / 2.0;
+      final goldGlow = Paint()
+        ..color = const Color(0xFFFFD700).withValues(alpha: 0.35 + goldenPulse * 0.35)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3.5 + goldenPulse * 2.0
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+      canvas.drawPath(path, goldGlow);
+    }
     final hasSpecialTile = cell.specialType != SpecialTileType.none && _specialImage != null;
     final turnColor =
         (turnOwner != null && herd != null && herd!.size > 0 && herd!.owner == turnOwner)

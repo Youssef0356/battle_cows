@@ -76,6 +76,13 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
     return maxFencesPerPlayer - (playerFences[color]?.length ?? 0);
   }
 
+  void clearSelection() {
+    selectedPosition = null;
+    validMoves = [];
+    _boardComponent?.updateSelection(null, []);
+    notifyStateChanged();
+  }
+
   void toggleFenceMode() {
     if (challengeMode != ChallengeMode.fenceChallenge) return;
     if (_engine.currentPlayer.isAi || isGameOver || _isAnimating) return;
@@ -941,7 +948,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
         if (oppHerds.isNotEmpty && Random().nextDouble() < 0.45) {
           oppHerds.sort((a, b) => b.size.compareTo(a.size));
           final oppHerd = oppHerds.first;
-          final oppMoves = _engine.board!.getReachablePositions(oppHerd.position, oppHerd.size)
+          final oppMoves = _engine.board!.getReachablePositions(oppHerd.position, max(oppHerd.size, 5))
               .where((p) => _engine.board!.isEmpty(p)).toList();
 
           if (oppMoves.isNotEmpty) {
@@ -1015,7 +1022,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
       if (herd != null && herd.owner == _engine.currentPlayer.color && herd.size >= 2) {
         selectedPosition = position;
         selectedSplitCount = 1;
-        validMoves = _engine.board!.getReachablePositions(position, herd.size)
+        validMoves = _engine.board!.getReachablePositions(position, max(herd.size, 5))
             .where((p) => _engine.board!.isEmpty(p))
             .toList();
         AudioManager().playSelect();

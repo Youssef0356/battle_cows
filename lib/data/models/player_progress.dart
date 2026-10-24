@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
+import '../../core/localization/app_localizations.dart';
 
 class PlayerProgress {
   int coins;
@@ -16,6 +18,7 @@ class PlayerProgress {
   bool tutorialCompleted;
   int ratePromptCount;
   bool isPremium;
+  Map<String, int> campaignStars;
 
   PlayerProgress({
     this.coins = 0,
@@ -38,8 +41,27 @@ class PlayerProgress {
     this.equippedTheme = '',
     this.equippedEmoji = '',
     this.equippedBoard = '',
+    Map<String, int>? campaignStars,
   })  : ownedItems = ownedItems ?? [],
-        dailyQuests = dailyQuests ?? [];
+        dailyQuests = dailyQuests ?? [],
+        campaignStars = campaignStars ?? {};
+
+  int getCampaignStars(int levelId) => campaignStars['level_$levelId'] ?? 0;
+
+  void setCampaignStars(int levelId, int stars) {
+    final current = getCampaignStars(levelId);
+    if (stars > current) {
+      campaignStars['level_$levelId'] = stars;
+    }
+  }
+
+  bool isCampaignLevelUnlocked(int levelId) {
+    if (levelId == 1) return true;
+    return getCampaignStars(levelId - 1) > 0;
+  }
+
+  int get totalCampaignStars =>
+      campaignStars.values.fold(0, (sum, stars) => sum + stars);
 
   String equippedSkin;
   String equippedHat;
@@ -93,6 +115,7 @@ class PlayerProgress {
         'equippedTheme': equippedTheme,
         'equippedEmoji': equippedEmoji,
         'equippedBoard': equippedBoard,
+        'campaignStars': campaignStars,
       };
 
   factory PlayerProgress.fromJson(Map<String, dynamic> json) {
@@ -120,6 +143,10 @@ class PlayerProgress {
       equippedTheme: json['equippedTheme'] ?? '',
       equippedEmoji: json['equippedEmoji'] ?? '',
       equippedBoard: json['equippedBoard'] ?? '',
+      campaignStars: (json['campaignStars'] as Map<String, dynamic>?)?.map(
+            (k, v) => MapEntry(k, (v as num).toInt()),
+          ) ??
+          {},
     );
   }
 
@@ -206,6 +233,40 @@ extension QuestTypeExtension on QuestType {
         return 'Move Cows';
       case QuestType.winStreak:
         return 'Win Streak';
+    }
+  }
+}
+
+extension QuestProgressLocalization on QuestProgress {
+  String localizedTitle([BuildContext? context]) {
+    final l10n = context != null ? AppLocalizations.of(context) : AppLocalizations.current;
+    switch (id) {
+      case 'win1': return l10n.questVictoryLapTitle;
+      case 'play2': return l10n.questGetMovingTitle;
+      case 'play3': return l10n.questBusyDayTitle;
+      case 'cap5': return l10n.questLandGrabTitle;
+      case 'cap10': return l10n.questConquestTitle;
+      case 'cap3': return l10n.questQuickHoovesTitle;
+      case 'play1': return l10n.questWarmUpTitle;
+      case 'move5': return l10n.questHerdBuilderTitle;
+      case 'winStreak2': return l10n.questOnARollTitle;
+      default: return title;
+    }
+  }
+
+  String localizedDescription([BuildContext? context]) {
+    final l10n = context != null ? AppLocalizations.of(context) : AppLocalizations.current;
+    switch (id) {
+      case 'win1': return l10n.questVictoryLapDesc;
+      case 'play2': return l10n.questGetMovingDesc;
+      case 'play3': return l10n.questBusyDayDesc;
+      case 'cap5': return l10n.questLandGrabDesc;
+      case 'cap10': return l10n.questConquestDesc;
+      case 'cap3': return l10n.questQuickHoovesDesc;
+      case 'play1': return l10n.questWarmUpDesc;
+      case 'move5': return l10n.questHerdBuilderDesc;
+      case 'winStreak2': return l10n.questOnARollDesc;
+      default: return description;
     }
   }
 }

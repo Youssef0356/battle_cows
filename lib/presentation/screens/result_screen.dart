@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/colors.dart';
+import '../../core/localization/app_fonts.dart';
+import '../../core/localization/app_localizations.dart';
 import '../router/app_router.dart';
 
 class ResultScreen extends StatelessWidget {
@@ -15,6 +16,8 @@ class ResultScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       body: Stack(
         children: [
@@ -42,8 +45,8 @@ class ResultScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      winner == 'Draw' ? 'DRAW!' : '$winner WINS!',
-                      style: GoogleFonts.bangers(
+                      winner == 'Draw' ? l10n.draw : l10n.playerWins(winner),
+                      style: AppFonts.bangers(
                         fontSize: 44,
                         color: Colors.white,
                         letterSpacing: 4,
@@ -86,8 +89,8 @@ class ResultScreen extends StatelessWidget {
                       child: Column(
                         children: [
                           Text(
-                            'FINAL SCORES',
-                            style: GoogleFonts.bangers(
+                            l10n.finalScores,
+                            style: AppFonts.bangers(
                               fontSize: 22,
                               color: Colors.white,
                               letterSpacing: 2,
@@ -122,15 +125,15 @@ class ResultScreen extends StatelessWidget {
                                   children: [
                                     Text(
                                       name.toUpperCase(),
-                                      style: GoogleFonts.bangers(
+                                      style: AppFonts.bangers(
                                         fontSize: 20,
                                         color: Colors.white,
                                         letterSpacing: 1,
                                       ),
                                     ),
                                     Text(
-                                      '$score TILES',
-                                      style: GoogleFonts.bangers(
+                                      l10n.scoreTiles(score),
+                                      style: AppFonts.bangers(
                                         fontSize: 20,
                                         color: isWinner
                                             ? AppColors.primaryAction
@@ -188,70 +191,8 @@ class ResultScreen extends StatelessWidget {
                                 ),
                               ),
                               child: Text(
-                                'MENU',
-                                style: GoogleFonts.bangers(
-                                  fontSize: 22,
-                                  color: Colors.white,
-                                  letterSpacing: 3,
-                                  shadows: [
-                                    Shadow(
-                                      color: Colors.black.withValues(alpha: 0.5),
-                                      offset: const Offset(2, 2),
-                                      blurRadius: 3,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Container(
-                            height: 56,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  const Color(0xFF689F38),
-                                  const Color(0xFF43A047),
-                                ],
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                              ),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: Colors.white, width: 3),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFF689F38).withValues(alpha: 0.4),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: ElevatedButton(
-                              onPressed: () {
-                                Navigator.pushReplacementNamed(
-                                  context,
-                                  AppRouter.game,
-                                  arguments: {
-                                    'players': [],
-                                    'herdSize': 16,
-                                    'tilesPerPlayer': 5,
-                                    'boardSize': 7,
-                                  },
-                                );
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.transparent,
-                                shadowColor: Colors.transparent,
-                                padding: EdgeInsets.zero,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(13),
-                                ),
-                              ),
-                              child: Text(
-                                'REMATCH',
-                                style: GoogleFonts.bangers(
+                                l10n.menu,
+                                style: AppFonts.bangers(
                                   fontSize: 22,
                                   color: Colors.white,
                                   letterSpacing: 3,

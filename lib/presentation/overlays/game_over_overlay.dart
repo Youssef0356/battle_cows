@@ -1,7 +1,8 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:in_app_review/in_app_review.dart';
+import '../../core/localization/app_fonts.dart';
+import '../../core/localization/app_localizations.dart';
 import '../../flame/battle_cows_game.dart';
 import '../../game/models/player.dart';
 import '../../game/utils/cow_skin_loader.dart';
@@ -65,17 +66,18 @@ class _GameOverOverlayState extends State<GameOverOverlay>
   }
 
   void _showRatePrompt() {
+    final l10n = AppLocalizations.of(context);
     final inAppReview = InAppReview.instance;
     CartoonDialog.show(
       context: context,
-      title: 'ENJOYING THE GAME?',
+      title: l10n.enjoyingTheGame,
       accentColor: const Color(0xFFFFB74D),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            'Rate us 5 stars to support the herd!',
-            style: GoogleFonts.bangers(
+            l10n.rateUsPrompt,
+            style: AppFonts.bangers(
               fontSize: 14,
               color: Colors.white70,
               letterSpacing: 0.5,
@@ -84,7 +86,7 @@ class _GameOverOverlayState extends State<GameOverOverlay>
           ),
           const SizedBox(height: 16),
           KenneyButton(
-            label: 'RATE US',
+            label: l10n.rateUs,
             icon: Icons.star_rounded,
             isWide: true,
             onPressed: () async {
@@ -98,8 +100,8 @@ class _GameOverOverlayState extends State<GameOverOverlay>
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              'MAYBE LATER',
-              style: GoogleFonts.bangers(
+              l10n.maybeLater,
+              style: AppFonts.bangers(
                 fontSize: 12,
                 color: Colors.white54,
                 letterSpacing: 1,
@@ -119,6 +121,7 @@ class _GameOverOverlayState extends State<GameOverOverlay>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final winner = widget.game.winner;
     final territoryCounts = widget.game.territoryCounts;
 
@@ -170,9 +173,9 @@ class _GameOverOverlayState extends State<GameOverOverlay>
                     const SizedBox(height: 12),
                     Text(
                       winner != null
-                          ? '${_getPlayerName(winner)} WINS!'
-                          : 'DRAW!',
-                      style: GoogleFonts.bangers(
+                          ? l10n.playerWins(_getPlayerName(winner))
+                          : l10n.draw,
+                      style: AppFonts.bangers(
                         fontSize: 32,
                         color: Colors.white,
                         letterSpacing: 2,
@@ -191,8 +194,8 @@ class _GameOverOverlayState extends State<GameOverOverlay>
                       child: Column(
                         children: [
                           Text(
-                            'FINAL TERRITORY',
-                            style: GoogleFonts.bangers(
+                            l10n.finalTerritory,
+                            style: AppFonts.bangers(
                               fontSize: 14,
                               color: Colors.white.withValues(alpha: 0.7),
                               letterSpacing: 1.5,
@@ -216,7 +219,7 @@ class _GameOverOverlayState extends State<GameOverOverlay>
                                   const SizedBox(width: 8),
                                   Text(
                                     '${_getPlayerName(color)}: $count',
-                                    style: GoogleFonts.bangers(
+                                    style: AppFonts.bangers(
                                       fontSize: 18,
                                       color: Colors.white,
                                     ),
@@ -229,20 +232,19 @@ class _GameOverOverlayState extends State<GameOverOverlay>
                       ),
                     ),
                     const SizedBox(height: 20),
-                    _buildStatsSection(),
+                    _buildStatsSection(l10n),
                     const SizedBox(height: 20),
                     Row(
                       children: [
                         Expanded(
                           child: KenneyButton(
-                            label: 'MENU',
+                            label: l10n.menu,
                             icon: Icons.home_rounded,
                             isWide: true,
                             style: KenneyBtnStyle.neutral,
                             fontSize: 18,
                             height: 50,
                             onPressed: () {
-                              // Tutorial matches never show interstitials.
                               if (widget.game.suppressAds) {
                                 widget.game.overlays.remove('GameOver');
                                 Navigator.of(context).pop();
@@ -260,13 +262,12 @@ class _GameOverOverlayState extends State<GameOverOverlay>
                         const SizedBox(width: 12),
                         Expanded(
                           child: KenneyButton(
-                            label: 'REMATCH',
+                            label: l10n.rematch,
                             icon: Icons.refresh_rounded,
                             isWide: true,
                             fontSize: 18,
                             height: 50,
                             onPressed: () {
-                              // Tutorial matches never show interstitials.
                               if (widget.game.suppressAds) {
                                 widget.game.overlays.remove('GameOver');
                                 widget.game.rematch();
@@ -299,7 +300,7 @@ class _GameOverOverlayState extends State<GameOverOverlay>
     return (player?.name ?? 'UNKNOWN').toUpperCase();
   }
 
-  Widget _buildStatsSection() {
+  Widget _buildStatsSection(AppLocalizations l10n) {
     final game = widget.game;
     return Container(
       padding: const EdgeInsets.all(12),
@@ -313,8 +314,8 @@ class _GameOverOverlayState extends State<GameOverOverlay>
       child: Column(
         children: [
           Text(
-            'GAME STATS',
-            style: GoogleFonts.bangers(
+            l10n.gameStats,
+            style: AppFonts.bangers(
               fontSize: 12,
               color: Colors.white.withValues(alpha: 0.6),
               letterSpacing: 1.5,
@@ -324,9 +325,9 @@ class _GameOverOverlayState extends State<GameOverOverlay>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildStatItem('TURNS', '${game.totalMoves}'),
-              _buildStatItem('YOUR COWS', '${game.cowCounts[widget.players.isNotEmpty ? widget.players[0].color : null] ?? 0}'),
-              _buildStatItem('CPU COWS', '${game.cowCounts[widget.players.length > 1 ? widget.players[1].color : null] ?? 0}'),
+              _buildStatItem(l10n.statTurns, '${game.totalMoves}'),
+              _buildStatItem(l10n.statYourCows, '${game.cowCounts[widget.players.isNotEmpty ? widget.players[0].color : null] ?? 0}'),
+              _buildStatItem(l10n.statCpuCows, '${game.cowCounts[widget.players.length > 1 ? widget.players[1].color : null] ?? 0}'),
             ],
           ),
           if (game.capturesPerPlayer.values.any((c) => c > 0)) ...[
@@ -334,16 +335,16 @@ class _GameOverOverlayState extends State<GameOverOverlay>
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildStatItem('YOUR CAPTURES', '${game.capturesPerPlayer[widget.players.isNotEmpty ? widget.players[0].color : null] ?? 0}'),
-                _buildStatItem('CPU CAPTURES', '${game.capturesPerPlayer[widget.players.length > 1 ? widget.players[1].color : null] ?? 0}'),
+                _buildStatItem(l10n.statYourCaptures, '${game.capturesPerPlayer[widget.players.isNotEmpty ? widget.players[0].color : null] ?? 0}'),
+                _buildStatItem(l10n.statCpuCaptures, '${game.capturesPerPlayer[widget.players.length > 1 ? widget.players[1].color : null] ?? 0}'),
               ],
             ),
           ],
           if (widget.coinsEarned > 0) ...[
             const SizedBox(height: 10),
             Text(
-              '+${widget.coinsEarned} 💰 EARNED',
-              style: GoogleFonts.bangers(
+              l10n.coinsEarned(widget.coinsEarned),
+              style: AppFonts.bangers(
                 fontSize: 16,
                 color: const Color(0xFF81C784),
                 letterSpacing: 1,
@@ -361,14 +362,14 @@ class _GameOverOverlayState extends State<GameOverOverlay>
       children: [
         Text(
           value,
-          style: GoogleFonts.bangers(
+          style: AppFonts.bangers(
             fontSize: 20,
             color: const Color(0xFFFFD54F),
           ),
         ),
         Text(
           label,
-          style: GoogleFonts.bangers(
+          style: AppFonts.bangers(
             fontSize: 9,
             color: Colors.white.withValues(alpha: 0.6),
             letterSpacing: 0.5,

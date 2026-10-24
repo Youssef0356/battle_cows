@@ -52,7 +52,7 @@ class GameEngine {
 
     for (final herd in playerHerds) {
       if (herd.size < 2) continue;
-      final reachable = _board!.getReachablePositions(herd.position, herd.size);
+      final reachable = _board!.getReachablePositions(herd.position, max(herd.size, 5));
 
       for (final target in reachable) {
         for (var split = 1; split < herd.size; split++) {
@@ -108,6 +108,8 @@ class GameEngine {
     final targetCell = _board!.getCell(move.to);
     if (targetCell?.specialType == SpecialTileType.hayBale) {
       movedCows++;
+    } else if (targetCell?.specialType == SpecialTileType.goldenPasture) {
+      movedCows++; // Golden pasture nourishes the herd with an extra cow
     }
     herds.add(Herd(position: move.to, owner: move.player, size: movedCows));
 
@@ -199,7 +201,7 @@ class GameEngine {
     final herd = movableHerds[_random.nextInt(movableHerds.length)];
     
     // Get reachable positions
-    final reachable = _board!.getReachablePositions(herd.position, herd.size);
+    final reachable = _board!.getReachablePositions(herd.position, max(herd.size, 5));
     if (reachable.isEmpty) return;
     
     // Pick a random destination
@@ -227,7 +229,9 @@ class GameEngine {
     }
 
     for (final herd in _board!.herds) {
-      counts[herd.owner] = (counts[herd.owner] ?? 0) + 1;
+      final cell = _board!.getCell(herd.position);
+      final tileValue = (cell?.specialType == SpecialTileType.goldenPasture) ? 3 : 1;
+      counts[herd.owner] = (counts[herd.owner] ?? 0) + tileValue;
     }
 
     return counts;

@@ -62,7 +62,6 @@ class GameBoard {
     final reachable = <HexPosition>[];
     for (final dir in HexPosition.directions) {
       var current = from;
-      HexPosition? lastValid;
       var distanceUsed = 0;
       while (distanceUsed < maxDistance) {
         final next = current + dir;
@@ -74,12 +73,9 @@ class GameBoard {
         if (hasHerdAt(next)) break;
         final stepCost = specialAt(next) == SpecialTileType.mud ? 2 : 1;
         if (distanceUsed + stepCost > maxDistance) break;
-        lastValid = next;
+        reachable.add(next);
         current = next;
         distanceUsed += stepCost;
-      }
-      if (lastValid != null) {
-        reachable.add(lastValid);
       }
     }
     return reachable;

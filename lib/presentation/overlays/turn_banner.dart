@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../core/localization/app_fonts.dart';
+import '../../core/localization/app_localizations.dart';
 
 class TurnBanner extends StatefulWidget {
   final String playerName;
@@ -65,6 +66,7 @@ class _TurnBannerState extends State<TurnBanner>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
@@ -117,8 +119,8 @@ class _TurnBannerState extends State<TurnBanner>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          widget.isAi ? 'CPU\'S TURN' : 'PLAYER TURN',
-                          style: GoogleFonts.bangers(
+                          widget.isAi ? l10n.cpuTurn.toUpperCase() : l10n.playerTurn.toUpperCase(),
+                          style: AppFonts.bangers(
                             fontSize: 14,
                             color: Colors.white.withValues(alpha: 0.85),
                             letterSpacing: 2,
@@ -126,7 +128,7 @@ class _TurnBannerState extends State<TurnBanner>
                         ),
                         Text(
                           widget.playerName.toUpperCase(),
-                          style: GoogleFonts.bangers(
+                          style: AppFonts.bangers(
                             fontSize: 24,
                             color: Colors.white,
                             letterSpacing: 2,

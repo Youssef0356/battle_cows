@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../core/localization/app_fonts.dart';
 
 class CartoonDialog extends StatefulWidget {
   final String? title;
@@ -165,7 +165,7 @@ class _CartoonDialogState extends State<CartoonDialog>
         children: [
           Text(
             widget.title!,
-            style: GoogleFonts.bangers(
+            style: AppFonts.bangers(
               fontSize: 24,
               color: widget.accentColor,
               letterSpacing: 2,
@@ -279,7 +279,7 @@ class _CartoonButtonState extends State<CartoonButton>
             ],
             Text(
               widget.label,
-              style: GoogleFonts.bangers(
+              style: AppFonts.bangers(
                 fontSize: widget.fontSize,
                 color: Colors.white,
                 letterSpacing: 1.5,

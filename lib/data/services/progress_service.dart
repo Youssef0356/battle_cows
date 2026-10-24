@@ -385,6 +385,24 @@ class ProgressService {
     return earned;
   }
 
+  /// Records the completion of a campaign level and awards bonus coins & XP.
+  int recordCampaignWin({
+    required int levelId,
+    required int stars,
+    required int bonusCoins,
+    required int bonusXp,
+  }) {
+    final oldStars = progress.getCampaignStars(levelId);
+    progress.setCampaignStars(levelId, stars);
+    
+    // Only grant the full level coin reward on the first completion (or star upgrade)
+    final reward = (stars > oldStars) ? bonusCoins : (bonusCoins ~/ 4);
+    progress.coins += reward;
+    progress.addXp(bonusXp);
+    _save();
+    return reward;
+  }
+
   static final _questPool = [
     _QuestDef('win1', 'Victory Lap', 'Win 1 match', '🏆', QuestType.winMatches, 1, 100, 30),
     _QuestDef('play2', 'Get Moving', 'Play 2 matches', '🎮', QuestType.playMatches, 2, 75, 20),

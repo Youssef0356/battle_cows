@@ -2,7 +2,7 @@ import 'hex_position.dart';
 import 'player_color.dart';
 
 enum CellType { empty, obstacle, claimed }
-enum SpecialTileType { none, mud, waterPond, hayBale, fenceGate }
+enum SpecialTileType { none, mud, waterPond, hayBale, fenceGate, goldenPasture }
 
 class HexCell {
   final HexPosition position;

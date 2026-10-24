@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../core/localization/app_fonts.dart';
 
 enum KenneyBtnStyle {
   primary,
@@ -142,7 +142,7 @@ class _KenneyButtonState extends State<KenneyButton>
                     ],
                     Text(
                       widget.label,
-                      style: GoogleFonts.bangers(
+                      style: AppFonts.bangers(
                         fontSize: textSize,
                         color: Colors.white,
                         letterSpacing: 1.5,

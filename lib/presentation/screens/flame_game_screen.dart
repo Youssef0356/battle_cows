@@ -18,6 +18,7 @@ import '../overlays/placement_overlay.dart';
 import '../overlays/herd_placement_overlay.dart';
 import '../overlays/tutorial_overlay.dart';
 import '../../game/tutorial/tutorial_data.dart';
+import '../../game/campaign/campaign_data.dart';
 import '../widgets/capture_toast.dart';
 import '../widgets/banner_ad_widget.dart';
 import '../widgets/parallax_dust_layer.dart';
@@ -31,6 +32,7 @@ class FlameGameScreen extends StatefulWidget {
   final int tilesPerPlayer;
   final ChallengeMode challengeMode;
   final bool isTutorial;
+  final int? campaignLevelId;
 
   const FlameGameScreen({
     super.key,
@@ -41,6 +43,7 @@ class FlameGameScreen extends StatefulWidget {
     this.tilesPerPlayer = 5,
     this.challengeMode = ChallengeMode.standard,
     this.isTutorial = false,
+    this.campaignLevelId,
   });
 
   @override
@@ -212,6 +215,29 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
     final captures = _game.capturesPerPlayer[playerColor] ?? 0;
     _lastMatchCoins =
         _progressService!.recordMatch(won: won, captures: captures);
+
+    if (won && widget.campaignLevelId != null) {
+      final level = CampaignData.getLevel(widget.campaignLevelId!);
+      final myTerritory = _game.territoryCounts[playerColor] ?? 0;
+      final oppTerritory = _game.territoryCounts.entries
+          .where((e) => e.key != playerColor)
+          .fold<int>(0, (sum, e) => sum + e.value);
+      
+      int stars = 1;
+      if (myTerritory >= oppTerritory * 2 || myTerritory >= 15) {
+        stars = 3;
+      } else if (myTerritory > oppTerritory + 2) {
+        stars = 2;
+      }
+
+      final campaignCoins = _progressService!.recordCampaignWin(
+        levelId: level.id,
+        stars: stars,
+        bonusCoins: level.rewardCoins,
+        bonusXp: level.rewardXp,
+      );
+      _lastMatchCoins += campaignCoins;
+    }
   }
 
   @override
