@@ -67,9 +67,12 @@ class AppLocalizationsFr implements AppLocalizations {
   @override String get removeAds => 'SUPPRIMER LES PUBS';
   @override String get supportSection => 'ASSISTANCE';
   @override String get languageSection => 'LANGUE';
+  @override String get chooseLanguage => 'CHOISIR LA LANGUE';
+  @override String get chooseLanguageSubtitle => 'Sélectionnez votre langue préférée';
   @override String get languageEnglish => 'English';
   @override String get languageFrench => 'Français';
   @override String get languageArabic => 'العربية';
+  @override String get confirm => 'CONFIRMER';
 
   // --- Challenge Modes ---
   @override String get modeStandardTitle => 'PÂTURAGE CLASSIQUE';

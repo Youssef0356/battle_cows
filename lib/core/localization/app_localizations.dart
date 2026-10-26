@@ -97,9 +97,12 @@ abstract class AppLocalizations {
   String get removeAds;
   String get supportSection;
   String get languageSection;
+  String get chooseLanguage;
+  String get chooseLanguageSubtitle;
   String get languageEnglish;
   String get languageFrench;
   String get languageArabic;
+  String get confirm;
 
   // --- Challenge Modes ---
   String get modeStandardTitle;

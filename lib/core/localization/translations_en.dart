@@ -67,9 +67,12 @@ class AppLocalizationsEn implements AppLocalizations {
   @override String get removeAds => 'REMOVE ADS';
   @override String get supportSection => 'SUPPORT';
   @override String get languageSection => 'LANGUAGE';
+  @override String get chooseLanguage => 'CHOOSE LANGUAGE';
+  @override String get chooseLanguageSubtitle => 'Select your preferred language';
   @override String get languageEnglish => 'English';
   @override String get languageFrench => 'Français';
   @override String get languageArabic => 'العربية';
+  @override String get confirm => 'CONFIRM';
 
   // --- Challenge Modes ---
   @override String get modeStandardTitle => 'STANDARD PASTURE';

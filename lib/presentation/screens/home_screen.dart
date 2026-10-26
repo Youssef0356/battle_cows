@@ -6,10 +6,12 @@ import '../../assets/asset_paths.dart';
 import '../../core/constants/colors.dart';
 import '../../core/localization/app_fonts.dart';
 import '../../core/localization/app_localizations.dart';
+import '../../core/localization/locale_controller.dart';
 import '../../data/services/premium_service.dart';
 import '../../data/services/progress_service.dart';
 import '../../game/models/player.dart';
 import '../dialogs/daily_quests_dialog.dart';
+import '../dialogs/language_selection_dialog.dart';
 import '../dialogs/premium_dialog.dart';
 import '../dialogs/shop_dialog.dart';
 import '../router/app_router.dart';
@@ -56,13 +58,19 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     _progressService!.refreshDailyQuests();
     if (mounted) {
       setState(() {});
-      // First-ever launch: drop the player straight into the guided tutorial
-      // mini-match before they can wander into a full game.
-      if (!_progressService!.tutorialCompleted) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted && !_progressService!.tutorialCompleted) _launchTutorial();
-        });
-      }
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        // First-ever launch: prompt player to choose their language before playing.
+        if (LocaleController.instance.isFirstLaunch) {
+          await LanguageSelectionDialog.show(context: context, isFirstTime: true);
+          if (!mounted) return;
+        }
+        // First-ever launch: drop the player straight into the guided tutorial
+        // mini-match before they can wander into a full game.
+        if (!_progressService!.tutorialCompleted) {
+          _launchTutorial();
+        }
+      });
     }
   }
 

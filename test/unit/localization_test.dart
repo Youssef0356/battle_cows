@@ -16,15 +16,18 @@ void main() {
 
   group('LocaleController tests', () {
     setUp(() async {
+      LocaleController.instance.resetForTesting();
       SharedPreferences.setMockInitialValues({});
       await LocaleController.instance.initialize();
     });
 
-    test('defaults to English locale', () {
+    test('defaults to English locale and reports first launch', () {
       expect(LocaleController.instance.locale.languageCode, 'en');
       expect(LocaleController.instance.isEnglish, isTrue);
       expect(LocaleController.instance.isArabic, isFalse);
       expect(LocaleController.instance.isFrench, isFalse);
+      expect(LocaleController.instance.isFirstLaunch, isTrue);
+      expect(LocaleController.instance.hasChosenLanguage, isFalse);
     });
 
     test('switches to French and persists preference', () async {
@@ -33,9 +36,23 @@ void main() {
       expect(LocaleController.instance.isFrench, isTrue);
       expect(LocaleController.instance.isEnglish, isFalse);
       expect(LocaleController.instance.isArabic, isFalse);
+      expect(LocaleController.instance.isFirstLaunch, isFalse);
+      expect(LocaleController.instance.hasChosenLanguage, isTrue);
 
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString('selected_locale'), 'fr');
+      expect(prefs.getBool('has_chosen_language'), isTrue);
+    });
+
+    test('persists English preference on first launch even if default', () async {
+      await LocaleController.instance.setLocale(const Locale('en'));
+      expect(LocaleController.instance.locale.languageCode, 'en');
+      expect(LocaleController.instance.isFirstLaunch, isFalse);
+      expect(LocaleController.instance.hasChosenLanguage, isTrue);
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('selected_locale'), 'en');
+      expect(prefs.getBool('has_chosen_language'), isTrue);
     });
 
     test('switches to Arabic and persists preference', () async {
@@ -44,9 +61,23 @@ void main() {
       expect(LocaleController.instance.isArabic, isTrue);
       expect(LocaleController.instance.isEnglish, isFalse);
       expect(LocaleController.instance.isFrench, isFalse);
+      expect(LocaleController.instance.isFirstLaunch, isFalse);
+      expect(LocaleController.instance.hasChosenLanguage, isTrue);
 
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString('selected_locale'), 'ar');
+      expect(prefs.getBool('has_chosen_language'), isTrue);
+    });
+
+    test('restores previously chosen language on initialize', () async {
+      SharedPreferences.setMockInitialValues({
+        'selected_locale': 'fr',
+        'has_chosen_language': true,
+      });
+      await LocaleController.instance.initialize();
+      expect(LocaleController.instance.locale.languageCode, 'fr');
+      expect(LocaleController.instance.isFirstLaunch, isFalse);
+      expect(LocaleController.instance.hasChosenLanguage, isTrue);
     });
   });
 
@@ -79,6 +110,8 @@ void main() {
       expect(fr.cancel, 'ANNULER');
       expect(fr.skip, 'PASSER');
       expect(fr.exit, 'QUITTER');
+      expect(fr.chooseLanguage, 'CHOISIR LA LANGUE');
+      expect(fr.confirm, 'CONFIRMER');
     });
 
     test('Arabic translations are valid Arabic script, non-empty, and natural', () {
@@ -98,6 +131,8 @@ void main() {
       expect(ar.cancel, 'إلغاء');
       expect(ar.skip, 'تخطي');
       expect(ar.exit, 'خروج');
+      expect(ar.chooseLanguage, 'اختر اللغة');
+      expect(ar.confirm, 'تأكيد');
     });
 
     test('Parameterized strings format without errors across all languages', () {

@@ -67,9 +67,12 @@ class AppLocalizationsAr implements AppLocalizations {
   @override String get removeAds => 'إزالة الإعلانات';
   @override String get supportSection => 'الدعم والمساعدة';
   @override String get languageSection => 'اللغة';
+  @override String get chooseLanguage => 'اختر اللغة';
+  @override String get chooseLanguageSubtitle => 'حدد لغتك المفضلة للمتابعة';
   @override String get languageEnglish => 'English';
   @override String get languageFrench => 'Français';
   @override String get languageArabic => 'العربية';
+  @override String get confirm => 'تأكيد';
 
   // --- Challenge Modes ---
   @override String get modeStandardTitle => 'المرعى الكلاسيكي';

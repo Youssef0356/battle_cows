@@ -160,11 +160,13 @@ class _CartoonDialogState extends State<CartoonDialog>
           ),
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
             widget.title!,
+            textAlign: TextAlign.center,
             style: AppFonts.bangers(
               fontSize: 24,
               color: widget.accentColor,
@@ -178,7 +180,7 @@ class _CartoonDialogState extends State<CartoonDialog>
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
