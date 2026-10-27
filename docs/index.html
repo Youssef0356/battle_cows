@@ -2044,12 +2044,11 @@
             <div class="gallery-box">
                 <div class="gallery-track-container">
                     <div class="gallery-slider" id="gallerySlider">
-                        <div class="gallery-slide"><img src="assets/screens/screen-1.png" alt="Battle Cows - Classic Board Game" onclick="openLightbox(this.src)"></div>
-                        <div class="gallery-slide"><img src="assets/screens/screen-2.png" alt="Battle Cows - Hex Gameplay" onclick="openLightbox(this.src)"></div>
-                        <div class="gallery-slide"><img src="assets/screens/screen-3.png" alt="Battle Cows - Tactical Features" onclick="openLightbox(this.src)"></div>
-                        <div class="gallery-slide"><img src="assets/screens/screen-4.png" alt="Battle Cows - Procedural Tiles" onclick="openLightbox(this.src)"></div>
-                        <div class="gallery-slide"><img src="assets/screens/screen-5.png" alt="Battle Cows - Campaign & Quests" onclick="openLightbox(this.src)"></div>
-                        <div class="gallery-slide"><img src="assets/screens/screen-6.png" alt="Battle Cows - Board Overview" onclick="openLightbox(this.src)"></div>
+                        <div class="gallery-slide"><img src="assets/playstore/playstore-1.png" alt="Battle Cows - Classic Hex Tactics on Mobile" onclick="openLightbox(this.src)"></div>
+                        <div class="gallery-slide"><img src="assets/playstore/playstore-2.png" alt="Battle Cows - Split & Sprint Maneuvers" onclick="openLightbox(this.src)"></div>
+                        <div class="gallery-slide"><img src="assets/playstore/playstore-3.png" alt="Battle Cows - Dynamic Special Pasture Tiles" onclick="openLightbox(this.src)"></div>
+                        <div class="gallery-slide"><img src="assets/playstore/playstore-4.png" alt="Battle Cows - Local 2-4 Player Pass & Play" onclick="openLightbox(this.src)"></div>
+                        <div class="gallery-slide"><img src="assets/playstore/playstore-5.png" alt="Battle Cows - 50+ Solo Puzzle Levels & AI" onclick="openLightbox(this.src)"></div>
                     </div>
                 </div>
 
@@ -2061,7 +2060,6 @@
                         <span class="g-dot" data-index="2"></span>
                         <span class="g-dot" data-index="3"></span>
                         <span class="g-dot" data-index="4"></span>
-                        <span class="g-dot" data-index="5"></span>
                     </div>
                     <button class="btn-3d btn-wood" id="nextSlideBtn" style="font-size: 0.9rem; padding: 8px 16px;">Next ▶</button>
                 </div>
@@ -2695,7 +2693,7 @@
         const prevBtn = document.getElementById('prevSlideBtn');
         const nextBtn = document.getElementById('nextSlideBtn');
         let currentSlide = 0;
-        const totalSlides = 6;
+        const totalSlides = 5;
 
         function goToSlide(idx) {
             if (idx < 0) idx = totalSlides - 1;
