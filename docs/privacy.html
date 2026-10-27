@@ -4,35 +4,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Privacy Policy — Battle Cows</title>
+    <link rel="icon" type="image/png" href="assets/app_icon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Fredoka:wght@600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --cream: #FFF6E3;
-            --cream-deep: #F5E6C8;
-            --wood: #5D4037;
-            --wood-dark: #3E2723;
-            --wood-darkest: #1B0000;
-            --green: #7CB342;
-            --green-dark: #558B2F;
-            --yellow: #FFD54F;
-            --brown-text: #4E342E;
+            --cream: #FFFDF8;
+            --cream-deep: #FEF7E7;
+            --wood: #78350F;
+            --wood-dark: #2E1507;
+            --wood-darkest: #1C0F06;
+            --green: #10B981;
+            --green-dark: #059669;
+            --yellow: #F59E0B;
+            --brown-text: #2B170C;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Nunito', sans-serif;
             color: var(--brown-text);
             background:
-                radial-gradient(circle at 15% 8%, rgba(255, 213, 79, 0.16), transparent 40%),
+                radial-gradient(circle at 15% 8%, rgba(245, 158, 11, 0.16), transparent 40%),
+                radial-gradient(circle at 85% 25%, rgba(16, 185, 129, 0.12), transparent 45%),
                 linear-gradient(180deg, var(--cream) 0%, var(--cream-deep) 100%);
             min-height: 100vh;
             line-height: 1.65;
         }
         header {
-            background: rgba(255, 246, 227, 0.94);
-            border-bottom: 4px solid var(--wood);
-            box-shadow: 0 4px 0 rgba(93, 64, 55, 0.15);
+            background: rgba(255, 253, 248, 0.94);
+            border-bottom: 4px solid var(--wood-dark);
+            box-shadow: 0 4px 12px rgba(46, 21, 7, 0.12);
             position: sticky;
             top: 0;
             z-index: 10;
@@ -45,24 +47,28 @@
             align-items: center;
             justify-content: space-between;
         }
-        .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-        .brand-icon {
-            width: 40px; height: 40px; border-radius: 11px;
-            background: linear-gradient(180deg, #8BC34A, var(--green-dark));
-            border: 3px solid var(--wood);
-            display: grid; place-items: center; font-size: 20px;
-            box-shadow: 0 3px 0 var(--wood-dark);
+        .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+        .brand-icon-img {
+            width: 42px; height: 42px; border-radius: 12px;
+            border: 2.5px solid var(--wood-dark);
+            box-shadow: 0 3px 0 var(--wood-darkest);
+            object-fit: cover;
         }
         .brand-name {
             font-family: 'Bangers', cursive;
-            font-size: 24px; color: var(--wood-dark);
+            font-size: 26px; color: var(--wood-dark);
             letter-spacing: 2px; text-shadow: 2px 2px 0 var(--yellow);
         }
         .back {
-            font-weight: 800; color: var(--wood); text-decoration: none;
-            padding: 8px 14px; border-radius: 10px;
+            font-family: 'Fredoka', sans-serif;
+            font-weight: 800; color: #ffffff; text-decoration: none;
+            background: linear-gradient(180deg, #10B981, #059669);
+            padding: 8px 18px; border-radius: 12px;
+            border: 2px solid var(--wood-dark);
+            box-shadow: 0 3px 0 var(--wood-darkest);
+            transition: transform 0.1s;
         }
-        .back:hover { background: rgba(93, 64, 55, 0.1); }
+        .back:hover { transform: translateY(-2px); }
         main {
             max-width: 820px; margin: 0 auto; padding: 48px 20px 72px;
         }
@@ -115,7 +121,7 @@
 <header>
     <nav class="nav">
         <a class="brand" href="index.html">
-            <span class="brand-icon" aria-hidden="true">🐄</span>
+            <img src="assets/app_icon.png" alt="Battle Cows" class="brand-icon-img">
             <span class="brand-name">Battle Cows</span>
         </a>
         <a class="back" href="index.html">← Back to site</a>
