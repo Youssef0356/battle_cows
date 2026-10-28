@@ -71,21 +71,21 @@ class HudOverlay extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: isLowTime
-              ? [const Color(0xFF8B0000), const Color(0xFF4E0000)]
-              : [const Color(0xFF4E342E), const Color(0xFF2E1C0C)],
+              ? [const Color(0xFFD32F2F), const Color(0xFF8B0000)]
+              : [const Color(0xFF5D4037), const Color(0xFF3E2723)],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isLowTime ? const Color(0xFFFF5252) : const Color(0xFF8D6E63),
+          color: isLowTime ? const Color(0xFFFF5252) : const Color(0xFFFFD54F),
           width: 2,
         ),
         boxShadow: [
           BoxShadow(
             color: isLowTime
                 ? const Color(0xFFD32F2F).withValues(alpha: 0.5)
-                : Colors.black.withValues(alpha: 0.4),
+                : Colors.black.withValues(alpha: 0.35),
             offset: const Offset(0, 2),
             blurRadius: isLowTime ? 8 : 4,
           ),
@@ -172,15 +172,15 @@ class HudOverlay extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF4E342E), Color(0xFF2E1C0C)],
+          colors: [Color(0xFF5D4037), Color(0xFF3E2723)],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFF8D6E63), width: 2),
+        border: Border.all(color: const Color(0xFFFFD54F), width: 2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.4),
+            color: Colors.black.withValues(alpha: 0.35),
             offset: const Offset(0, 2),
             blurRadius: 4,
           ),
@@ -216,15 +216,16 @@ class HudOverlay extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.only(top: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.55),
+        color: const Color(0xFF3E2723).withValues(alpha: 0.88),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white12),
+        border: Border.all(color: const Color(0xFFFFD54F).withValues(alpha: 0.4), width: 1.5),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.3),
             blurRadius: 4,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -240,18 +241,18 @@ class HudOverlay extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: isTurn
-                    ? [primary, primary.withValues(alpha: 0.75)]
-                    : [Colors.black38, Colors.black45],
+                    ? [primary, primary.withValues(alpha: 0.8)]
+                    : [const Color(0xFF2E1C0C).withValues(alpha: 0.8), const Color(0xFF1B0E06).withValues(alpha: 0.8)],
               ),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: isTurn ? const Color(0xFFFFD54F) : primary.withValues(alpha: 0.4),
-                width: isTurn ? 2.0 : 1.0,
+                color: isTurn ? const Color(0xFFFFD54F) : primary.withValues(alpha: 0.5),
+                width: isTurn ? 2.0 : 1.2,
               ),
               boxShadow: isTurn
                   ? [
                       BoxShadow(
-                        color: primary.withValues(alpha: 0.4),
+                        color: primary.withValues(alpha: 0.5),
                         blurRadius: 6,
                       ),
                     ]

@@ -155,6 +155,24 @@ void main() {
       final mode = ChallengeMode.timed;
       expect(mode.localizedTitle(), isNotEmpty);
       expect(mode.localizedDescription(), isNotEmpty);
+
+      // Pasture Frenzy (stampedeRush) localized checks
+      final frenzy = ChallengeMode.stampedeRush;
+      expect(frenzy.icon, '🌱');
+
+      final en = AppLocalizationsEn();
+      final fr = AppLocalizationsFr();
+      final ar = AppLocalizationsAr();
+
+      expect(en.modeStampedeTitle, 'PASTURE FRENZY');
+      expect(en.modeStampedeDesc, contains('Bonus tiles sprout'));
+      expect(en.modeStampedeDesc, contains('most tiles wins'));
+
+      expect(fr.modeStampedeTitle, 'FRÉNÉSIE DU PÂTURAGE');
+      expect(fr.modeStampedeDesc, contains('tuiles bonus germent'));
+
+      expect(ar.modeStampedeTitle, 'جنون المراعي');
+      expect(ar.modeStampedeDesc, contains('تظهر قطع أراضٍ ومكافآت جديدة'));
     });
 
     test('ShopCategory and ShopItem localize properly', () {

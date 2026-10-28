@@ -63,7 +63,7 @@ extension ChallengeModeDetails on ChallengeMode {
       case ChallengeMode.goldenPasture:
         return '🍀';
       case ChallengeMode.stampedeRush:
-        return '⚡';
+        return '🌱';
     }
   }
 }

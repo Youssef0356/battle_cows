@@ -17,7 +17,9 @@ class GameEngine {
   int _lastCaptureCount = 0;
   ChallengeMode _challengeMode = ChallengeMode.standard;
   final Map<PlayerColor, int> _hearts = {};
-  final Random _random = Random();
+  Random _random = Random();
+  HexPosition? _lastSpawnedPosition;
+  SpecialTileType? _lastSpawnedType;
 
   // ignore: unnecessary_getters_setters
   GameBoard? get board => _board;
@@ -28,20 +30,31 @@ class GameEngine {
   bool get gameOver => _gameOver;
   int get lastCaptureCount => _lastCaptureCount;
   Map<PlayerColor, int> get hearts => Map.unmodifiable(_hearts);
+  HexPosition? get lastSpawnedPosition => _lastSpawnedPosition;
+  SpecialTileType? get lastSpawnedType => _lastSpawnedType;
 
   ChallengeMode get challengeMode => _challengeMode;
 
-  void initializeGame(GameBoard board, List<Player> players, {ChallengeMode challengeMode = ChallengeMode.standard}) {
+  void initializeGame(
+    GameBoard board,
+    List<Player> players, {
+    ChallengeMode challengeMode = ChallengeMode.standard,
+    Random? random,
+  }) {
     _board = board;
     _players = players;
     _currentPlayerIndex = 0;
     _turnCount = 0;
     _gameOver = false;
     _challengeMode = challengeMode;
+    if (random != null) _random = random;
+    _lastSpawnedPosition = null;
+    _lastSpawnedType = null;
     _hearts.clear();
     for (final player in players) {
       _hearts[player.color] = 3;
     }
+    checkGameOver();
   }
 
   List<Move> getValidMoves(PlayerColor playerColor) {
@@ -106,16 +119,17 @@ class GameEngine {
 
     var movedCows = move.splitCount;
     final targetCell = _board!.getCell(move.to);
-    if (targetCell?.specialType == SpecialTileType.hayBale) {
-      movedCows++;
-    } else if (targetCell?.specialType == SpecialTileType.goldenPasture) {
+    if (targetCell?.specialType == SpecialTileType.goldenPasture) {
       movedCows++; // Golden pasture nourishes the herd with an extra cow
     }
     herds.add(Herd(position: move.to, owner: move.player, size: movedCows));
 
     final updatedCells = Map<HexPosition, HexCell>.from(_board!.cells);
-    if (targetCell?.specialType == SpecialTileType.hayBale) {
-      updatedCells[move.to] = targetCell!.copyWith(specialType: SpecialTileType.none);
+
+    _lastSpawnedPosition = null;
+    _lastSpawnedType = null;
+    if (_challengeMode == ChallengeMode.stampedeRush) {
+      _spawnBonusTile(updatedCells, herds);
     }
 
     _board = GameBoard(
@@ -126,13 +140,16 @@ class GameEngine {
     _turnCount++;
     _currentPlayerIndex = (_currentPlayerIndex + 1) % _players.length;
 
-    _checkGameOver();
+    checkGameOver();
 
     return true;
   }
 
-  void _checkGameOver() {
-    if (_board == null) return;
+  void checkGameOver() {
+    if (_board == null || _board!.herds.isEmpty) {
+      _gameOver = false;
+      return;
+    }
 
     for (final player in _players) {
       final moves = getValidMoves(player.color);
@@ -142,6 +159,29 @@ class GameEngine {
       }
     }
     _gameOver = true;
+  }
+
+  void _spawnBonusTile(Map<HexPosition, HexCell> cells, List<Herd> herds) {
+    final occupiedPositions = herds.where((h) => h.size > 0).map((h) => h.position).toSet();
+    final eligiblePositions = cells.entries
+        .where((entry) =>
+            !entry.value.isObstacle &&
+            entry.value.specialType == SpecialTileType.none &&
+            !occupiedPositions.contains(entry.key))
+        .map((entry) => entry.key)
+        .toList();
+
+    if (eligiblePositions.isEmpty) return;
+
+    final targetHex = eligiblePositions[_random.nextInt(eligiblePositions.length)];
+    final currentCell = cells[targetHex]!;
+    // 80% chance for Hay Bale (+1 cow bonus), 20% for Golden Pasture (+1 cow & 3x territory points)
+    final isGolden = _random.nextDouble() < 0.20;
+    final special = isGolden ? SpecialTileType.goldenPasture : SpecialTileType.hayBale;
+
+    cells[targetHex] = currentCell.copyWith(specialType: special);
+    _lastSpawnedPosition = targetHex;
+    _lastSpawnedType = special;
   }
 
   bool hasLegalMoves(PlayerColor playerColor) {

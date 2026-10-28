@@ -6,6 +6,7 @@ import '../../core/localization/app_localizations.dart';
 import '../../core/localization/locale_controller.dart';
 import '../../data/services/premium_service.dart';
 import '../../data/services/progress_service.dart';
+import '../../flame/audio_manager.dart';
 import '../dialogs/premium_dialog.dart';
 import '../widgets/kenney_button.dart';
 import '../widgets/cartoon_dialog.dart';
@@ -27,6 +28,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
+    _soundEnabled = AudioManager().sfxEnabled;
+    _musicEnabled = AudioManager().musicEnabled;
     _loadProgress();
   }
 
@@ -83,12 +86,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   _buildToggleRow(
                     l10n.soundEffects,
                     _soundEnabled,
-                    () => setState(() => _soundEnabled = !_soundEnabled),
+                    () async {
+                      setState(() => _soundEnabled = !_soundEnabled);
+                      await AudioManager().toggleSfx();
+                    },
                   ),
                   _buildToggleRow(
                     l10n.music,
                     _musicEnabled,
-                    () => setState(() => _musicEnabled = !_musicEnabled),
+                    () async {
+                      setState(() => _musicEnabled = !_musicEnabled);
+                      await AudioManager().toggleMusic();
+                    },
                   ),
                   _buildToggleRow(
                     l10n.hapticFeedback,

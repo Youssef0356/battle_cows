@@ -24,6 +24,7 @@ import 'components/background_component.dart';
 import 'components/board_border_component.dart';
 import 'components/move_animation_component.dart';
 import 'components/placement_preview_component.dart';
+import 'components/floating_pop_component.dart';
 import 'audio_manager.dart';
 
 class BattleCowsGame extends FlameGame with DragCallbacks {
@@ -159,6 +160,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
   final BoardBuilder _boardBuilder = BoardBuilder();
   final List<void Function()> _stateListeners = [];
   int _sessionId = 0;
+  bool _gameInitialized = false; // true after _initializeGame() runs once
 
   double get _hexSize {
     return BattleCowsGame.hexSizeFor(
@@ -326,6 +328,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
   void _initializeGame() {
     _sessionId++;
     _engine = GameEngine();
+    _gameInitialized = true;
     isGameOver = false;
     winner = null;
     selectedPosition = null;
@@ -394,6 +397,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
       _previewComponent = PlacementPreviewComponent(
         position: Vector2.zero(),
         hexSize: _hexSize,
+        getPlacedHexes: () => _boardBuilder.placedHexes.toList(),
       );
       world.add(_previewComponent!);
 
@@ -412,8 +416,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
       world.add(_boardComponent!);
     }
 
-    camera.viewfinder.position = Vector2.zero();
-    camera.viewfinder.anchor = Anchor.center;
+    centerCameraOnBoard();
   }
 
   void _rebuildPlacementCells() {
@@ -444,23 +447,41 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
   }
 
   bool _isTileWithinBounds(PastureTile tile) {
-    final hexSize = _hexSize;
-    const horizontalMarginFraction = 0.23;
-    const topMarginFraction = 0.34;
-    const bottomMarginFraction = 0.23;
-    final halfW = size.x / 2;
-    final halfH = size.y / 2;
-    final marginX = halfW * horizontalMarginFraction;
-    final topMargin = halfH * topMarginFraction;
-    final bottomMargin = halfH * bottomMarginFraction;
+    if (size.x <= 0 || size.y <= 0) return true;
 
-    for (final pos in tile.hexes) {
+    final hexSize = _hexSize;
+    final allHexes = <HexPosition>[
+      ..._boardBuilder.placedHexes,
+      ...tile.hexes,
+    ];
+
+    double minX = double.infinity, maxX = double.negativeInfinity;
+    double minY = double.infinity, maxY = double.negativeInfinity;
+
+    for (final pos in allHexes) {
       final px = hexSize * (sqrt(3) * pos.q + sqrt(3) / 2 * pos.r);
       final py = hexSize * (3.0 / 2 * pos.r);
-      if (px < -halfW + marginX || px > halfW - marginX) return false;
-      if (py < -halfH + topMargin || py > halfH - bottomMargin) return false;
+      if (px < minX) minX = px;
+      if (px > maxX) maxX = px;
+      if (py < minY) minY = py;
+      if (py > maxY) maxY = py;
     }
-    return true;
+
+    final totalWidth = (maxX - minX) + hexSize * 1.8;
+    final totalHeight = (maxY - minY) + hexSize * 1.8;
+
+    final isLandscape = size.x > size.y;
+    final topReserved = isLandscape ? 85.0 : 115.0;
+    final bottomReserved = isLandscape ? 80.0 : 130.0;
+    const sideMargin = 16.0;
+
+    final availW = (size.x - sideMargin * 2).clamp(120.0, 5000.0);
+    final availH = (size.y - topReserved - bottomReserved).clamp(120.0, 5000.0);
+
+    // Responsive minimum zoom: allows expanding comfortably on tablets, landscape, and large pastures.
+    const minPlayableZoom = 0.50;
+    return (totalWidth * minPlayableZoom <= availW) &&
+           (totalHeight * minPlayableZoom <= availH);
   }
 
   Future<void> setBackgroundAsset(String assetPath) async {
@@ -517,6 +538,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
     for (final hex in translated.hexes) {
       _boardComponent?.addCell(hex);
     }
+    centerCameraOnBoard();
 
     if (!_allTilesPlaced) {
       _advancePlacementTurn();
@@ -622,8 +644,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
     );
     world.add(_borderComponent!);
 
-    camera.viewfinder.position = Vector2.zero();
-    camera.viewfinder.anchor = Anchor.center;
+    centerCameraOnBoard();
 
     _startHerdPlacement();
 
@@ -660,17 +681,99 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
     _shakeStrength = strength;
   }
 
+  @override
+  void onGameResize(Vector2 size) {
+    super.onGameResize(size);
+    if (_backgroundComponent != null) {
+      _backgroundComponent!.size = size;
+    }
+    // Recenter board dynamically whenever the screen size changes.
+    centerCameraOnBoard();
+  }
+
+  // ─── Board-centering helpers ─────────────────────────────────────────────
+
+  /// Returns the geometric centre (in world-space pixels) of all currently
+  /// visible hexes: placed tiles during placement phase, board cells otherwise.
+  Vector2 calculateBoardCenter() {
+    final hexes = _isPlacementPhase
+        ? (_boardBuilder.placedHexes.isNotEmpty
+            ? _boardBuilder.placedHexes.toList()
+            : (_currentTile != null
+                ? _currentTile!.translate(_tileOffset).hexes
+                : const <HexPosition>[]))
+        : (_engine.board?.cells.keys.toList() ?? const <HexPosition>[]);
+
+    if (hexes.isEmpty) return Vector2(0, -12);
+
+    final hs = _hexSize;
+    double minX = double.infinity, maxX = double.negativeInfinity;
+    double minY = double.infinity, maxY = double.negativeInfinity;
+
+    for (final h in hexes) {
+      final px = hs * (sqrt(3) * h.q + sqrt(3) / 2 * h.r);
+      final py = hs * (3.0 / 2 * h.r);
+      if (px < minX) minX = px;
+      if (px > maxX) maxX = px;
+      if (py < minY) minY = py;
+      if (py > maxY) maxY = py;
+    }
+
+    return Vector2((minX + maxX) / 2.0, (minY + maxY) / 2.0);
+  }
+
+  /// Centres the camera on the board and auto-fits the zoom so the entire
+  /// board is visible within the playable area (between the two HUD rows).
+  void centerCameraOnBoard() {
+    if (!_gameInitialized) return;
+    if (size.x <= 0 || size.y <= 0) return;
+
+    final center = calculateBoardCenter();
+    final isLandscape = size.x > size.y;
+    final double topHud = isLandscape ? 85.0 : 115.0;
+    final double botHud = isLandscape ? 80.0 : 130.0;
+    final verticalShift = (topHud - botHud) / 2.0;
+    userCameraOffset = Vector2(center.x, center.y + verticalShift);
+    camera.viewfinder.position = userCameraOffset;
+
+    // Auto-zoom: fit the board inside the available playable window.
+    final hexes = _isPlacementPhase
+        ? (_boardBuilder.placedHexes.isNotEmpty
+            ? _boardBuilder.placedHexes.toList()
+            : (_currentTile?.translate(_tileOffset).hexes ?? const <HexPosition>[]))
+        : (_engine.board?.cells.keys.toList() ?? const <HexPosition>[]);
+
+    if (hexes.isNotEmpty) {
+      final hs = _hexSize;
+      double minX = double.infinity, maxX = double.negativeInfinity;
+      double minY = double.infinity, maxY = double.negativeInfinity;
+      for (final h in hexes) {
+        final px = hs * (sqrt(3) * h.q + sqrt(3) / 2 * h.r);
+        final py = hs * (3.0 / 2 * h.r);
+        if (px < minX) minX = px;
+        if (px > maxX) maxX = px;
+        if (py < minY) minY = py;
+        if (py > maxY) maxY = py;
+      }
+      final boardW = (maxX - minX) + hs * 2.2;
+      final boardH = (maxY - minY) + hs * 2.2;
+      final availW = (size.x - 32.0).clamp(120.0, 5000.0);
+      final availH = (size.y - topHud - botHud).clamp(120.0, 5000.0);
+      final fitZoom = min(availW / boardW, availH / boardH);
+      camera.viewfinder.zoom = fitZoom.clamp(0.50, 1.30);
+    }
+
+    camera.viewfinder.anchor = Anchor.center;
+  }
+
   void resetCameraPosition() {
-    userCameraOffset = Vector2.zero();
-    camera.viewfinder.position = Vector2.zero();
-    camera.viewfinder.zoom = 1.0;
+    centerCameraOnBoard();
   }
 
   void _computeValidHerdPositions() {
     final allHexes = _engine.board!.cells.keys.toList();
-    final herds = _engine.board!.herds.map((h) => h.position).toSet();
     final outerHexes = BoardGenerator.getOuterHexes(allHexes);
-    _validHerdPositions = outerHexes.where((h) => !herds.contains(h)).toList();
+    _validHerdPositions = outerHexes.where((h) => _engine.board?.isEmpty(h) ?? false).toList();
 
     _boardComponent?.updateBoard(_engine.board!);
     _boardComponent?.updateSelection(null, _validHerdPositions);
@@ -692,9 +795,22 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
     if (cell != null) {
       cell.herd = herd;
       cell.territoryOwner = herd.owner;
+      cell.triggerBounce();
+    }
+
+    final pixelPos = _boardComponent?.hexToPixel(position, _hexSize);
+    if (pixelPos != null) {
+      add(LandingImpactComponent(position: pixelPos));
+      add(FloatingPopComponent(
+        text: '🐮 MOO!',
+        color: AppColors.getPlayerPrimary(player.color),
+        position: Vector2(pixelPos.x, pixelPos.y - 20),
+        fontSize: 15.0,
+      ));
     }
 
     shakeCamera(strength: 2.5);
+    AudioManager().playHerdPlace();
 
     _herdPlacementPlayerIndex++;
 
@@ -720,11 +836,16 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
   void _finishHerdPlacement() {
     _isHerdPlacementPhase = false;
     _validHerdPositions = [];
+    selectedPosition = null;
+    validMoves = [];
+    _boardComponent?.updateSelection(null, []);
 
+    _engine.checkGameOver();
     _boardComponent?.updateBoard(_engine.board!);
 
     _updateCounts();
     _startTimer();
+    AudioManager().startMusic();
 
     onPlacementComplete?.call();
     notifyStateChanged();
@@ -1090,6 +1211,8 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
       to: toPixel,
       count: move.splitCount,
       color: AppColors.getPlayerPrimary(herd.owner),
+      playerColor: herd.owner,
+      skinOverride: (herd.owner == _localPlayerColor) ? equippedSkin : null,
       onComplete: () {
         _isAnimating = false;
         executeMove(move);
@@ -1099,12 +1222,31 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
   }
 
   void executeMove(Move move) {
+    final prevCell = _engine.board?.getCell(move.to);
+    final ateBonus = prevCell?.specialType == SpecialTileType.hayBale ||
+        prevCell?.specialType == SpecialTileType.goldenPasture;
+
     _engine.executeMove(move);
     selectedPosition = null;
     validMoves = [];
     _updateCounts();
     _boardComponent?.updateBoard(_engine.board!);
+    _boardComponent?.triggerCellBounce(move.to);
+
+    final hexSize = _hexSize;
+    final toPixel = _boardComponent!.hexToPixel(move.to, hexSize);
+    add(LandingImpactComponent(position: toPixel));
+
     AudioManager().playMove();
+    if (ateBonus) {
+      AudioManager().playHay();
+      add(FloatingPopComponent(
+        text: prevCell?.specialType == SpecialTileType.goldenPasture ? '🌟 GOLDEN PASTURE!' : '🌾 HAY BONUS!',
+        color: const Color(0xFFFFD54F),
+        position: Vector2(toPixel.x, toPixel.y - 20),
+        fontSize: 15.0,
+      ));
+    }
     shakeCamera(strength: 1.5);
     onMove?.call(move);
 
@@ -1116,6 +1258,19 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
       shakeCamera(strength: min(8.0, 2.5 + captureCount));
       capturesPerPlayer[move.player] = (capturesPerPlayer[move.player] ?? 0) + captureCount;
       onCapture?.call(captureCount, move.player);
+      add(FloatingPopComponent(
+        text: captureCount > 3 ? '⚔️ STAMPEDE! +$captureCount' : '⚔️ +$captureCount CLAIMED!',
+        color: AppColors.getPlayerPrimary(move.player),
+        position: Vector2(toPixel.x, toPixel.y - 24),
+        fontSize: 16.0,
+      ));
+    } else if (!ateBonus) {
+      add(FloatingPopComponent(
+        text: '+${move.splitCount}',
+        color: AppColors.getPlayerPrimary(move.player),
+        position: Vector2(toPixel.x, toPixel.y - 14),
+        fontSize: 13.0,
+      ));
     }
 
     _updateLargestHerd();
@@ -1150,6 +1305,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
     isGameOver = true;
     winner = _engine.determineWinner();
     _updateCounts();
+    AudioManager().stopMusic();
     AudioManager().playGameOver();
     if (!suppressAds) AdManager().loadInterstitialAd();
     onGameOver?.call(winner, territoryCounts);

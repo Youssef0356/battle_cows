@@ -44,10 +44,9 @@ class BoardGenerator {
         specials[sorted[sorted.length * 2 ~/ 3]] = SpecialTileType.hayBale;
       }
     } else if (mode == ChallengeMode.stampedeRush) {
-      if (sorted.length > 4) specials[sorted[sorted.length ~/ 4]] = SpecialTileType.hayBale;
-      if (sorted.length > 8) specials[sorted[sorted.length ~/ 2]] = SpecialTileType.hayBale;
-      if (sorted.length > 12) specials[sorted[sorted.length * 3 ~/ 4]] = SpecialTileType.hayBale;
-      if (sorted.length > 10) specials[sorted[sorted.length ~/ 3]] = SpecialTileType.mud;
+      if (sorted.length > 3) specials[sorted[sorted.length ~/ 3]] = SpecialTileType.hayBale;
+      if (sorted.length > 6) specials[sorted[sorted.length * 2 ~/ 3]] = SpecialTileType.hayBale;
+      if (sorted.length > 8) specials[sorted[sorted.length ~/ 2]] = SpecialTileType.goldenPasture;
     } else if (mode == ChallengeMode.timed) {
       if (sorted.length > 3) specials[sorted[sorted.length ~/ 3]] = SpecialTileType.hayBale;
     }

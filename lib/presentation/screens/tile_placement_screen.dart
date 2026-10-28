@@ -374,7 +374,8 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
     return LayoutBuilder(
       builder: (context, constraints) {
         final boardDimension = min(constraints.maxWidth, constraints.maxHeight) * 0.92;
-        final hexSize = boardDimension / 16;
+        final divisor = (11.5 + _builder.placedTiles.length * 0.35).clamp(11.5, 15.0);
+        final hexSize = boardDimension / divisor;
 
         return GestureDetector(
           onPanStart: (details) {
@@ -422,20 +423,21 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.touch_app_rounded, color: Colors.white54, size: 48),
+                          const Icon(Icons.touch_app_rounded, color: Color(0xFFFFD54F), size: 48),
                           const SizedBox(height: 8),
                           Text(
-                            'DRAG TILE ONTO THE BOARD\nOR TAP TO PLACE',
+                            'PLACE YOUR FIRST PASTURE HERE!',
                             textAlign: TextAlign.center,
                             style: AppFonts.bangers(
                               fontSize: 16,
-                              color: Colors.white70,
+                              color: const Color(0xFFFFD54F),
                               letterSpacing: 1.5,
                             ),
                           ),
                         ],
                       ),
                     ),
+                  ..._buildDockingSlots(hexSize, boardDimension),
                   ..._buildPlacedTiles(hexSize, boardDimension),
                   if (_currentTile != null)
                     ..._buildPreviewTile(hexSize, boardDimension),
@@ -446,6 +448,30 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
         );
       },
     );
+  }
+
+  List<Widget> _buildDockingSlots(double hexSize, double boardDimension) {
+    if (_builder.placedHexes.isEmpty) return const [];
+    final widgets = <Widget>[];
+    final center = Offset(boardDimension / 2, boardDimension / 2);
+    final outerHexes = BoardGenerator.getOuterHexes(_builder.placedHexes);
+
+    for (final hex in outerHexes) {
+      final pixelPos = _hexToPixel(hex, hexSize, center);
+      widgets.add(
+        Positioned(
+          left: pixelPos.dx - hexSize,
+          top: pixelPos.dy - hexSize,
+          child: IgnorePointer(
+            child: CustomPaint(
+              size: Size(hexSize * 2, hexSize * 2),
+              painter: _DockingHexPainter(),
+            ),
+          ),
+        ),
+      );
+    }
+    return widgets;
   }
 
   void _updateSnappedHexOffset(Offset globalPos, double hexSize) {
@@ -526,10 +552,14 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF2E1C0C).withValues(alpha: 0.95),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF5D4037), Color(0xFF3E2723)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: AppColors.getPlayerPrimary(_currentPlayer.color),
+          color: const Color(0xFFFFD54F),
           width: 2,
         ),
         boxShadow: [
@@ -550,7 +580,7 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
               decoration: BoxDecoration(
                 color: Colors.black38,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.white24),
+                border: Border.all(color: const Color(0xFFFFD54F).withValues(alpha: 0.5)),
               ),
               child: Row(
                 children: [
@@ -588,9 +618,20 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: const Color(0xFF5D4037),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF8D6E63), Color(0xFF5D4037)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF8D6E63), width: 1.5),
+                border: Border.all(color: const Color(0xFFFFD54F), width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.3),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Row(
                 children: [
@@ -614,15 +655,26 @@ class _TilePlacementScreenState extends State<TilePlacementScreen> with TickerPr
                 gradient: canPlace
                     ? const LinearGradient(
                         colors: [Color(0xFF66BB6A), Color(0xFF2E7D32)],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
                       )
                     : LinearGradient(
                         colors: [Colors.grey.shade700, Colors.grey.shade800],
                       ),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: canPlace ? Colors.white : Colors.white24,
-                  width: 1.5,
+                  color: canPlace ? const Color(0xFFFFD54F) : Colors.white24,
+                  width: 1.8,
                 ),
+                boxShadow: canPlace
+                    ? [
+                        BoxShadow(
+                          color: const Color(0xFF66BB6A).withValues(alpha: 0.5),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ]
+                    : null,
               ),
               child: Text(
                 AppLocalizations.of(context).place.toUpperCase(),
@@ -790,13 +842,20 @@ class _HexPainter extends CustomPainter {
     }
     canvas.restore();
 
-    // Hex border
+    // Hex double border: crisp outer rim + inner soft highlight
     canvas.drawPath(
       path,
       Paint()
         ..color = border
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 2,
+        ..strokeWidth = 2.6,
+    );
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = Colors.white.withValues(alpha: 0.28)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.0,
     );
   }
 
@@ -806,4 +865,42 @@ class _HexPainter extends CustomPainter {
       oldDelegate.border != border ||
       oldDelegate.texture != texture ||
       oldDelegate.flipMode != flipMode;
+}
+
+class _DockingHexPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+
+    final path = Path();
+    for (var i = 0; i < 6; i++) {
+      final angle = (pi / 3) * i - pi / 6;
+      final point = Offset(
+        center.dx + radius * cos(angle),
+        center.dy + radius * sin(angle),
+      );
+      if (i == 0) {
+        path.moveTo(point.dx, point.dy);
+      } else {
+        path.lineTo(point.dx, point.dy);
+      }
+    }
+    path.close();
+
+    // Soft dashed glow
+    final fillPaint = Paint()
+      ..color = const Color(0xFF66BB6A).withValues(alpha: 0.12)
+      ..style = PaintingStyle.fill;
+    canvas.drawPath(path, fillPaint);
+
+    final borderPaint = Paint()
+      ..color = const Color(0xFF81C784).withValues(alpha: 0.55)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.8;
+    canvas.drawPath(path, borderPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

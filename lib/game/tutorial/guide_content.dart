@@ -197,17 +197,17 @@ class GuideContent {
       ],
     ),
     GuideMode(
-      startPath: 'HOME  >  CHALLENGES  >  STAMPEDE RUSH   (or LOCAL MULTIPLAYER > GAME MODE)',
+      startPath: 'HOME  >  CHALLENGES  >  PASTURE FRENZY   (or LOCAL MULTIPLAYER > GAME MODE)',
       rules: [
-        'Hay bales and mud patches scatter across the meadow.',
-        'Claiming hay bales awards +1 cow directly into your advancing herd.',
-        'Herds of 4+ cows unleash high-velocity stampede slides.',
-        'Mud terrain costs 2 movement to cross - navigate around it or muscle through!',
+        'Fresh bonus tiles sprout across open pastures after every player turn!',
+        'Hay bales award +1 bonus cow directly into your herd when claimed.',
+        'Golden pastures nourish your cows and award 3x territory points.',
+        'The player holding the most tiles at the end of the match wins!',
       ],
       tips: [
-        'Route your splits directly through hay bales to grow your cow count.',
-        'Herd size is king: big herds cross vast distances in a single charge.',
-        'Use mud bogs to slow down enemy pursuing herds.',
+        'Dash toward newly sprouted hay bales early to snowball your cow numbers.',
+        'Use split moves to rapidly claim open tiles before your opponent reaches them.',
+        'Fortify golden pasture tiles with stout herds to secure maximum points.',
       ],
     ),
   ];

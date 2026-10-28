@@ -83,8 +83,8 @@ class AppLocalizationsAr implements AppLocalizations {
   @override String get modeFenceDesc => 'ضع وحرّك الأسوار الخشبية لحصار قطعان المنافسين!';
   @override String get modeGoldenTitle => 'المرعى الذهبي';
   @override String get modeGoldenDesc => 'المرعى الذهبي في المنتصف يمنح +1 بقرة إضافية ونقاطاً ثلاثية!';
-  @override String get modeStampedeTitle => 'الاجتياح الكاسح';
-  @override String get modeStampedeDesc => 'حزم القش تفجر الحماسة! القطعان الكبيرة (4+) تنطلق بقوة اندفاع خارقة!';
+  @override String get modeStampedeTitle => 'جنون المراعي';
+  @override String get modeStampedeDesc => 'تظهر قطع أراضٍ ومكافآت جديدة بعد كل دور! التهم القش لتوسيع قطيعك—الفائز هو الأكثر امتلاكاً للأراضي!';
 
   // --- Quests ---
   @override String get dailyQuestsTitle => 'المهمات اليومية';

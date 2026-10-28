@@ -83,8 +83,8 @@ class AppLocalizationsEn implements AppLocalizations {
   @override String get modeFenceDesc => 'Place & move wooden fences each turn to block and trap enemy herds!';
   @override String get modeGoldenTitle => 'GOLDEN PASTURE';
   @override String get modeGoldenDesc => 'Central Golden Pasture grants +1 bonus cow and 3x territory points!';
-  @override String get modeStampedeTitle => 'STAMPEDE RUSH';
-  @override String get modeStampedeDesc => 'Hay bales boost herds! Herds of 4+ move with blazing stampede power!';
+  @override String get modeStampedeTitle => 'PASTURE FRENZY';
+  @override String get modeStampedeDesc => 'Bonus tiles sprout after every turn! Eat hay to expand—player with the most tiles wins!';
 
   // --- Quests ---
   @override String get dailyQuestsTitle => 'DAILY QUESTS';

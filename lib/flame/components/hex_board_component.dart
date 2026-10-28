@@ -129,6 +129,10 @@ class HexBoardComponent extends PositionComponent {
     _validMoves = validMoves;
   }
 
+  void triggerCellBounce(HexPosition pos) {
+    _cells[pos]?.triggerBounce();
+  }
+
   void updateBoard(GameBoard newBoard) {
     for (final entry in _cells.entries) {
       final pos = entry.key;

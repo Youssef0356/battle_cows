@@ -83,8 +83,8 @@ class AppLocalizationsFr implements AppLocalizations {
   @override String get modeFenceDesc => 'Posez et bougez des barrières en bois pour coincer vos rivaux !';
   @override String get modeGoldenTitle => 'PÂTURAGE DORÉ';
   @override String get modeGoldenDesc => 'Le pré doré au centre offre +1 vache bonus et triple vos points !';
-  @override String get modeStampedeTitle => 'RUÉE SAUVAGE';
-  @override String get modeStampedeDesc => 'Le foin donne des ailes ! Les groupes de 4+ foncent à toute allure !';
+  @override String get modeStampedeTitle => 'FRÉNÉSIE DU PÂTURAGE';
+  @override String get modeStampedeDesc => 'Des tuiles bonus germent après chaque tour ! Mangez le foin pour grandir—le joueur avec le plus de tuiles gagne !';
 
   // --- Quests ---
   @override String get dailyQuestsTitle => 'QUÊTES QUOTIDIENNES';

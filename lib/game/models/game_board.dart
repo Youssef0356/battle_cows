@@ -43,6 +43,8 @@ class GameBoard {
         cell.isEmpty &&
         !cell.isObstacle &&
         cell.specialType != SpecialTileType.fenceGate &&
+        cell.specialType != SpecialTileType.hayBale &&
+        cell.specialType != SpecialTileType.waterPond &&
         !hasHerdAt(pos);
   }
 
@@ -63,6 +65,7 @@ class GameBoard {
     for (final dir in HexPosition.directions) {
       var current = from;
       var distanceUsed = 0;
+      HexPosition? lastValid;
       while (distanceUsed < maxDistance) {
         final next = current + dir;
         if (!isValidPosition(next)) break;
@@ -70,12 +73,16 @@ class GameBoard {
         if (cells[next]?.isObstacle == true) break;
         if (specialAt(next) == SpecialTileType.waterPond) break;
         if (specialAt(next) == SpecialTileType.fenceGate) break;
+        if (specialAt(next) == SpecialTileType.hayBale) break;
         if (hasHerdAt(next)) break;
         final stepCost = specialAt(next) == SpecialTileType.mud ? 2 : 1;
         if (distanceUsed + stepCost > maxDistance) break;
-        reachable.add(next);
+        lastValid = next;
         current = next;
         distanceUsed += stepCost;
+      }
+      if (lastValid != null) {
+        reachable.add(lastValid);
       }
     }
     return reachable;

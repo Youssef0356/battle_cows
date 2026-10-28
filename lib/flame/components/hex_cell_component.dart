@@ -25,6 +25,20 @@ class HexCellComponent extends PositionComponent {
   ui.Image? _specialImage;
   ui.Image? _cowImage;
   double _lifeTime = 0;
+  double _bounceTimer = 0.0;
+
+  void triggerBounce() {
+    _bounceTimer = 0.35;
+  }
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    _lifeTime += dt;
+    if (_bounceTimer > 0) {
+      _bounceTimer = max(0.0, _bounceTimer - dt);
+    }
+  }
 
   static final Map<String, ui.Image> imageCache = {};
 
@@ -178,7 +192,6 @@ class HexCellComponent extends PositionComponent {
 
   @override
   void render(Canvas canvas) {
-    _lifeTime += 0.016;
     final center = Vector2(size.x / 2, size.y / 2);
     final hexRadius = size.x / 2;
 
@@ -195,14 +208,17 @@ class HexCellComponent extends PositionComponent {
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
       canvas.drawPath(path, goldGlow);
     }
-    final hasSpecialTile = cell.specialType != SpecialTileType.none && _specialImage != null;
     final turnColor =
         (turnOwner != null && herd != null && herd!.size > 0 && herd!.owner == turnOwner)
             ? AppColors.getPlayerPrimary(turnOwner!)
             : null;
-    if (!hasSpecialTile || turnColor != null) {
-      _drawHexBorder(canvas, path, color: turnColor);
-    }
+    final borderColor = turnColor ??
+        (cell.specialType == SpecialTileType.goldenPasture
+            ? const Color(0xFFFFD700)
+            : (cell.specialType == SpecialTileType.hayBale
+                ? const Color(0xFFE6A100)
+                : null));
+    _drawHexBorder(canvas, path, color: borderColor);
 
     if (cell.isObstacle) {
       _drawObstacleFenceOrRock(canvas, center, hexRadius);
@@ -217,18 +233,68 @@ class HexCellComponent extends PositionComponent {
     }
 
     if (herd != null && herd!.size > 0) {
-      final bob = sin(_lifeTime * 2.2 + cell.position.q * 0.8 + cell.position.r * 0.45) * 2.2;
+      double squashX = 1.0;
+      double squashY = 1.0;
+      double yOffset = 0.0;
+      double rotation = 0.0;
+
+      // 1. Landing bounce squash-and-stretch
+      if (_bounceTimer > 0) {
+        final t = 1.0 - (_bounceTimer / 0.35);
+        final wave = sin(t * pi * 3.5) * exp(-3.0 * t);
+        squashX += wave * 0.22;
+        squashY -= wave * 0.22;
+      }
+
+      // 2. Selected eager bounce vs. idle breathing & personality
+      if (isSelected) {
+        final hop = sin(_lifeTime * 9.0).abs() * 5.0;
+        yOffset -= hop;
+        rotation = sin(_lifeTime * 12.0) * 0.07;
+        squashX += 0.04;
+        squashY -= 0.04;
+      } else {
+        // Idle gentle breathing
+        final breath = sin(_lifeTime * 2.5 + cell.position.q * 1.2 + cell.position.r * 0.8);
+        final bob = sin(_lifeTime * 2.2 + cell.position.q * 0.8 + cell.position.r * 0.45) * 2.0;
+        yOffset += bob;
+        squashX += breath * 0.03;
+        squashY -= breath * 0.03;
+
+        // Occasional playful ear wiggle / head tilt
+        final earCycle = (_lifeTime * 0.75 + cell.position.q * 2.1 + cell.position.r * 1.5) % 4.5;
+        if (earCycle < 0.4) {
+          rotation = sin(earCycle / 0.4 * pi * 4) * 0.07;
+        }
+      }
+
       if (_cowImage != null) {
-        _drawAsset(canvas, _cowImage!, center, hexRadius * 0.78, bob);
+        _drawAsset(
+          canvas,
+          _cowImage!,
+          center,
+          hexRadius * 0.78,
+          yOffset,
+          scaleX: squashX,
+          scaleY: squashY,
+          rotation: rotation,
+        );
         _drawCowCountBadge(
           canvas,
-          Offset(center.x + hexRadius * 0.32, center.y + bob + hexRadius * 0.28),
+          Offset(center.x + hexRadius * 0.32 * squashX, center.y + yOffset + hexRadius * 0.28 * squashY),
           hexRadius * 0.7,
           herd!.size,
           AppColors.getPlayerPrimary(herd!.owner),
         );
       } else {
-        _drawCowPieceWithShield(canvas, Vector2(center.x, center.y + bob), hexRadius);
+        _drawCowPieceWithShield(
+          canvas,
+          Vector2(center.x, center.y + yOffset),
+          hexRadius,
+          scaleX: squashX,
+          scaleY: squashY,
+          rotation: rotation,
+        );
       }
     }
   }
@@ -314,12 +380,11 @@ class HexCellComponent extends PositionComponent {
     canvas.save();
     canvas.clipPath(path);
 
-    if (cell.specialType != SpecialTileType.none && _specialImage != null) {
-      _drawFullTileAsset(canvas, _specialImage!, center, radius);
-    } else if (texture != null && !cell.isObstacle) {
-      _drawTexture(canvas, center, radius);
-    } else if (cell.isObstacle) {
+    // 1. ALWAYS draw authentic pasture base so every tile matches the board design
+    if (cell.isObstacle) {
       canvas.drawPath(path, Paint()..color = const Color(0xFF4E342E));
+    } else if (texture != null) {
+      _drawTexture(canvas, center, radius);
     } else {
       final grassShades = [
         const Color(0xFF689F38),
@@ -329,6 +394,31 @@ class HexCellComponent extends PositionComponent {
       canvas.drawPath(path, Paint()..color = grassShades[cell.position.q.abs() % 3]);
     }
 
+    // 2. Thematic pasture glow / aura for special tile types
+    if (cell.specialType == SpecialTileType.goldenPasture) {
+      final goldenPulse = (sin(_lifeTime * 3.5) + 1.0) / 2.0;
+      canvas.drawPath(
+        path,
+        Paint()
+          ..color = const Color(0xFFFFD54F).withValues(alpha: 0.22 + goldenPulse * 0.14)
+          ..blendMode = BlendMode.srcOver,
+      );
+    } else if (cell.specialType == SpecialTileType.hayBale) {
+      canvas.drawCircle(
+        Offset(center.x, center.y),
+        radius * 0.72,
+        Paint()
+          ..color = const Color(0xFFFFE082).withValues(alpha: 0.18)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
+      );
+    }
+
+    // 3. Draw clean cartoon special prop on the pasture
+    if (cell.specialType != SpecialTileType.none && _specialImage != null) {
+      _drawSpecialProp(canvas, _specialImage!, center, radius);
+    }
+
+    // 4. Territory ownership & herd tints
     if (territoryOwner != null && (herd == null || herd!.size == 0)) {
       final tint = AppColors.getPlayerPrimary(territoryOwner!).withValues(alpha: 0.15);
       canvas.drawPath(path, Paint()..color = tint);
@@ -342,6 +432,35 @@ class HexCellComponent extends PositionComponent {
     }
 
     canvas.restore();
+  }
+
+  void _drawSpecialProp(Canvas canvas, ui.Image image, Vector2 center, double radius) {
+    final floatOffset = cell.specialType == SpecialTileType.goldenPasture
+        ? sin(_lifeTime * 2.8) * 2.0
+        : (cell.specialType == SpecialTileType.hayBale ? sin(_lifeTime * 2.2) * 1.2 : 0.0);
+
+    final double propScale;
+    if (cell.specialType == SpecialTileType.mud) {
+      propScale = 1.45;
+    } else if (cell.specialType == SpecialTileType.goldenPasture) {
+      propScale = 1.25;
+    } else {
+      propScale = 1.20;
+    }
+
+    final propSize = radius * propScale;
+    final dst = Rect.fromCenter(
+      center: Offset(center.x, center.y + floatOffset),
+      width: propSize,
+      height: propSize,
+    );
+    final src = Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble());
+    canvas.drawImageRect(
+      image,
+      src,
+      dst,
+      Paint()..filterQuality = FilterQuality.medium,
+    );
   }
 
   void _drawTexture(Canvas canvas, Vector2 center, double radius) {
@@ -449,7 +568,19 @@ class HexCellComponent extends PositionComponent {
     }
   }
 
-  void _drawCowPieceWithShield(Canvas canvas, Vector2 center, double radius) {
+  void _drawCowPieceWithShield(
+    Canvas canvas,
+    Vector2 center,
+    double radius, {
+    double scaleX = 1.0,
+    double scaleY = 1.0,
+    double rotation = 0.0,
+  }) {
+    canvas.save();
+    canvas.translate(center.x, center.y);
+    if (rotation != 0.0) canvas.rotate(rotation);
+    if (scaleX != 1.0 || scaleY != 1.0) canvas.scale(scaleX, scaleY);
+
     final herdSize = herd!.size;
     final primaryColor = AppColors.getPlayerPrimary(herd!.owner);
     final darkColor = AppColors.getPlayerDark(herd!.owner);
@@ -460,8 +591,8 @@ class HexCellComponent extends PositionComponent {
     for (var i = 0; i < 6; i++) {
       final angle = (pi / 3) * i;
       final point = Offset(
-        center.x + pieceRadius * cos(angle),
-        center.y + pieceRadius * sin(angle),
+        pieceRadius * cos(angle),
+        pieceRadius * sin(angle),
       );
       if (i == 0) {
         pedestalPath.moveTo(point.dx, point.dy);
@@ -476,7 +607,7 @@ class HexCellComponent extends PositionComponent {
     final pedSidePath = Path();
     for (var i = 0; i < 6; i++) {
       final angle = (pi / 3) * i;
-      final point = Offset(center.x + pieceRadius * cos(angle), center.y + pieceRadius * sin(angle));
+      final point = Offset(pieceRadius * cos(angle), pieceRadius * sin(angle));
       if (i == 0) {
         pedSidePath.moveTo(point.dx, point.dy);
       } else {
@@ -485,7 +616,7 @@ class HexCellComponent extends PositionComponent {
     }
     for (var i = 5; i >= 0; i--) {
       final angle = (pi / 3) * i;
-      final point = Offset(center.x + pieceRadius * cos(angle), center.y + pieceRadius * sin(angle) + pedDepth);
+      final point = Offset(pieceRadius * cos(angle), pieceRadius * sin(angle) + pedDepth);
       pedSidePath.lineTo(point.dx, point.dy);
     }
     pedSidePath.close();
@@ -505,7 +636,7 @@ class HexCellComponent extends PositionComponent {
 
     canvas.drawPath(
       pedestalPath,
-      Paint()..shader = faceGradient.createShader(Rect.fromCircle(center: Offset(center.x, center.y), radius: pieceRadius)),
+      Paint()..shader = faceGradient.createShader(Rect.fromCircle(center: Offset.zero, radius: pieceRadius)),
     );
 
     // White Pedestal Rim
@@ -528,15 +659,17 @@ class HexCellComponent extends PositionComponent {
     cowPainter.layout();
     cowPainter.paint(
       canvas,
-      Offset(center.x - cowPainter.width / 2, center.y - cowPainter.height / 2 - 2),
+      Offset(-cowPainter.width / 2, -cowPainter.height / 2 - 2),
     );
 
     // 3. Shield Badge with Stack Count (Bottom-Right / Center-Bottom)
     final shieldWidth = pieceRadius * 0.75;
     final shieldHeight = pieceRadius * 0.85;
-    final shieldCenter = Offset(center.x + pieceRadius * 0.35, center.y + pieceRadius * 0.3);
+    final shieldCenter = Offset(pieceRadius * 0.35, pieceRadius * 0.3);
 
     _drawShieldBadge(canvas, shieldCenter, shieldWidth, shieldHeight, herdSize, primaryColor);
+
+    canvas.restore();
   }
 
   void _drawFullTileAsset(Canvas canvas, ui.Image image, Vector2 center, double radius) {
@@ -557,10 +690,24 @@ class HexCellComponent extends PositionComponent {
     );
   }
 
-  void _drawAsset(Canvas canvas, ui.Image image, Vector2 center, double radius, double yOffset) {
+  void _drawAsset(
+    Canvas canvas,
+    ui.Image image,
+    Vector2 center,
+    double radius,
+    double yOffset, {
+    double scaleX = 1.0,
+    double scaleY = 1.0,
+    double rotation = 0.0,
+  }) {
+    canvas.save();
+    canvas.translate(center.x, center.y + yOffset);
+    if (rotation != 0.0) canvas.rotate(rotation);
+    if (scaleX != 1.0 || scaleY != 1.0) canvas.scale(scaleX, scaleY);
     final src = Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble());
-    final dst = Rect.fromCircle(center: Offset(center.x, center.y + yOffset), radius: radius);
+    final dst = Rect.fromCircle(center: Offset.zero, radius: radius);
     canvas.drawImageRect(image, src, dst, Paint()..filterQuality = FilterQuality.medium);
+    canvas.restore();
   }
 
   void _drawShieldBadge(Canvas canvas, Offset center, double width, double height, int count, Color teamColor) {

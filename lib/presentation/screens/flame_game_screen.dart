@@ -375,8 +375,7 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
     }
   }
 
-  /// SKIP button or last-step button: end guidance, remember it, and let the
-  /// player finish the practice match on their own (no progression, no ads).
+  /// Last-step button: end guidance, mark tutorial completed.
   void _onTutorialComplete() {
     if (!mounted) return;
     setState(() => _tutorialStep = -1);
@@ -385,47 +384,24 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
     }
   }
 
-  void _onScaleStart(ScaleStartDetails details) {
-    _lastFocalPoint = details.focalPoint;
-    _baseZoom = _game.camera.viewfinder.zoom;
-  }
-
-  void _onScaleUpdate(ScaleUpdateDetails details) {
-    if (widget.isTutorial) return;
-    if (details.pointerCount == 2) {
-      // Pinch-to-zoom: keep world focal point stable under fingers
-      final camera = _game.camera.viewfinder;
-      final screenFocal = Vector2(details.focalPoint.dx, details.focalPoint.dy);
-      final worldFocalBefore = camera.globalToLocal(screenFocal);
-
-      final newZoom = (_baseZoom * details.scale).clamp(_minZoom, _maxZoom);
-      camera.zoom = newZoom;
-
-      final worldFocalAfter = camera.globalToLocal(screenFocal);
-      final drift = worldFocalBefore - worldFocalAfter;
-      _game.userCameraOffset += drift;
-      _clampCameraPosition();
-      _game.notifyStateChanged();
-    } else if (details.pointerCount == 1 && !_game.isPlacementDragActive) {
-      // Single-finger pan
-      final delta = details.focalPoint - _lastFocalPoint;
-      final zoom = _game.camera.viewfinder.zoom;
-      _game.userCameraOffset -= Vector2(delta.dx / zoom, delta.dy / zoom);
-      _clampCameraPosition();
-      _game.notifyStateChanged();
+  /// SKIP button: immediately mark tutorial completed and exit back to Main Menu.
+  void _onTutorialSkip() {
+    if (!mounted) return;
+    if (widget.isTutorial) {
+      _progressService?.markTutorialCompleted();
     }
-    _lastFocalPoint = details.focalPoint;
-    if (!_hasPanned) setState(() => _hasPanned = true);
+    setState(() => _tutorialStep = -1);
+    Navigator.of(context).pop();
   }
+
+  void _onScaleStart(ScaleStartDetails details) {}
+
+  void _onScaleUpdate(ScaleUpdateDetails details) {}
 
   void _onScaleEnd(ScaleEndDetails details) {}
 
   void _clampCameraPosition() {
-    const maxOffset = 400.0; // fixed world-unit limit, independent of zoom
-    _game.userCameraOffset = Vector2(
-      _game.userCameraOffset.x.clamp(-maxOffset, maxOffset),
-      _game.userCameraOffset.y.clamp(-maxOffset, maxOffset),
-    );
+    _game.userCameraOffset = Vector2(0, -18);
   }
 
   @override
@@ -444,7 +420,7 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
           ),
           Positioned.fill(
             key: const ValueKey('board-scrim'),
-            child: ColoredBox(color: Colors.black26),
+            child: const ColoredBox(color: Colors.transparent),
           ),
           Positioned.fill(
             key: const ValueKey('game-widget'),
@@ -497,13 +473,9 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
             child: ParallaxDustLayer(),
           ),
           if (!_game.isGameOver && _game.overlays.isActive('GameControls'))
-            Positioned.fill(
-              key: const ValueKey('pan-indicators'),
-              child: PanIndicators(
-                emphasized: !_hasPanned,
-                topInset: _bannerHeight + 62,
-                bottomInset: _showFenceBar ? 174 : 124,
-              ),
+            const Positioned.fill(
+              key: ValueKey('pan-indicators'),
+              child: SizedBox.shrink(),
             ),
           if (_showTutorialOverlay)
             Positioned.fill(
@@ -513,7 +485,7 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
                 currentStep: _tutorialStep,
                 onNext: _onTutorialNext,
                 onComplete: _onTutorialComplete,
-                onSkip: _onTutorialComplete,
+                onSkip: _onTutorialSkip,
               ),
             ),
           if (!widget.isTutorial)
