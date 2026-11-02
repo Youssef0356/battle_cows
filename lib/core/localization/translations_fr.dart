@@ -15,6 +15,10 @@ class AppLocalizationsFr implements AppLocalizations {
   @override String get rematch => 'REVANCHE';
   @override String get draw => 'MATCH NUL !';
   @override String playerWins(String name) => '$name GAGNE !';
+  @override String sharedVictory(String names) => 'VICTOIRE PARTAGÉE !\n$names';
+  @override String get allPlayersTied => 'ÉGALITÉ PARFAITE !';
+  @override String get numberOfPlayers => 'NOMBRE DE JOUEURS';
+  @override String playersCount(int count) => '$count Joueurs';
   @override String get shareMessage =>
       'Découvrez Battle Cows ! 🐮 Rassemblez, chargez et conquérez le pré ! https://play.google.com/store/apps/details?id=com.battlecows.game';
 
@@ -342,7 +346,7 @@ class AppLocalizationsFr implements AppLocalizations {
     switch (id) {
       case 1: return 'La Traversée du Pré';
       case 2: return 'Le Ruisseau Boueux';
-      case 3: return 'Duel au Trèfle d\'Or';
+      case 3: return 'Affrontement au Ranch';
       case 4: return 'La Folie des Barrières';
       case 5: return 'Le Canyon de la Ruée';
       case 6: return 'Le Face-à-Face au Ranch';
@@ -354,7 +358,7 @@ class AppLocalizationsFr implements AppLocalizations {
     switch (id) {
       case 1: return 'Initiation fermière';
       case 2: return 'Progression dans la boue';
-      case 3: return 'La couronne du pré';
+      case 3: return 'Défi Cowboy';
       case 4: return 'Défense forestière';
       case 5: return 'À toute vitesse';
       case 6: return 'Le grand pré';
@@ -378,7 +382,7 @@ class AppLocalizationsFr implements AppLocalizations {
     switch (id) {
       case 1: return 'Le Fermier Bob émerge de sa sieste. Déployez votre troupeau et prenez le contrôle des herbages !';
       case 2: return 'La boue engloutit vos sabots ! Calculez vos divisions pour contourner le marais sans encombre.';
-      case 3: return 'Tex convoite le Trèfle d\'Or central. Prenez d\'assaut le centre et défendez-le vaillamment !';
+      case 3: return 'Tex est un cow-boy chevronné. Déployez rapidement votre troupeau et prenez le contrôle des herbages !';
       case 4: return 'Woody a semé des barrières partout ! Utilisez les vôtres pour le repousser dans ses retranchements.';
       case 5: return 'Mode Ruée Sauvage ! Formez des groupes de 4+ vaches pour déclencher des sprints supersoniques !';
       case 6: return 'Le Shérif Angus défend son titre. Déployez tout votre génie stratégique pour le terrasser !';
@@ -390,7 +394,7 @@ class AppLocalizationsFr implements AppLocalizations {
     switch (id) {
       case 1: return 'Occupez plus de terrain que le Fermier Bob pour décrocher jusqu\'à 3 étoiles.';
       case 2: return 'Contournez les bourbiers et emparez-vous des parcelles d\'herbe tendre.';
-      case 3: return 'Contrôlez le pré doré pour gagner des vaches bonus et tripler vos points.';
+      case 3: return 'Surpassez Cowboy Tex et conquérez le pré.';
       case 4: return 'Exploitez les clôtures avec ruse pour coincer le Taureau Woody.';
       case 5: return 'Déchaînez les ruées sauvages pour submerger Bessie.';
       case 6: return 'Déjouez les pièges du Shérif Angus sur un champ de bataille colossal.';

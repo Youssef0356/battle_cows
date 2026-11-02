@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../../assets/asset_paths.dart';
 import '../../core/localization/app_fonts.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../flame/battle_cows_game.dart';
@@ -53,6 +54,7 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
     final isMyTurn = !currentPlayer.isAi && !game.isGameOver;
     final remainingFences = game.getRemainingFences(currentPlayer.color);
     final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+    final isTablet = MediaQuery.of(context).size.shortestSide >= 600;
 
     return SafeArea(
       child: Column(
@@ -61,7 +63,7 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
           if (isFenceChallenge && isMyTurn)
             Padding(
               padding: EdgeInsets.fromLTRB(12, 0, 12, isLandscape ? 4 : 8),
-              child: _buildFenceActionBar(game, currentPlayer, remainingFences, l10n, isLandscape),
+              child: _buildFenceActionBar(game, currentPlayer, remainingFences, l10n, isLandscape, isTablet),
             ),
           _buildMoveBar(
             herd: herd,
@@ -70,6 +72,7 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
             movingCount: movingCount,
             l10n: l10n,
             isLandscape: isLandscape,
+            isTablet: isTablet,
           ),
         ],
       ),
@@ -82,6 +85,7 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
     int remainingFences,
     AppLocalizations l10n,
     bool isLandscape,
+    bool isTablet,
   ) {
     final isFenceMode = game.isFenceMode;
     final hasSelectedFence = game.selectedFencePosition != null;
@@ -89,7 +93,7 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
     return Align(
       alignment: Alignment.bottomCenter,
       child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: isLandscape ? 450 : double.infinity),
+        constraints: BoxConstraints(maxWidth: isTablet ? 540 : (isLandscape ? 450 : double.infinity)),
         child: Container(
           padding: EdgeInsets.symmetric(horizontal: 14, vertical: isLandscape ? 6 : 10),
           decoration: BoxDecoration(
@@ -210,6 +214,7 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
     required int movingCount,
     required AppLocalizations l10n,
     required bool isLandscape,
+    bool isTablet = false,
   }) {
     final hasHerd = herd != null && totalCows >= 2;
 
@@ -256,21 +261,17 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
       return Container(
         width: double.infinity,
         margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF4E342E), Color(0xFF2E1C0C)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage(AssetPaths.uiBottomInstructionBanner),
+            fit: BoxFit.fill,
           ),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFFFD54F), width: 1.8),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.5),
-              blurRadius: 10,
-              spreadRadius: 1,
-              offset: const Offset(0, 3),
+              color: Colors.black38,
+              blurRadius: 8,
+              offset: Offset(0, 3),
             ),
           ],
         ),
@@ -311,7 +312,7 @@ class _GameControlsOverlayState extends State<GameControlsOverlay> {
     return Align(
       alignment: Alignment.bottomCenter,
       child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: isLandscape ? 450 : double.infinity),
+        constraints: BoxConstraints(maxWidth: isTablet ? 540 : (isLandscape ? 450 : double.infinity)),
         child: Container(
           margin: EdgeInsets.fromLTRB(12, 0, 12, isLandscape ? 4 : 12),
           padding: EdgeInsets.symmetric(

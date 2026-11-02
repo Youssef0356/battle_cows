@@ -233,6 +233,194 @@ void main() {
       expect(engine.gameOver, false);
       expect(engine.turnCount, 1);
     });
+
+    test('two players each placing 16 herds results in draw', () {
+      final cells = <HexPosition, HexCell>{};
+      final blueHerds = <Herd>[];
+      final redHerds = <Herd>[];
+
+      for (var i = 0; i < 16; i++) {
+        final bluePos = HexPosition(i, 0);
+        cells[bluePos] = HexCell(position: bluePos);
+        blueHerds.add(Herd(position: bluePos, owner: PlayerColor.blue, size: 1));
+
+        final redPos = HexPosition(i, 2);
+        cells[redPos] = HexCell(position: redPos);
+        redHerds.add(Herd(position: redPos, owner: PlayerColor.red, size: 1));
+      }
+
+      final board = GameBoard(cells: cells, herds: [...blueHerds, ...redHerds]);
+      engine.initializeGame(board, _testPlayers());
+
+      expect(engine.gameOver, true);
+      expect(engine.getTerritoryCount()[PlayerColor.blue], 16);
+      expect(engine.getTerritoryCount()[PlayerColor.red], 16);
+      expect(engine.determineWinner(), isNull);
+    });
+
+    test('tied territory with tied contiguous groups results in draw', () {
+      final cells = <HexPosition, HexCell>{};
+      final blueHerds = <Herd>[];
+      final redHerds = <Herd>[];
+
+      for (var i = 0; i < 5; i++) {
+        final bluePos = HexPosition(i, 0);
+        cells[bluePos] = HexCell(position: bluePos);
+        blueHerds.add(Herd(position: bluePos, owner: PlayerColor.blue, size: 1));
+
+        final redPos = HexPosition(i, 2);
+        cells[redPos] = HexCell(position: redPos);
+        redHerds.add(Herd(position: redPos, owner: PlayerColor.red, size: 1));
+      }
+
+      final board = GameBoard(cells: cells, herds: [...blueHerds, ...redHerds]);
+      engine.initializeGame(board, _testPlayers());
+
+      expect(engine.gameOver, true);
+      expect(engine.determineWinner(), isNull);
+    });
+
+    test('tied territory breaks tie by largest contiguous group size', () {
+      final cells = <HexPosition, HexCell>{};
+      // Blue: 4 connected herds (0,0)-(3,0)
+      final blueHerds = <Herd>[];
+      for (var i = 0; i < 4; i++) {
+        final pos = HexPosition(i, 0);
+        cells[pos] = HexCell(position: pos);
+        blueHerds.add(Herd(position: pos, owner: PlayerColor.blue, size: 1));
+      }
+
+      // Red: 4 isolated herds (separated)
+      final redHerds = <Herd>[
+        const Herd(position: HexPosition(0, 3), owner: PlayerColor.red, size: 1),
+        const Herd(position: HexPosition(2, 3), owner: PlayerColor.red, size: 1),
+        const Herd(position: HexPosition(4, 3), owner: PlayerColor.red, size: 1),
+        const Herd(position: HexPosition(6, 3), owner: PlayerColor.red, size: 1),
+      ];
+      for (final h in redHerds) {
+        cells[h.position] = HexCell(position: h.position);
+      }
+
+      final board = GameBoard(cells: cells, herds: [...blueHerds, ...redHerds]);
+      engine.initializeGame(board, _testPlayers());
+
+      expect(engine.gameOver, true);
+      expect(engine.determineWinner(), PlayerColor.blue);
+    });
+
+    test('4-player match determines winner with highest territory count', () {
+      final fourPlayers = [
+        const Player(id: 0, name: 'P1', color: PlayerColor.blue),
+        const Player(id: 1, name: 'P2', color: PlayerColor.red),
+        const Player(id: 2, name: 'P3', color: PlayerColor.yellow),
+        const Player(id: 3, name: 'P4', color: PlayerColor.purple),
+      ];
+      final cells = <HexPosition, HexCell>{};
+      final herds = <Herd>[
+        // P1: 3 herds
+        const Herd(position: HexPosition(0, 0), owner: PlayerColor.blue, size: 1),
+        const Herd(position: HexPosition(1, 0), owner: PlayerColor.blue, size: 1),
+        const Herd(position: HexPosition(2, 0), owner: PlayerColor.blue, size: 1),
+        // P2: 2 herds
+        const Herd(position: HexPosition(0, 1), owner: PlayerColor.red, size: 1),
+        const Herd(position: HexPosition(1, 1), owner: PlayerColor.red, size: 1),
+        // P3: 1 herd
+        const Herd(position: HexPosition(0, 2), owner: PlayerColor.yellow, size: 1),
+        // P4: 1 herd
+        const Herd(position: HexPosition(0, 3), owner: PlayerColor.purple, size: 1),
+      ];
+      for (final h in herds) {
+        cells[h.position] = HexCell(position: h.position);
+      }
+      final board = GameBoard(cells: cells, herds: herds);
+      engine.initializeGame(board, fourPlayers);
+
+      expect(engine.gameOver, true);
+      expect(engine.determineWinner(), PlayerColor.blue);
+      expect(engine.getWinningPlayers(), [PlayerColor.blue]);
+
+      final standings = engine.getStandings();
+      expect(standings.length, 4);
+      expect(standings[0].color, PlayerColor.blue);
+      expect(standings[0].rank, 1);
+      expect(standings[1].color, PlayerColor.red);
+      expect(standings[1].rank, 2);
+      // P3 and P4 tied at rank 3
+      expect(standings[2].rank, 3);
+      expect(standings[3].rank, 3);
+    });
+
+    test('4-player tiebreak only compares top scorers, ignoring lower scorers with large groups', () {
+      final fourPlayers = [
+        const Player(id: 0, name: 'P1', color: PlayerColor.blue),
+        const Player(id: 1, name: 'P2', color: PlayerColor.red),
+        const Player(id: 2, name: 'P3', color: PlayerColor.yellow),
+        const Player(id: 3, name: 'P4', color: PlayerColor.purple),
+      ];
+      final cells = <HexPosition, HexCell>{};
+      // P1 (Blue) and P2 (Red) tied at top score = 4
+      // P1 has contiguous group of 3
+      final blueHerds = [
+        const Herd(position: HexPosition(0, 0), owner: PlayerColor.blue, size: 1),
+        const Herd(position: HexPosition(1, 0), owner: PlayerColor.blue, size: 1),
+        const Herd(position: HexPosition(2, 0), owner: PlayerColor.blue, size: 1),
+        const Herd(position: HexPosition(5, 5), owner: PlayerColor.blue, size: 1),
+      ];
+      // P2 has contiguous group of 2
+      final redHerds = [
+        const Herd(position: HexPosition(0, 2), owner: PlayerColor.red, size: 1),
+        const Herd(position: HexPosition(1, 2), owner: PlayerColor.red, size: 1),
+        const Herd(position: HexPosition(5, 6), owner: PlayerColor.red, size: 1),
+        const Herd(position: HexPosition(7, 7), owner: PlayerColor.red, size: 1),
+      ];
+      // P3 (Yellow) has lower score = 3, but all 3 are in 1 contiguous group (size 3)
+      final yellowHerds = [
+        const Herd(position: HexPosition(0, 4), owner: PlayerColor.yellow, size: 1),
+        const Herd(position: HexPosition(1, 4), owner: PlayerColor.yellow, size: 1),
+        const Herd(position: HexPosition(2, 4), owner: PlayerColor.yellow, size: 1),
+      ];
+
+      final allHerds = [...blueHerds, ...redHerds, ...yellowHerds];
+      for (final h in allHerds) {
+        cells[h.position] = HexCell(position: h.position);
+      }
+      final board = GameBoard(cells: cells, herds: allHerds);
+      engine.initializeGame(board, fourPlayers);
+
+      expect(engine.gameOver, true);
+      // P1 should win tiebreak against P2 (group size 3 vs 2)
+      // P3 should NOT steal victory despite having group size 3 because score is 3 vs 4
+      expect(engine.determineWinner(), PlayerColor.blue);
+      expect(engine.getWinningPlayers(), [PlayerColor.blue]);
+    });
+
+    test('4-player full draw when all 4 players tie', () {
+      final fourPlayers = [
+        const Player(id: 0, name: 'P1', color: PlayerColor.blue),
+        const Player(id: 1, name: 'P2', color: PlayerColor.red),
+        const Player(id: 2, name: 'P3', color: PlayerColor.yellow),
+        const Player(id: 3, name: 'P4', color: PlayerColor.purple),
+      ];
+      final cells = <HexPosition, HexCell>{};
+      final herds = [
+        const Herd(position: HexPosition(0, 0), owner: PlayerColor.blue, size: 1),
+        const Herd(position: HexPosition(0, 2), owner: PlayerColor.red, size: 1),
+        const Herd(position: HexPosition(0, 4), owner: PlayerColor.yellow, size: 1),
+        const Herd(position: HexPosition(0, 6), owner: PlayerColor.purple, size: 1),
+      ];
+      for (final h in herds) {
+        cells[h.position] = HexCell(position: h.position);
+      }
+      final board = GameBoard(cells: cells, herds: herds);
+      engine.initializeGame(board, fourPlayers);
+
+      expect(engine.gameOver, true);
+      expect(engine.determineWinner(), isNull);
+      expect(engine.getWinningPlayers().length, 4);
+
+      final standings = engine.getStandings();
+      expect(standings.every((s) => s.rank == 1), isTrue);
+    });
   });
 }
 

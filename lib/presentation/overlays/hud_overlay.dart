@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../core/localization/app_fonts.dart';
 import '../../core/localization/app_localizations.dart';
@@ -32,6 +33,10 @@ class HudOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     if (game.engine.players.isEmpty) return const SizedBox.shrink();
     final turnCount = game.engine.turnCount + 1;
+    final media = MediaQuery.of(context);
+    final screenWidth = media.size.width;
+    final isTablet = media.size.shortestSide >= 600;
+    final sidePadding = isTablet ? 32.0 : (screenWidth < 360 ? 10.0 : 16.0);
 
     return Align(
       alignment: Alignment.topCenter,
@@ -40,18 +45,18 @@ class HudOverlay extends StatelessWidget {
         child: SizedBox(
           width: double.infinity,
           child: Padding(
-            padding: EdgeInsets.fromLTRB(20, 8 + topInset, 20, 0),
+            padding: EdgeInsets.fromLTRB(sidePadding, 8 + topInset, sidePadding, 0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Row(
                   children: [
-                    Expanded(child: Align(alignment: Alignment.centerLeft, child: _buildTimerBox())),
-                    Expanded(child: Center(child: _buildTurnCounterBox(turnCount))),
-                    Expanded(child: Align(alignment: Alignment.centerRight, child: buildSettingsButton(context))),
+                    Expanded(child: Align(alignment: Alignment.centerLeft, child: _buildTimerBox(isTablet: isTablet, screenWidth: screenWidth))),
+                    Expanded(child: Center(child: _buildTurnCounterBox(turnCount, isTablet: isTablet, screenWidth: screenWidth))),
+                    Expanded(child: Align(alignment: Alignment.centerRight, child: buildSettingsButton(context, isTablet: isTablet))),
                   ],
                 ),
-                _buildLiveScoreBar(),
+                _buildLiveScoreBar(context, isTablet: isTablet, screenWidth: screenWidth),
               ],
             ),
           ),
@@ -60,159 +65,259 @@ class HudOverlay extends StatelessWidget {
     );
   }
 
-  Widget _buildTimerBox() {
+  Widget _buildTimerBox({bool isTablet = false, double screenWidth = 400}) {
     final timeRemaining = game.timeRemaining;
     final hasTimer = game.challengeMode.hasTimer;
     final isLowTime = hasTimer && timeRemaining <= 10;
     final isFenceBattle = game.challengeMode == ChallengeMode.fenceChallenge;
 
+    final width = isTablet ? 116.0 : (screenWidth < 360 ? 78.0 : 92.0);
+    final height = isTablet ? 78.0 : (screenWidth < 360 ? 54.0 : 62.0);
+    final fontScale = (width / 92.0).clamp(0.85, 1.3).toDouble();
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isLowTime
-              ? [const Color(0xFFD32F2F), const Color(0xFF8B0000)]
-              : [const Color(0xFF5D4037), const Color(0xFF3E2723)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
+      width: width,
+      height: height,
+      decoration: const BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage(AssetPaths.uiHudCounterPlaque),
+          fit: BoxFit.fill,
         ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isLowTime ? const Color(0xFFFF5252) : const Color(0xFFFFD54F),
-          width: 2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: isLowTime
-                ? const Color(0xFFD32F2F).withValues(alpha: 0.5)
-                : Colors.black.withValues(alpha: 0.35),
-            offset: const Offset(0, 2),
-            blurRadius: isLowTime ? 8 : 4,
-          ),
-        ],
       ),
-      child: hasTimer
-          ? Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  width: 26,
-                  height: 26,
-                  child: Stack(
-                    alignment: Alignment.center,
+      padding: EdgeInsets.symmetric(horizontal: 6 * fontScale, vertical: 4 * fontScale),
+      child: Center(
+        child: hasTimer
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 22 * fontScale,
+                    height: 22 * fontScale,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        CircularProgressIndicator(
+                          value: (timeRemaining / 60.0).clamp(0.0, 1.0).toDouble(),
+                          strokeWidth: 2.6 * fontScale,
+                          backgroundColor: Colors.white24,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            isLowTime ? const Color(0xFFFF5252) : const Color(0xFFFFD54F),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: 4 * fontScale),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CircularProgressIndicator(
-                        value: (timeRemaining / 60.0).clamp(0.0, 1.0),
-                        strokeWidth: 3.0,
-                        backgroundColor: Colors.white24,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          isLowTime ? const Color(0xFFFF5252) : const Color(0xFFFFD54F),
+                      Text(
+                        '⏱️ TIME',
+                        style: AppFonts.bangers(
+                          fontSize: (8.5 * fontScale).clamp(7.5, 12.0).toDouble(),
+                          color: Colors.white70,
+                          letterSpacing: 0.5,
                         ),
                       ),
                       Text(
-                        '',
+                        isLowTime ? 'HURRY!' : '$timeRemaining s',
                         style: AppFonts.bangers(
-                          fontSize: 11,
-                          color: isLowTime ? const Color(0xFFFF5252) : Colors.white,
+                          fontSize: (9.5 * fontScale).clamp(8.5, 14.0).toDouble(),
+                          color: isLowTime ? const Color(0xFFFF8A80) : const Color(0xFFFFD54F),
                         ),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(width: 6),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                ],
+              )
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    isFenceBattle ? 'WOOD' : 'FREE PLAY',
+                    style: AppFonts.bangers(
+                      fontSize: (9.0 * fontScale).clamp(8.0, 13.0).toDouble(),
+                      color: Colors.white70,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                  Text(
+                    isFenceBattle ? 'FENCE' : '∞',
+                    style: AppFonts.bangers(
+                      fontSize: (15.0 * fontScale).clamp(13.0, 22.0).toDouble(),
+                      color: const Color(0xFFFFD54F),
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildTurnCounterBox(int turn, {bool isTablet = false, double screenWidth = 400}) {
+    final width = isTablet ? 108.0 : (screenWidth < 360 ? 74.0 : 86.0);
+    final height = isTablet ? 78.0 : (screenWidth < 360 ? 54.0 : 62.0);
+    final fontScale = (width / 86.0).clamp(0.85, 1.3).toDouble();
+
+    return Container(
+      width: width,
+      height: height,
+      decoration: const BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage(AssetPaths.uiHudCounterPlaque),
+          fit: BoxFit.fill,
+        ),
+      ),
+      padding: EdgeInsets.symmetric(horizontal: 6 * fontScale, vertical: 4 * fontScale),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'TURN',
+              style: AppFonts.bangers(
+                fontSize: (9.5 * fontScale).clamp(8.5, 14.0).toDouble(),
+                color: Colors.white70,
+                letterSpacing: 1,
+              ),
+            ),
+            Text(
+              '$turn',
+              style: AppFonts.bangers(
+                fontSize: (15.5 * fontScale).clamp(13.5, 22.0).toDouble(),
+                color: const Color(0xFFFFD54F),
+                letterSpacing: 1,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLiveScoreBar(BuildContext context, {bool isTablet = false, double screenWidth = 400}) {
+    final territoryCounts = game.territoryCounts;
+    final currentP = game.engine.players.isNotEmpty ? game.engine.currentPlayer : null;
+
+    if (players.length == 2) {
+      final p1 = players[0];
+      final p2 = players[1];
+      final p1Turn = currentP?.color == p1.color;
+      final p2Turn = currentP?.color == p2.color;
+      final p1Score = territoryCounts[p1.color] ?? 0;
+      final p2Score = territoryCounts[p2.color] ?? 0;
+
+      final maxAllowed = screenWidth - (isTablet ? 64.0 : 20.0);
+      final targetW = isTablet ? 450.0 : 330.0;
+      final barWidth = min(maxAllowed, targetW);
+      final barHeight = (barWidth * (173.0 / 897.0)).clamp(48.0, 88.0).toDouble();
+      final scale = (barWidth / 330.0).clamp(0.8, 1.35).toDouble();
+
+      return Container(
+        margin: const EdgeInsets.only(top: 6),
+        width: barWidth,
+        height: barHeight,
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage(AssetPaths.uiScoreboardRibbonsBar),
+            fit: BoxFit.fill,
+          ),
+        ),
+        child: Row(
+          children: [
+            // Left Blue Ribbon: Player 1 (Blue)
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(left: 16 * scale, right: 4 * scale, bottom: 2),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      '⏱️ TIME',
-                      style: AppFonts.bangers(
-                        fontSize: 9,
-                        color: Colors.white70,
-                        letterSpacing: 1,
+                      p1.isAi ? '🤖' : '🐮',
+                      style: TextStyle(fontSize: (11 * scale).clamp(9.5, 16.0).toDouble()),
+                    ),
+                    SizedBox(width: 3 * scale),
+                    Flexible(
+                      child: Text(
+                        p1.name.length > 7 ? p1.name.substring(0, 7) : p1.name,
+                        style: AppFonts.bangers(
+                          fontSize: (10.5 * scale).clamp(9.0, 15.0).toDouble(),
+                          color: p1Turn ? Colors.white : Colors.white70,
+                          letterSpacing: 0.5,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    Text(
-                      isLowTime ? 'HURRY!' : 'RUNNING',
-                      style: AppFonts.bangers(
-                        fontSize: 10,
-                        color: isLowTime ? const Color(0xFFFF8A80) : const Color(0xFFFFD54F),
+                    SizedBox(width: 4 * scale),
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 5 * scale, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(5 * scale),
+                      ),
+                      child: Text(
+                        '$p1Score',
+                        style: AppFonts.bangers(
+                          fontSize: (11.5 * scale).clamp(10.0, 17.0).toDouble(),
+                          color: const Color(0xFFFFD54F),
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ],
-            )
-          : Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  isFenceBattle ? '🪵 FENCES' : '🎮 FREE PLAY',
-                  style: AppFonts.bangers(
-                    fontSize: 10,
-                    color: Colors.white70,
-                    letterSpacing: 1,
-                  ),
-                ),
-                Text(
-                  isFenceBattle ? 'BATTLE' : '∞',
-                  style: AppFonts.bangers(
-                    fontSize: 18,
-                    color: const Color(0xFFFFD54F),
-                    letterSpacing: 1,
-                  ),
-                ),
-              ],
+              ),
             ),
-    );
-  }
-
-  Widget _buildTurnCounterBox(int turn) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF5D4037), Color(0xFF3E2723)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
+            // Right Red Ribbon: Player 2 / AI (Red)
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(left: 4 * scale, right: 16 * scale, bottom: 2),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      p2.isAi ? '🤖' : '🐮',
+                      style: TextStyle(fontSize: (11 * scale).clamp(9.5, 16.0).toDouble()),
+                    ),
+                    SizedBox(width: 3 * scale),
+                    Flexible(
+                      child: Text(
+                        p2.name.length > 7 ? p2.name.substring(0, 7) : p2.name,
+                        style: AppFonts.bangers(
+                          fontSize: (10.5 * scale).clamp(9.0, 15.0).toDouble(),
+                          color: p2Turn ? Colors.white : Colors.white70,
+                          letterSpacing: 0.5,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    SizedBox(width: 4 * scale),
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 5 * scale, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(5 * scale),
+                      ),
+                      child: Text(
+                        '$p2Score',
+                        style: AppFonts.bangers(
+                          fontSize: (11.5 * scale).clamp(10.0, 17.0).toDouble(),
+                          color: const Color(0xFFFFD54F),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFFFD54F), width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.35),
-            offset: const Offset(0, 2),
-            blurRadius: 4,
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            'TURN',
-            style: AppFonts.bangers(
-              fontSize: 10,
-              color: Colors.white70,
-              letterSpacing: 1,
-            ),
-          ),
-          Text(
-            '$turn',
-            style: AppFonts.bangers(
-              fontSize: 16,
-              color: const Color(0xFFFFD54F),
-              letterSpacing: 1,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLiveScoreBar() {
-    final territoryCounts = game.territoryCounts;
-    final currentP = game.engine.players.isNotEmpty ? game.engine.currentPlayer : null;
+      );
+    }
 
     return Container(
       margin: const EdgeInsets.only(top: 6),
@@ -297,8 +402,9 @@ class HudOverlay extends StatelessWidget {
     );
   }
 
-  Widget buildSettingsButton(BuildContext context) {
+  Widget buildSettingsButton(BuildContext context, {bool isTablet = false}) {
     final l10n = AppLocalizations.of(context);
+    final btnSize = isTablet ? 54.0 : 44.0;
     return GestureDetector(
       onTap: () {
         CartoonDialog.show(
@@ -387,26 +493,20 @@ class HudOverlay extends StatelessWidget {
         );
       },
       child: Container(
-        width: 38,
-        height: 38,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF5D4037), Color(0xFF3E2723)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+        width: btnSize,
+        height: btnSize,
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage(AssetPaths.uiBtnSettingsGear),
+            fit: BoxFit.contain,
           ),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFF8D6E63), width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.3),
-              offset: const Offset(0, 2),
-              blurRadius: 3,
+              color: Colors.black26,
+              offset: Offset(0, 2),
+              blurRadius: 4,
             ),
           ],
-        ),
-        child: const Center(
-          child: Icon(Icons.settings, color: Colors.white, size: 18),
         ),
       ),
     );

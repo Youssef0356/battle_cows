@@ -60,7 +60,7 @@ void main() {
 
       // A RenderFlex overflow is reported as an exception during pump.
       expect(tester.takeException(), isNull);
-      expect(find.text('Cowboy Cow'), findsOneWidget);
+      expect(find.text('Wooden Tiles'), findsOneWidget);
     });
 
     testWidgets('owned and equipped tiles do not overflow their cells', (tester) async {
@@ -68,8 +68,8 @@ void main() {
       tester.view.devicePixelRatio = 3.0;
       addTearDown(tester.view.reset);
 
-      progress.buyItem('skin_farmer', 350);
-      progress.equipItem('skin_farmer');
+      progress.buyItem('board_wood', 300);
+      progress.equipItem('board_wood');
 
       await pumpShop(tester, textScale: 1.8);
 
@@ -92,7 +92,11 @@ void main() {
         await tester.pump();
 
         expect(tester.takeException(), isNull, reason: 'overflow in ${category.name}');
-        expect(find.byType(GridView), findsOneWidget);
+        if (category == ShopCategory.boards) {
+          expect(find.byType(GridView), findsOneWidget);
+        } else {
+          expect(find.text('COMING SOON!'), findsOneWidget);
+        }
       }
     });
 

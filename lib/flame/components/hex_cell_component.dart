@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../assets/asset_paths.dart';
 import '../../game/models/hex_cell.dart';
 import '../../game/models/herd.dart';
 import '../../core/constants/colors.dart';
@@ -18,14 +19,21 @@ class HexCellComponent extends PositionComponent {
   ui.Image? texture;
   PlayerColor? territoryOwner;
 
-  /// Player whose turn it is. When it matches the rendered herd's owner,
-  /// the cell border and tint take that player's color — the on-board
-  /// turn indicator that replaced the top scoreboard.
+  /// Player whose turn it is.
   PlayerColor? turnOwner;
   ui.Image? _specialImage;
   ui.Image? _cowImage;
   double _lifeTime = 0;
   double _bounceTimer = 0.0;
+
+  bool _isTrapped = false;
+  bool get isTrapped => _isTrapped;
+  set isTrapped(bool val) {
+    if (_isTrapped != val) {
+      _isTrapped = val;
+      refreshHerdImages();
+    }
+  }
 
   void triggerBounce() {
     _bounceTimer = 0.35;
@@ -44,6 +52,19 @@ class HexCellComponent extends PositionComponent {
 
   static Future<void> precacheAllAssets() async {
     final paths = [
+      AssetPaths.hexNeutralPasture,
+      AssetPaths.hexPlayer1Claimed,
+      AssetPaths.hexPlayer2Claimed,
+      AssetPaths.hexValidMoveHighlight,
+      AssetPaths.hexBlockedTrapped,
+      AssetPaths.cowP1HolsteinIdle,
+      AssetPaths.cowP1HolsteinLeap,
+      AssetPaths.cowP1HolsteinDizzy,
+      AssetPaths.cowP2HighlandIdle,
+      AssetPaths.cowP2HighlandLeap,
+      AssetPaths.cowP2HighlandDizzy,
+      AssetPaths.stackCounterBadge,
+      AssetPaths.landingDustBurst,
       'assets/images/Cows/cow_viking.png',
       'assets/images/Cows/cow_cowboy.png',
       'assets/images/Cows/cow_farmer.png',
@@ -134,17 +155,17 @@ class HexCellComponent extends PositionComponent {
   }
 
   String? get _cowAssetPath {
-    if (herd == null) return null;
+    if (herd == null || herd!.size == 0) return null;
+    final pose = _isTrapped ? CowPose.dizzy : CowPose.idle;
     if (skinOverride != null &&
         skinOverride!.isNotEmpty &&
         skinOwnerColor == herd!.owner) {
-      return CowSkins.assetFor(herd!.owner, skinId: skinOverride);
+      return CowSkins.assetFor(herd!.owner, skinId: skinOverride, pose: pose);
     }
-    return CowSkins.assetFor(herd!.owner);
+    return CowSkins.assetFor(herd!.owner, pose: pose);
   }
 
-  /// Re-resolves the cow sprite for the current herd (called after the
-  /// equipped skin changes mid-game, e.g. when progress loads late).
+  /// Re-resolves the cow sprite for the current herd.
   void refreshHerdImages() {
     final path = _cowAssetPath;
     if (path == null) {
@@ -176,29 +197,19 @@ class HexCellComponent extends PositionComponent {
 
   void setHerd(Herd? value) {
     herd = value;
-    final path = _cowAssetPath;
-    if (path == null) {
-      _cowImage = null;
-      return;
-    }
-    if (imageCache.containsKey(path)) {
-      _cowImage = imageCache[path];
-    } else {
-      _loadImage(path).then((image) {
-        _cowImage = image;
-      });
-    }
+    refreshHerdImages();
   }
 
   @override
   void render(Canvas canvas) {
     final center = Vector2(size.x / 2, size.y / 2);
     final hexRadius = size.x / 2;
-
     final path = _createHexPath(center, hexRadius);
 
-    _draw3DDepth(canvas, path, center, hexRadius);
-    _drawHexFill(canvas, path, center, hexRadius);
+    // 1. Draw 2.5D Hex Tile Sprite (Neutral, Claimed Blue, Claimed Red, Valid Move, or Blocked Fence)
+    _drawHexSprite(canvas, path, center, hexRadius);
+
+    // 2. Golden Pasture special aura
     if (cell.specialType == SpecialTileType.goldenPasture) {
       final goldenPulse = (sin(_lifeTime * 3.5) + 1.0) / 2.0;
       final goldGlow = Paint()
@@ -208,37 +219,30 @@ class HexCellComponent extends PositionComponent {
         ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
       canvas.drawPath(path, goldGlow);
     }
-    final turnColor =
-        (turnOwner != null && herd != null && herd!.size > 0 && herd!.owner == turnOwner)
-            ? AppColors.getPlayerPrimary(turnOwner!)
-            : null;
-    final borderColor = turnColor ??
-        (cell.specialType == SpecialTileType.goldenPasture
-            ? const Color(0xFFFFD700)
-            : (cell.specialType == SpecialTileType.hayBale
-                ? const Color(0xFFE6A100)
-                : null));
-    _drawHexBorder(canvas, path, color: borderColor);
 
-    if (cell.isObstacle) {
-      _drawObstacleFenceOrRock(canvas, center, hexRadius);
+    // 3. Draw special collectible / terrain props
+    if (cell.specialType != SpecialTileType.none && _specialImage != null) {
+      _drawSpecialProp(canvas, _specialImage!, center, hexRadius);
     }
 
+    // 4. Selection glow
     if (isSelected) {
       _drawSelectionGlow(canvas, path);
     }
 
+    // 5. Valid move indicator (neon mint glow hex asset already renders, plus pulse)
     if (isValidMove) {
-      _drawValidMoveDashedOutline(canvas, center, hexRadius);
+      _drawValidMovePulse(canvas, center, hexRadius);
     }
 
+    // 6. Cow Herd & Stack Counter Badge
     if (herd != null && herd!.size > 0) {
       double squashX = 1.0;
       double squashY = 1.0;
       double yOffset = 0.0;
       double rotation = 0.0;
 
-      // 1. Landing bounce squash-and-stretch
+      // Landing bounce squash-and-stretch
       if (_bounceTimer > 0) {
         final t = 1.0 - (_bounceTimer / 0.35);
         final wave = sin(t * pi * 3.5) * exp(-3.0 * t);
@@ -246,8 +250,14 @@ class HexCellComponent extends PositionComponent {
         squashY -= wave * 0.22;
       }
 
-      // 2. Selected eager bounce vs. idle breathing & personality
-      if (isSelected) {
+      // Dizzy wobble when boxed in vs. playful idle breathing
+      if (_isTrapped) {
+        // Dizzy head wobble & disoriented bobbing
+        rotation = sin(_lifeTime * 9.0) * 0.09;
+        yOffset = sin(_lifeTime * 4.5) * 2.0;
+        squashX += sin(_lifeTime * 3.0) * 0.02;
+        squashY -= sin(_lifeTime * 3.0) * 0.02;
+      } else if (isSelected) {
         final hop = sin(_lifeTime * 9.0).abs() * 5.0;
         yOffset -= hop;
         rotation = sin(_lifeTime * 12.0) * 0.07;
@@ -261,7 +271,6 @@ class HexCellComponent extends PositionComponent {
         squashX += breath * 0.03;
         squashY -= breath * 0.03;
 
-        // Occasional playful ear wiggle / head tilt
         final earCycle = (_lifeTime * 0.75 + cell.position.q * 2.1 + cell.position.r * 1.5) % 4.5;
         if (earCycle < 0.4) {
           rotation = sin(earCycle / 0.4 * pi * 4) * 0.07;
@@ -269,20 +278,21 @@ class HexCellComponent extends PositionComponent {
       }
 
       if (_cowImage != null) {
+        final cowRadius = hexRadius * 0.88;
         _drawAsset(
           canvas,
           _cowImage!,
           center,
-          hexRadius * 0.78,
-          yOffset,
+          cowRadius,
+          yOffset - hexRadius * 0.08,
           scaleX: squashX,
           scaleY: squashY,
           rotation: rotation,
         );
-        _drawCowCountBadge(
+        _drawBadge(
           canvas,
-          Offset(center.x + hexRadius * 0.32 * squashX, center.y + yOffset + hexRadius * 0.28 * squashY),
-          hexRadius * 0.7,
+          Offset(center.x + hexRadius * 0.35 * squashX, center.y + yOffset + hexRadius * 0.32 * squashY),
+          hexRadius * 0.76,
           herd!.size,
           AppColors.getPlayerPrimary(herd!.owner),
         );
@@ -297,6 +307,90 @@ class HexCellComponent extends PositionComponent {
         );
       }
     }
+  }
+
+  void _drawHexSprite(Canvas canvas, Path path, Vector2 center, double radius) {
+    ui.Image? hexImg;
+    if (cell.isObstacle) {
+      hexImg = imageCache[AssetPaths.hexBlockedTrapped];
+    } else if (isValidMove) {
+      hexImg = imageCache[AssetPaths.hexValidMoveHighlight];
+    } else if (territoryOwner == PlayerColor.blue) {
+      hexImg = imageCache[AssetPaths.hexPlayer1Claimed];
+    } else if (territoryOwner == PlayerColor.red) {
+      hexImg = imageCache[AssetPaths.hexPlayer2Claimed];
+    } else {
+      hexImg = imageCache[AssetPaths.hexNeutralPasture];
+    }
+
+    if (hexImg != null) {
+      final hexWidth = radius * sqrt(3);
+      final scale = hexWidth / 512.0;
+      final dstW = 560.0 * scale;
+      final dstH = 600.0 * scale;
+      final dstLeft = center.x - 280.0 * scale;
+      final dstTop = center.y - 260.0 * scale;
+      final dst = Rect.fromLTWH(dstLeft, dstTop, dstW, dstH);
+      final src = Rect.fromLTWH(0, 0, hexImg.width.toDouble(), hexImg.height.toDouble());
+
+      canvas.drawImageRect(hexImg, src, dst, Paint()..filterQuality = FilterQuality.medium);
+
+      // Tint for multiplayer 3rd/4th players (yellow, purple)
+      if (territoryOwner != null &&
+          territoryOwner != PlayerColor.blue &&
+          territoryOwner != PlayerColor.red &&
+          !cell.isObstacle &&
+          !isValidMove) {
+        final tint = AppColors.getPlayerPrimary(territoryOwner!).withValues(alpha: 0.22);
+        canvas.drawPath(path, Paint()..color = tint);
+      }
+    } else {
+      _draw3DDepth(canvas, path, center, radius);
+      _drawHexFill(canvas, path, center, radius);
+      _drawHexBorder(canvas, path);
+    }
+  }
+
+  void _drawValidMovePulse(Canvas canvas, Vector2 center, double radius) {
+    final movePulse = (sin(_lifeTime * 5.0) + 1.0) / 2.0;
+    final innerPath = _createHexPath(center, radius * 0.88);
+    final pulsePaint = Paint()
+      ..color = const Color(0xFF69F0AE).withValues(alpha: 0.10 + movePulse * 0.15)
+      ..style = PaintingStyle.fill;
+    canvas.drawPath(innerPath, pulsePaint);
+  }
+
+  void _drawBadge(Canvas canvas, Offset center, double diameter, int count, Color teamColor) {
+    final badgeImg = imageCache[AssetPaths.stackCounterBadge];
+    final radius = diameter / 2;
+    if (badgeImg != null) {
+      final src = Rect.fromLTWH(0, 0, badgeImg.width.toDouble(), badgeImg.height.toDouble());
+      final dst = Rect.fromCircle(center: center, radius: radius);
+      canvas.drawImageRect(badgeImg, src, dst, Paint()..filterQuality = FilterQuality.medium);
+    } else {
+      _drawCowCountBadge(canvas, center, diameter, count, teamColor);
+      return;
+    }
+
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: '$count',
+        style: TextStyle(
+          fontSize: diameter * 0.55,
+          fontWeight: FontWeight.w900,
+          color: const Color(0xFFFFD54F),
+          fontFamily: 'Bangers',
+          shadows: const [
+            Shadow(color: Colors.black87, offset: Offset(1.2, 1.2), blurRadius: 2),
+          ],
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    textPainter.paint(
+      canvas,
+      Offset(center.dx - textPainter.width / 2, center.dy - textPainter.height / 2 - 1),
+    );
   }
 
   Path _createHexPath(Vector2 center, double radius) {
@@ -503,22 +597,6 @@ class HexCellComponent extends PositionComponent {
     canvas.drawPath(path, borderPaint);
   }
 
-  void _drawObstacleFenceOrRock(Canvas canvas, Vector2 center, double radius) {
-    final isFence = (cell.position.q + cell.position.r) % 2 == 0;
-    final textPainter = TextPainter(
-      text: TextSpan(
-        text: isFence ? '🪵' : '🪨',
-        style: TextStyle(fontSize: radius * 0.9),
-      ),
-      textDirection: TextDirection.ltr,
-    );
-    textPainter.layout();
-    textPainter.paint(
-      canvas,
-      Offset(center.x - textPainter.width / 2, center.y - textPainter.height / 2),
-    );
-  }
-
   void _drawSelectionGlow(Canvas canvas, Path path) {
     final glowPaint = Paint()
       ..color = const Color(0xFFFFD54F).withValues(alpha: 0.5 + pulseValue * 0.5)
@@ -534,38 +612,6 @@ class HexCellComponent extends PositionComponent {
       ..strokeWidth = 1.8;
 
     canvas.drawPath(path, innerGlow);
-  }
-
-  void _drawValidMoveDashedOutline(Canvas canvas, Vector2 center, double radius) {
-    final movePulse = (sin(_lifeTime * 5.0) + 1.0) / 2.0;
-    
-    // Soft glowing green indicator fill
-    final hexPath = _createHexPath(center, radius * 0.88);
-    final fillPaint = Paint()
-      ..color = const Color(0xFF69F0AE).withValues(alpha: 0.12 + movePulse * 0.14)
-      ..style = PaintingStyle.fill;
-    canvas.drawPath(hexPath, fillPaint);
-
-    final dashPaint = Paint()
-      ..color = Color.lerp(const Color(0xFF69F0AE), Colors.white, movePulse)!
-          .withValues(alpha: 0.75 + movePulse * 0.25)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.4 + movePulse * 1.2;
-
-    // Draw dashed hex perimeter
-    final innerRadius = radius * 0.9;
-    for (var i = 0; i < 6; i++) {
-      final a1 = (pi / 3) * i - pi / 6;
-      final a2 = (pi / 3) * (i + 1) - pi / 6;
-      final p1 = Offset(center.x + innerRadius * cos(a1), center.y + innerRadius * sin(a1));
-      final p2 = Offset(center.x + innerRadius * cos(a2), center.y + innerRadius * sin(a2));
-
-      final mid1 = Offset(p1.dx * 0.65 + p2.dx * 0.35, p1.dy * 0.65 + p2.dy * 0.35);
-      final mid2 = Offset(p1.dx * 0.35 + p2.dx * 0.65, p1.dy * 0.35 + p2.dy * 0.65);
-
-      canvas.drawLine(p1, mid1, dashPaint);
-      canvas.drawLine(mid2, p2, dashPaint);
-    }
   }
 
   void _drawCowPieceWithShield(
@@ -670,24 +716,6 @@ class HexCellComponent extends PositionComponent {
     _drawShieldBadge(canvas, shieldCenter, shieldWidth, shieldHeight, herdSize, primaryColor);
 
     canvas.restore();
-  }
-
-  void _drawFullTileAsset(Canvas canvas, ui.Image image, Vector2 center, double radius) {
-    final src = Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble());
-    final dst = Rect.fromLTWH(
-      center.x - radius,
-      center.y - radius,
-      radius * 2,
-      radius * 2,
-    );
-    canvas.drawImageRect(
-      image,
-      src,
-      dst,
-      Paint()
-        ..filterQuality = FilterQuality.medium
-        ..color = Colors.white,
-    );
   }
 
   void _drawAsset(

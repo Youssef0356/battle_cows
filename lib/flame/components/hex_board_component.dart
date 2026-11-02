@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'dart:ui' as ui;
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flame/components.dart';
 import '../../assets/asset_paths.dart';
@@ -112,7 +113,100 @@ class HexBoardComponent extends PositionComponent {
       } else {
         entry.value.pulseValue = 0;
       }
+
+      final herd = entry.value.herd;
+      if (herd != null && herd.size > 1) {
+        final trapped = board.getReachablePositions(entry.key, max(herd.size, 5)).isEmpty;
+        entry.value.isTrapped = trapped;
+      } else {
+        entry.value.isTrapped = false;
+      }
     }
+  }
+
+  @override
+  void render(Canvas canvas) {
+    super.render(canvas);
+
+    // Draw glowing curved trajectory arrows for valid moves
+    if (_selectedPosition != null && _validMoves.isNotEmpty) {
+      final fromCell = _cells[_selectedPosition];
+      if (fromCell != null) {
+        final hexRadius = size.x / 30;
+        for (final targetPos in _validMoves) {
+          final toCell = _cells[targetPos];
+          if (toCell != null) {
+            _drawTrajectoryArrow(canvas, fromCell.position, toCell.position, hexRadius);
+          }
+        }
+      }
+    }
+  }
+
+  void _drawTrajectoryArrow(Canvas canvas, Vector2 from, Vector2 to, double radius) {
+    final dist = from.distanceTo(to);
+    if (dist < 1.0) return;
+
+    final midX = (from.x + to.x) / 2;
+    final midY = (from.y + to.y) / 2;
+    final curveHeight = min(dist * 0.28, 48.0);
+    final ctrl = Offset(midX, midY - curveHeight);
+
+    final arrowPath = Path()
+      ..moveTo(from.x, from.y)
+      ..quadraticBezierTo(ctrl.dx, ctrl.dy, to.x, to.y);
+
+    // Outer neon glow
+    final glowPaint = Paint()
+      ..shader = const LinearGradient(
+        colors: [Color(0xFF00E5FF), Color(0xFF69F0AE)],
+      ).createShader(Rect.fromPoints(Offset(from.x, from.y), Offset(to.x, to.y)))
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4.8
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+    canvas.drawPath(arrowPath, glowPaint);
+
+    // Inner bright beam
+    final beamPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.95)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.0
+      ..strokeCap = StrokeCap.round;
+    canvas.drawPath(arrowPath, beamPaint);
+
+    // Arrowhead at destination
+    final dx = to.x - ctrl.dx;
+    final dy = to.y - ctrl.dy;
+    final angle = atan2(dy, dx);
+
+    final arrowHead = Path();
+    final arrowSize = radius * 0.55;
+    arrowHead.moveTo(to.x, to.y);
+    arrowHead.lineTo(
+      to.x - arrowSize * cos(angle - pi / 6),
+      to.y - arrowSize * sin(angle - pi / 6),
+    );
+    arrowHead.lineTo(
+      to.x - arrowSize * 0.6 * cos(angle),
+      to.y - arrowSize * 0.6 * sin(angle),
+    );
+    arrowHead.lineTo(
+      to.x - arrowSize * cos(angle + pi / 6),
+      to.y - arrowSize * sin(angle + pi / 6),
+    );
+    arrowHead.close();
+
+    final headPaint = Paint()
+      ..color = const Color(0xFF00E5FF)
+      ..style = PaintingStyle.fill;
+    canvas.drawPath(arrowHead, headPaint);
+
+    final headStroke = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.4;
+    canvas.drawPath(arrowHead, headStroke);
   }
 
   /// Sets the player whose turn it is; their herds get a colored

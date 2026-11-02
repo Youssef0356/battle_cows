@@ -15,6 +15,10 @@ class AppLocalizationsEn implements AppLocalizations {
   @override String get rematch => 'REMATCH';
   @override String get draw => 'DRAW!';
   @override String playerWins(String name) => '$name WINS!';
+  @override String sharedVictory(String names) => 'SHARED VICTORY!\n$names';
+  @override String get allPlayersTied => "IT'S A DRAW!\nALL PLAYERS TIED";
+  @override String get numberOfPlayers => 'NUMBER OF PLAYERS';
+  @override String playersCount(int count) => '$count Players';
   @override String get shareMessage =>
       'Check out Battle Cows! 🐮 Round up, rampage, repeat! https://play.google.com/store/apps/details?id=com.battlecows.game';
 
@@ -342,7 +346,7 @@ class AppLocalizationsEn implements AppLocalizations {
     switch (id) {
       case 1: return 'Meadow Crossing';
       case 2: return 'Muddy Creek';
-      case 3: return 'Golden Pasture Duel';
+      case 3: return 'Meadow Showdown';
       case 4: return 'Fence Frenzy';
       case 5: return 'Stampede Canyon';
       case 6: return 'Ranch Showdown';
@@ -354,7 +358,7 @@ class AppLocalizationsEn implements AppLocalizations {
     switch (id) {
       case 1: return 'Barnyard Basics';
       case 2: return 'Treading Through Mud';
-      case 3: return 'The Crown Clover';
+      case 3: return 'Cowboy Clash';
       case 4: return 'Timber Defense';
       case 5: return 'Full Throttle';
       case 6: return 'The Grand Pasture';
@@ -378,7 +382,7 @@ class AppLocalizationsEn implements AppLocalizations {
     switch (id) {
       case 1: return 'Farmer Bob is waking up from a nap. Spread your herd and claim the open pastures!';
       case 2: return 'Mud slows your cows down! Plan your splits carefully to bypass the bog.';
-      case 3: return 'Tex wants the central Golden Pasture. Capture the middle and hold it!';
+      case 3: return 'Tex is a seasoned cowhand. Spread your herd quickly and claim the open pastures!';
       case 4: return 'Woody placed fences everywhere! Place your own fences to box him into a corner.';
       case 5: return 'Stampede Rush mode! Build 4+ cow stacks to trigger blistering speed!';
       case 6: return 'Sheriff Angus is the reigning champion. Bring all your tactical mastery to defeat him!';
@@ -390,7 +394,7 @@ class AppLocalizationsEn implements AppLocalizations {
     switch (id) {
       case 1: return 'Claim more territory than Farmer Bob to earn up to 3 stars.';
       case 2: return 'Navigate past the mud and capture the green pastures.';
-      case 3: return 'Seize the central Golden Pasture for bonus cows and triple points.';
+      case 3: return 'Outmaneuver Cowboy Tex and claim more territory.';
       case 4: return 'Use fences tactically to outmaneuver and trap Woody Bull.';
       case 5: return 'Unleash stampede rushes to overwhelm Bessie Brawn.';
       case 6: return 'Outsmart Sheriff Angus on an epic grand pasture.';

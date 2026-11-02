@@ -10,7 +10,6 @@ class PlacementPreviewComponent extends PositionComponent {
   List<HexPosition> _previewHexes = [];
   bool _isValid = false;
   double hexSize;
-  double _pulse = 0;
   final List<HexPosition> Function()? getPlacedHexes;
 
   PlacementPreviewComponent({
@@ -33,11 +32,6 @@ class PlacementPreviewComponent extends PositionComponent {
     _previewHexes = List.from(translated.hexes);
   }
 
-  @override
-  void update(double dt) {
-    super.update(dt);
-    _pulse += dt;
-  }
 
   @override
   void render(Canvas canvas) {
@@ -53,33 +47,23 @@ class PlacementPreviewComponent extends PositionComponent {
 
     // 3. Render current dragged/positioned tile preview
     if (_previewHexes.isNotEmpty) {
+      final previewRadius = hexSize * 0.98;
       for (final pos in _previewHexes) {
         final px = hexSize * (sqrt(3) * pos.q + sqrt(3) / 2 * pos.r);
         final py = hexSize * (3.0 / 2 * pos.r);
-        _drawPreviewHex(canvas, Offset(px, py), hexSize);
+        _drawPreviewHex(canvas, Offset(px, py), previewRadius);
       }
     }
   }
 
   void _drawCenterStartingGuide(Canvas canvas) {
     final center = Offset.zero;
-    final path = _createHexPath(center, hexSize * 1.05);
-    final glow = (sin(_pulse * 3.5) + 1.0) / 2.0;
+    final path = _createHexPath(center, hexSize * 0.98);
 
-    // Soft sunlit golden halo
-    canvas.drawCircle(
-      center,
-      hexSize * 1.5,
-      Paint()
-        ..color = const Color(0xFFFFD54F).withValues(alpha: 0.18 + glow * 0.12)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12),
-    );
-
-    // Glowing golden dashed boundary
     canvas.drawPath(
       path,
       Paint()
-        ..color = const Color(0xFFFFD54F).withValues(alpha: 0.2 + glow * 0.15)
+        ..color = const Color(0xFFFFD54F).withValues(alpha: 0.12)
         ..style = PaintingStyle.fill,
     );
 
@@ -87,15 +71,14 @@ class PlacementPreviewComponent extends PositionComponent {
       canvas,
       path,
       Paint()
-        ..color = const Color(0xFFFFD54F).withValues(alpha: 0.75 + glow * 0.25)
+        ..color = const Color(0xFFFFD54F).withValues(alpha: 0.7)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.8,
+        ..strokeWidth = 2.0,
     );
   }
 
   void _drawDockingSlots(Canvas canvas, List<HexPosition> placed) {
     final outer = BoardGenerator.getOuterHexes(placed);
-    final glow = (sin(_pulse * 3.0) + 1.0) / 2.0;
     final previewSet = _previewHexes.toSet();
 
     for (final hex in outer) {
@@ -105,23 +88,15 @@ class PlacementPreviewComponent extends PositionComponent {
       final px = hexSize * (sqrt(3) * hex.q + sqrt(3) / 2 * hex.r);
       final py = hexSize * (3.0 / 2 * hex.r);
       final center = Offset(px, py);
-      final path = _createHexPath(center, hexSize * 0.96);
-
-      // Cheerful pasture green snap slot
-      canvas.drawPath(
-        path,
-        Paint()
-          ..color = const Color(0xFF81C784).withValues(alpha: 0.08 + glow * 0.08)
-          ..style = PaintingStyle.fill,
-      );
+      final path = _createHexPath(center, hexSize * 0.95);
 
       _drawDashedHex(
         canvas,
         path,
         Paint()
-          ..color = const Color(0xFF81C784).withValues(alpha: 0.45 + glow * 0.25)
+          ..color = const Color(0xFF81C784).withValues(alpha: 0.35)
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.8,
+          ..strokeWidth = 1.4,
       );
     }
   }
@@ -148,61 +123,35 @@ class PlacementPreviewComponent extends PositionComponent {
 
   void _drawPreviewHex(Canvas canvas, Offset center, double radius) {
     final path = _createHexPath(center, radius);
-    final glow = _isValid ? (sin(_pulse * 4.5) + 1.0) / 2.0 : 0.0;
 
-    // Contact drop shadow
-    final shadowPath = _createHexPath(Offset(center.dx, center.dy + 3.0), radius);
+    // Subtle contact shadow
+    final shadowPath = _createHexPath(Offset(center.dx, center.dy + 1.5), radius);
     canvas.drawPath(
       shadowPath,
       Paint()
-        ..color = Colors.black.withValues(alpha: 0.25)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+        ..color = Colors.black.withValues(alpha: 0.15)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2),
     );
 
-    // Fill
+    // Natural pasture preview fill
     final fillColor = _isValid
-        ? const Color(0xFF66BB6A).withValues(alpha: 0.40 + glow * 0.20)
-        : const Color(0xFFEF5350).withValues(alpha: 0.42);
+        ? const Color(0xFF66BB6A).withValues(alpha: 0.32)
+        : const Color(0xFFEF5350).withValues(alpha: 0.32);
 
     canvas.drawPath(path, Paint()..color = fillColor);
 
-    // Glowing border
+    // Clean, crisp border accurately matching final placed hex cell border
     final borderColor = _isValid
-        ? const Color(0xFF00E676)
-        : const Color(0xFFFF5252);
+        ? const Color(0xFF4CAF50)
+        : const Color(0xFFE53935);
 
-    // Outer glow for valid placement
-    if (_isValid) {
-      canvas.drawPath(
-        path,
-        Paint()
-          ..color = const Color(0xFF00E676).withValues(alpha: 0.35 + glow * 0.35)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 5.0 + glow * 2.0
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
-      );
-    }
-
-    // Crisp cartoon border
     canvas.drawPath(
       path,
       Paint()
         ..color = borderColor
         ..style = PaintingStyle.stroke
-        ..strokeWidth = _isValid ? 3.0 + glow * 1.0 : 2.5,
+        ..strokeWidth = 2.2,
     );
-
-    // Subtle inner pasture highlight
-    if (_isValid) {
-      final innerPath = _createHexPath(center, radius * 0.88);
-      canvas.drawPath(
-        innerPath,
-        Paint()
-          ..color = Colors.white.withValues(alpha: 0.25 + glow * 0.15)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.2,
-      );
-    }
   }
 
   Path _createHexPath(Offset center, double radius) {

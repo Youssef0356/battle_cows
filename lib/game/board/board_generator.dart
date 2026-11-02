@@ -36,14 +36,7 @@ class BoardGenerator {
     if (sorted.isEmpty) return {};
     final specials = <HexPosition, SpecialTileType>{};
 
-    if (mode == ChallengeMode.goldenPasture) {
-      // The innermost hex is the Golden Pasture
-      specials[sorted.first] = SpecialTileType.goldenPasture;
-      if (sorted.length > 6) {
-        specials[sorted[sorted.length ~/ 3]] = SpecialTileType.hayBale;
-        specials[sorted[sorted.length * 2 ~/ 3]] = SpecialTileType.hayBale;
-      }
-    } else if (mode == ChallengeMode.stampedeRush) {
+    if (mode == ChallengeMode.stampedeRush) {
       if (sorted.length > 3) specials[sorted[sorted.length ~/ 3]] = SpecialTileType.hayBale;
       if (sorted.length > 6) specials[sorted[sorted.length * 2 ~/ 3]] = SpecialTileType.hayBale;
       if (sorted.length > 8) specials[sorted[sorted.length ~/ 2]] = SpecialTileType.goldenPasture;

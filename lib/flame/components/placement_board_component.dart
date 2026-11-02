@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../assets/asset_paths.dart';
 import '../../game/models/hex_position.dart';
 import '../battle_cows_game.dart';
 
@@ -13,6 +14,7 @@ class PlacementBoardComponent extends PositionComponent {
   final BattleCowsGame game;
   final double hexSize;
   ui.Image? _texture;
+  ui.Image? _hexPastureImg;
   double _pulseTime = 0;
 
   List<HexPosition>? _animatingHexes;
@@ -30,11 +32,9 @@ class PlacementBoardComponent extends PositionComponent {
   Future<void> onLoad() async {
     await super.onLoad();
     try {
-      final data = await rootBundle.load('assets/images/Tile Image/Tile Texture.jpg');
-      final bytes = data.buffer.asUint8List();
-      final codec = await ui.instantiateImageCodec(bytes);
-      final frame = await codec.getNextFrame();
-      _texture = frame.image;
+      final data = await rootBundle.load(AssetPaths.hexNeutralPasture);
+      final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+      _hexPastureImg = (await codec.getNextFrame()).image;
     } catch (_) {}
   }
 
@@ -160,6 +160,22 @@ class PlacementBoardComponent extends PositionComponent {
       canvas.translate(center.dx, center.dy);
       canvas.scale(scale);
       canvas.translate(-center.dx, -center.dy);
+    }
+
+    if (_hexPastureImg != null) {
+      final hexWidth = hexSize * 0.98 * sqrt(3);
+      final s = hexWidth / 512.0;
+      final dstW = 560.0 * s;
+      final dstH = 600.0 * s;
+      final dst = Rect.fromLTWH(
+        center.dx - 280.0 * s,
+        center.dy - 260.0 * s,
+        dstW,
+        dstH,
+      );
+      final src = Rect.fromLTWH(0, 0, _hexPastureImg!.width.toDouble(), _hexPastureImg!.height.toDouble());
+      canvas.drawImageRect(_hexPastureImg!, src, dst, Paint()..filterQuality = FilterQuality.medium);
+      return;
     }
 
     final path = _createHexPath(center, hexSize * 0.98);

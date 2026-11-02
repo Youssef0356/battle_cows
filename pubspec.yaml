@@ -1,7 +1,7 @@
 name: battle_cows
 description: "Battle Cows - A hex-based territory strategy game"
 publish_to: 'https://flutter.dev'
-version: 1.2.1+13
+version: 1.2.2+14
 
 environment:
   sdk: ^3.11.1
@@ -40,6 +40,11 @@ flutter:
     - assets/images/Effects/
     - assets/images/Tile Image/
     - assets/images/ui/
+    - assets/images/Ui V2/
+    - assets/images/Ui V2/Hexes_normalized/
+    - assets/images/Ui V2/Cows_normalized/
+    - assets/images/Ui V2/battle_cows_ui_components/
+    - assets/images/Ui V2/battle_cows_main_menu_ui/
     - assets/sounds/
     - assets/audio/
     - assets/models/

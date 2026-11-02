@@ -217,7 +217,10 @@ class GameEngine {
     
     // Check if player lost all hearts
     if (_hearts[player.color]! <= 0) {
-      _gameOver = true;
+      final alivePlayers = _players.where((p) => !playerIsEliminated(p.color)).toList();
+      if (alivePlayers.length <= 1) {
+        _gameOver = true;
+      }
       return currentHearts - 1;
     }
     
@@ -277,91 +280,218 @@ class GameEngine {
     return counts;
   }
 
-  PlayerColor? determineWinner() {
-    if (!_gameOver) return null;
-
-    final territoryCounts = getTerritoryCount();
-    PlayerColor? winner;
-    int maxTerritory = -1;
-    int tieCount = 0;
-
-    for (final entry in territoryCounts.entries) {
-      if (entry.value > maxTerritory) {
-        maxTerritory = entry.value;
-        winner = entry.key;
-        tieCount = 1;
-      } else if (entry.value == maxTerritory) {
-        tieCount++;
-      }
-    }
-
-    if (tieCount > 1) {
-      return _breakTie();
-    }
-
-    return winner;
-  }
-
-  PlayerColor? _breakTie() {
-    if (_board == null) return null;
-
-    final largestGroups = <PlayerColor, int>{};
-
-    for (final player in _players) {
-      final herds = _board!.herds.where((h) => h.owner == player.color).toList();
-      var largest = 0;
-      for (final herd in herds) {
-        final size = _board!.getContiguousGroupSize(herd.position);
-        if (size > largest) largest = size;
-      }
-      largestGroups[player.color] = largest;
-    }
-
-    PlayerColor? winner;
-    int maxSize = -1;
-
-    for (final entry in largestGroups.entries) {
-      if (entry.value > maxSize) {
-        maxSize = entry.value;
-        winner = entry.key;
-      }
-    }
-
-    return winner;
-  }
-
   bool playerIsEliminated(PlayerColor color) {
     if (_board == null) return false;
     final hearts = _hearts[color] ?? 3;
     return hearts <= 0;
   }
 
-  PlayerColor? determineWinnerWithHearts() {
-    if (!_gameOver) return null;
+  /// Returns all players who tied for 1st place after all tiebreakers.
+  /// If there is a single clear winner, returns a list with that single player.
+  /// If game is not over, returns an empty list.
+  List<PlayerColor> getWinningPlayers() {
+    if (!_gameOver) return [];
 
-    final alivePlayers = _players.where((p) => playerIsEliminated(p.color) == false).toList();
-    if (alivePlayers.length == 1) return alivePlayers.first.color;
+    final candidatePlayers = _challengeMode == ChallengeMode.timed
+        ? _players.where((p) => !playerIsEliminated(p.color)).toList()
+        : _players;
+
+    if (candidatePlayers.isEmpty) return [];
+    if (candidatePlayers.length == 1) return [candidatePlayers.first.color];
 
     final territoryCounts = getTerritoryCount();
-    PlayerColor? winner;
-    int maxTerritory = -1;
-    int tieCount = 0;
 
-    for (final player in alivePlayers) {
+    // If all candidate players successfully placed all 16 herds, the match is an immediate draw
+    final allPlaced16 = candidatePlayers.isNotEmpty &&
+        candidatePlayers.every((p) => (territoryCounts[p.color] ?? 0) >= 16);
+    if (allPlaced16) {
+      return candidatePlayers.map((p) => p.color).toList();
+    }
+
+    int maxTerritory = -1;
+    for (final player in candidatePlayers) {
       final score = territoryCounts[player.color] ?? 0;
       if (score > maxTerritory) {
         maxTerritory = score;
-        winner = player.color;
-        tieCount = 1;
-      } else if (score == maxTerritory) {
-        tieCount++;
       }
     }
 
-    if (tieCount > 1) {
-      return _breakTie();
+    final topScorers = candidatePlayers
+        .where((p) => (territoryCounts[p.color] ?? 0) == maxTerritory)
+        .map((p) => p.color)
+        .toList();
+
+    if (topScorers.length <= 1) {
+      return topScorers;
     }
 
-    return winner;
+    // Tie-break only among top scorers
+    return _breakTieFor(topScorers);
   }
+
+  List<PlayerColor> _breakTieFor(List<PlayerColor> tiedPlayers) {
+    if (_board == null || tiedPlayers.isEmpty) return tiedPlayers;
+    if (tiedPlayers.length == 1) return tiedPlayers;
+
+    final largestGroups = <PlayerColor, int>{};
+    for (final color in tiedPlayers) {
+      final herds = _board!.herds.where((h) => h.owner == color).toList();
+      var largest = 0;
+      for (final herd in herds) {
+        final size = _board!.getContiguousGroupSize(herd.position);
+        if (size > largest) largest = size;
+      }
+      largestGroups[color] = largest;
+    }
+
+    int maxSize = -1;
+    for (final color in tiedPlayers) {
+      final size = largestGroups[color] ?? 0;
+      if (size > maxSize) {
+        maxSize = size;
+      }
+    }
+
+    final bestContiguous = tiedPlayers
+        .where((c) => (largestGroups[c] ?? 0) == maxSize)
+        .toList();
+
+    if (bestContiguous.length <= 1) {
+      return bestContiguous;
+    }
+
+    // Secondary Tie-break: Total cow count on the board
+    final cowCounts = <PlayerColor, int>{};
+    for (final color in bestContiguous) {
+      final totalCows = _board!.herds
+          .where((h) => h.owner == color)
+          .fold<int>(0, (sum, h) => sum + h.size);
+      cowCounts[color] = totalCows;
+    }
+
+    int maxCows = -1;
+    for (final color in bestContiguous) {
+      final cows = cowCounts[color] ?? 0;
+      if (cows > maxCows) {
+        maxCows = cows;
+      }
+    }
+
+    final bestCows = bestContiguous
+        .where((c) => (cowCounts[c] ?? 0) == maxCows)
+        .toList();
+
+    return bestCows;
+  }
+
+  PlayerColor? determineWinner() {
+    final winners = getWinningPlayers();
+    return winners.length == 1 ? winners.first : null;
+  }
+
+  PlayerColor? determineWinnerWithHearts() {
+    return determineWinner();
+  }
+
+  /// Returns sorted standings (#1 to #N) for all players.
+  List<PlayerStanding> getStandings() {
+    final territoryCounts = getTerritoryCount();
+    final largestGroups = <PlayerColor, int>{};
+    final cowCounts = <PlayerColor, int>{};
+
+    for (final player in _players) {
+      final herds = _board?.herds.where((h) => h.owner == player.color).toList() ?? [];
+      var largest = 0;
+      var totalCows = 0;
+      for (final herd in herds) {
+        final size = _board?.getContiguousGroupSize(herd.position) ?? 0;
+        if (size > largest) largest = size;
+        totalCows += herd.size;
+      }
+      largestGroups[player.color] = largest;
+      cowCounts[player.color] = totalCows;
+    }
+
+    final list = _players.map((p) {
+      final isElim = _challengeMode == ChallengeMode.timed && playerIsEliminated(p.color);
+      return _RawStanding(
+        color: p.color,
+        score: isElim ? -1 : (territoryCounts[p.color] ?? 0),
+        largestGroup: largestGroups[p.color] ?? 0,
+        cowCount: cowCounts[p.color] ?? 0,
+        isEliminated: isElim,
+      );
+    }).toList();
+
+    // Sort descending by score, then largestGroup, then cowCount
+    list.sort((a, b) {
+      if (a.isEliminated != b.isEliminated) {
+        return a.isEliminated ? 1 : -1;
+      }
+      final scoreCmp = b.score.compareTo(a.score);
+      if (scoreCmp != 0) return scoreCmp;
+      final groupCmp = b.largestGroup.compareTo(a.largestGroup);
+      if (groupCmp != 0) return groupCmp;
+      return b.cowCount.compareTo(a.cowCount);
+    });
+
+    final standings = <PlayerStanding>[];
+    var currentRank = 1;
+    for (var i = 0; i < list.length; i++) {
+      if (i > 0) {
+        final prev = list[i - 1];
+        final curr = list[i];
+        final isTied = curr.score == prev.score &&
+            curr.largestGroup == prev.largestGroup &&
+            curr.cowCount == prev.cowCount;
+        if (!isTied) {
+          currentRank = i + 1;
+        }
+      }
+      standings.add(PlayerStanding(
+        color: list[i].color,
+        score: list[i].isEliminated ? 0 : list[i].score,
+        largestGroup: list[i].largestGroup,
+        cowCount: list[i].cowCount,
+        rank: currentRank,
+        isEliminated: list[i].isEliminated,
+      ));
+    }
+
+    return standings;
+  }
+}
+
+class _RawStanding {
+  final PlayerColor color;
+  final int score;
+  final int largestGroup;
+  final int cowCount;
+  final bool isEliminated;
+
+  _RawStanding({
+    required this.color,
+    required this.score,
+    required this.largestGroup,
+    required this.cowCount,
+    required this.isEliminated,
+  });
+}
+
+class PlayerStanding {
+  final PlayerColor color;
+  final int score;
+  final int largestGroup;
+  final int cowCount;
+  final int rank;
+  final bool isEliminated;
+
+  const PlayerStanding({
+    required this.color,
+    required this.score,
+    required this.largestGroup,
+    required this.cowCount,
+    required this.rank,
+    this.isEliminated = false,
+  });
 }

@@ -135,7 +135,7 @@ void main() {
 
       if (engine.gameOver) {
         final winner = engine.determineWinner();
-        expect(winner, isNotNull);
+        expect(winner, anyOf(isNull, isA<PlayerColor>()));
       }
     });
   });

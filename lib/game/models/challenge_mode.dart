@@ -5,16 +5,14 @@ enum ChallengeMode {
   standard,
   timed,
   fenceChallenge,
-  goldenPasture,
   stampedeRush,
 }
 
 extension ChallengeModeDetails on ChallengeMode {
   bool get hasTimer => this == ChallengeMode.timed;
   bool get isFenceBattle => this == ChallengeMode.fenceChallenge;
-  bool get isGoldenPasture => this == ChallengeMode.goldenPasture;
   bool get isStampedeRush => this == ChallengeMode.stampedeRush;
-  bool get hasObjective => this == ChallengeMode.goldenPasture;
+  bool get hasObjective => false;
 
   String localizedTitle([BuildContext? context]) {
     final l10n = context != null ? AppLocalizations.of(context) : AppLocalizations.current;
@@ -25,8 +23,6 @@ extension ChallengeModeDetails on ChallengeMode {
         return l10n.modeTimedTitle;
       case ChallengeMode.fenceChallenge:
         return l10n.modeFenceTitle;
-      case ChallengeMode.goldenPasture:
-        return l10n.modeGoldenTitle;
       case ChallengeMode.stampedeRush:
         return l10n.modeStampedeTitle;
     }
@@ -43,8 +39,6 @@ extension ChallengeModeDetails on ChallengeMode {
         return l10n.modeTimedDesc;
       case ChallengeMode.fenceChallenge:
         return l10n.modeFenceDesc;
-      case ChallengeMode.goldenPasture:
-        return l10n.modeGoldenDesc;
       case ChallengeMode.stampedeRush:
         return l10n.modeStampedeDesc;
     }
@@ -60,8 +54,6 @@ extension ChallengeModeDetails on ChallengeMode {
         return '⏱️';
       case ChallengeMode.fenceChallenge:
         return '🪵';
-      case ChallengeMode.goldenPasture:
-        return '🍀';
       case ChallengeMode.stampedeRush:
         return '🌱';
     }

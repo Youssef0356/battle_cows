@@ -46,6 +46,10 @@ abstract class AppLocalizations {
   String get rematch;
   String get draw;
   String playerWins(String name);
+  String sharedVictory(String names);
+  String get allPlayersTied;
+  String get numberOfPlayers;
+  String playersCount(int count);
   String get shareMessage;
 
   // --- Home Screen ---

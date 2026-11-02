@@ -6,16 +6,14 @@ import '../../core/constants/colors.dart';
 import '../../core/localization/app_fonts.dart';
 import '../../core/localization/app_localizations.dart';
 import '../../core/localization/locale_controller.dart';
-import '../../data/services/premium_service.dart';
 import '../../data/services/progress_service.dart';
+import '../../flame/audio_manager.dart';
 import '../../game/models/player.dart';
 import '../dialogs/daily_quests_dialog.dart';
 import '../dialogs/language_selection_dialog.dart';
 import '../dialogs/premium_dialog.dart';
 import '../dialogs/shop_dialog.dart';
 import '../router/app_router.dart';
-import '../widgets/wood_button.dart';
-import '../widgets/rustic_decor.dart';
 import '../../game/models/challenge_mode.dart';
 import '../../game/ai/ai_player.dart';
 import '../../game/tutorial/tutorial_data.dart';
@@ -30,24 +28,15 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen> {
   int _tilesPerPlayer = 5;
-  late AnimationController _animController;
-  late Animation<double> _titleScale;
+  int _multiplayerPlayerCount = 2;
   ProgressService? _progressService;
 
   @override
   void initState() {
     super.initState();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    _animController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1000),
-    );
-    _titleScale = Tween<double>(begin: 0.7, end: 1.0).animate(
-      CurvedAnimation(parent: _animController, curve: Curves.elasticOut),
-    );
-    _animController.forward();
     _initProgress();
   }
 
@@ -104,12 +93,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     });
   }
 
-  @override
-  void dispose() {
-    _animController.dispose();
-    super.dispose();
-  }
-
   List<Player> _createPlayers({required int count, required bool isMultiplayer, Difficulty difficulty = Difficulty.medium}) {
     final l10n = AppLocalizations.of(context);
     final players = <Player>[];
@@ -126,10 +109,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   int _selectedDifficultyIndex = 1;
-
-  /// Home backdrop: the player's equipped theme, or the default farm scene.
-  String get _backgroundAsset =>
-      _progressService?.equippedThemeAsset ?? AssetPaths.background;
 
   void _launchGame({required int playerCount, required int tilesPerPlayer, required bool isMultiplayer, ChallengeMode challengeMode = ChallengeMode.standard}) {
     final difficulty = Difficulty.values[_selectedDifficultyIndex];
@@ -158,6 +137,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     ChallengeMode challengeMode = ChallengeMode.standard,
   }) {
     int selectedTiles = _tilesPerPlayer;
+    int selectedPlayerCount = _multiplayerPlayerCount;
     ChallengeMode selectedMode = challengeMode;
     final l10n = AppLocalizations.of(context);
 
@@ -302,6 +282,103 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     }).toList(),
                   ),
                 ] else ...[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.groups_rounded, color: Color(0xFFFFD54F), size: 18),
+                      const SizedBox(width: 6),
+                      Text(
+                        l10n.numberOfPlayers,
+                        style: AppFonts.bangers(
+                          fontSize: 16,
+                          color: const Color(0xFFFFD54F),
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [2, 3, 4].map((count) {
+                      final isSel = selectedPlayerCount == count;
+                      final playerDotColors = [
+                        AppColors.blue,
+                        AppColors.red,
+                        if (count >= 3) AppColors.yellow,
+                        if (count >= 4) AppColors.purple,
+                      ];
+                      return Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: BouncyPressable(
+                            onTap: () => setDialogState(() => selectedPlayerCount = count),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              decoration: BoxDecoration(
+                                gradient: isSel
+                                    ? const LinearGradient(
+                                        colors: [Color(0xFFFFD54F), Color(0xFFFFA000)],
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                      )
+                                    : LinearGradient(
+                                        colors: [
+                                          Colors.white.withValues(alpha: 0.12),
+                                          Colors.white.withValues(alpha: 0.04),
+                                        ],
+                                      ),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: isSel ? const Color(0xFFFFD54F) : Colors.white24,
+                                  width: isSel ? 2.5 : 1.5,
+                                ),
+                                boxShadow: isSel
+                                    ? [
+                                        BoxShadow(
+                                          color: const Color(0xFFFFD54F).withValues(alpha: 0.35),
+                                          blurRadius: 10,
+                                          spreadRadius: 1,
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: playerDotColors.map((c) => Container(
+                                      margin: const EdgeInsets.symmetric(horizontal: 2),
+                                      width: 9,
+                                      height: 9,
+                                      decoration: BoxDecoration(
+                                        color: c,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: Colors.white, width: 1),
+                                      ),
+                                    )).toList(),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    l10n.playersCount(count),
+                                    textAlign: TextAlign.center,
+                                    style: AppFonts.bangers(
+                                      fontSize: 12.5,
+                                      color: isSel ? const Color(0xFF3E2723) : Colors.white,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -557,9 +634,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           Navigator.pop(ctx);
                           setState(() {
                             _tilesPerPlayer = selectedTiles;
+                            if (isMultiplayer) {
+                              _multiplayerPlayerCount = selectedPlayerCount;
+                            }
                           });
                           _launchGame(
-                            playerCount: 2,
+                            playerCount: isMultiplayer ? selectedPlayerCount : 2,
                             tilesPerPlayer: selectedTiles,
                             isMultiplayer: isMultiplayer,
                             challengeMode: selectedMode,
@@ -674,76 +754,312 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          // Background pasture image (the equipped theme, or the default).
-          Positioned.fill(
-            child: Image.asset(
-              _backgroundAsset,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stack) => Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF2E7D32), Color(0xFF1B5E20), Color(0xFF2E7D32)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
+      backgroundColor: const Color(0xFF2E1A0E),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final screenWidth = constraints.maxWidth;
+          final screenHeight = constraints.maxHeight;
+          final isLandscape = screenWidth > screenHeight;
+          final aspectRatio = screenWidth / screenHeight;
+          final isTabletPortrait = !isLandscape && (screenWidth >= 600 || aspectRatio >= 0.60);
+
+          // Responsive width: mobile uses full width with padding, tablet constrains to comfortable touch width
+          final contentWidth = screenWidth.clamp(320.0, 460.0);
+          // Header plaque height scales proportionally with content width
+          final headerHeight = contentWidth < 350
+              ? 48.0
+              : (contentWidth * 0.155).clamp(52.0, 66.0);
+          final isShortScreen = screenHeight < 720;
+
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              // Responsive Background (Adapts cleanly for phones, tablet portrait, and tablet landscape)
+              _buildResponsiveBackground(
+                screenWidth: screenWidth,
+                screenHeight: screenHeight,
+                isLandscape: isLandscape,
               ),
-            ),
-          ),
-          // Subtle vignette overlay
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withValues(alpha: 0.25),
-                    Colors.transparent,
-                    Colors.black.withValues(alpha: 0.6),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          // Main UI Content in SafeArea
-          SafeArea(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return SingleChildScrollView(
+              // Main UI Content in SafeArea
+              SafeArea(
+                child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
                   child: ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    constraints: BoxConstraints(minHeight: screenHeight),
                     child: IntrinsicHeight(
-                      child: Column(
-                        children: [
-                          _buildTopHeader(),
-                          const Spacer(),
-                          ScaleTransition(
-                            scale: _titleScale,
-                            child: _buildHeroLogo(),
+                      child: Center(
+                        child: SizedBox(
+                          width: contentWidth,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            child: Column(
+                              children: [
+                                // Top Header: Profile plaque on left, action tool buttons on right
+                                SizedBox(
+                                  height: headerHeight,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+                                      _buildProfilePlaque(height: headerHeight),
+                                      _buildTopToolButtons(height: headerHeight),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                // 3D Hero Logo (Battle Cows) centered above the hex platform
+                                _buildHeroLogo(
+                                  contentWidth: contentWidth,
+                                  isShortScreen: isShortScreen || isLandscape,
+                                ),
+                                // Flexible space exposing the background 3D cows on hex platform
+                                if (isShortScreen || isLandscape)
+                                  const SizedBox(height: 12)
+                                else if (isTabletPortrait)
+                                  const Spacer(flex: 5)
+                                else
+                                  const Spacer(flex: 3),
+                                // Main Action Buttons Block
+                                _buildMenuButtons(contentWidth: contentWidth),
+                                // Bottom spacing before the bottom bar
+                                if (isShortScreen || isLandscape)
+                                  const SizedBox(height: 10)
+                                else
+                                  const Spacer(flex: 1),
+                                const SizedBox(height: 8),
+                                // Bottom Bar: Daily Quests banner + Exit button
+                                _buildBottomBar(contentWidth: contentWidth),
+                                const SizedBox(height: 4),
+                              ],
+                            ),
                           ),
-                          const SizedBox(height: 10),
-                          _buildMenuButtons(),
-                          const Spacer(),
-                          _buildBottomRusticBar(),
-                        ],
+                        ),
                       ),
                     ),
                   ),
-                );
-              },
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  /// Responsive background tailored for all form factors:
+  /// - Phones & Foldables: Seamless full-bleed picnic scene with top-anchored alignment.
+  /// - Tablets Portrait: Top-anchored alignment ensures tablecloth & cows stay in view and never shift under the logo.
+  /// - Tablets Landscape: Authentic wide rustic wood table base with a sharp, full-height feathered centerpiece so cows & scene are never cropped out.
+  Widget _buildResponsiveBackground({
+    required double screenWidth,
+    required double screenHeight,
+    required bool isLandscape,
+  }) {
+    if (isLandscape) {
+      final centerWidth = screenHeight * (1536.0 / 2752.0);
+
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          // Base layer: wide rustic wooden table surface
+          Image.asset(
+            AssetPaths.tableGameplayBackground,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Image.asset(
+              AssetPaths.backgroundWood,
+              fit: BoxFit.cover,
             ),
           ),
-          const Positioned.fill(
-            child: IgnorePointer(
-              child: Stack(
+          // Soft ambient vignette across the wide table
+          Container(
+            decoration: const BoxDecoration(
+              gradient: RadialGradient(
+                center: Alignment.center,
+                radius: 1.25,
+                colors: [
+                  Color(0x10000000),
+                  Color(0x751E1008),
+                  Color(0xC0120804),
+                ],
+              ),
+            ),
+          ),
+          // Feathered center artwork displaying the full picnic scene, cows & tablecloth
+          Center(
+            child: SizedBox(
+              width: centerWidth,
+              height: screenHeight,
+              child: ShaderMask(
+                shaderCallback: (rect) {
+                  return const LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black,
+                      Colors.black,
+                      Colors.transparent,
+                    ],
+                    stops: [0.0, 0.08, 0.92, 1.0],
+                  ).createShader(rect);
+                },
+                blendMode: BlendMode.dstIn,
+                child: Image.asset(
+                  AssetPaths.mainMenuBackground,
+                  fit: BoxFit.fitHeight,
+                  alignment: Alignment.topCenter,
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    // Portrait Mode (Phones, Foldables, Tablets):
+    // Use topCenter alignment so the top checkered tablecloth and milk jug are always preserved,
+    // and the cows on the hex platform remain positioned right beneath the hero logo.
+    return Image.asset(
+      AssetPaths.mainMenuBackground,
+      fit: BoxFit.cover,
+      alignment: Alignment.topCenter,
+      errorBuilder: (context, error, stack) => Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF4E342E), Color(0xFF2E1A0E)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 3D Battle Cows carved wood logo, floating directly above the hex cows.
+  Widget _buildHeroLogo({required double contentWidth, required bool isShortScreen}) {
+    final logoWidth = isShortScreen
+        ? (contentWidth * 0.44).clamp(150.0, 195.0)
+        : (contentWidth * 0.50).clamp(175.0, 230.0);
+    final logoHeight = logoWidth * (383.0 / 543.0);
+
+    return SizedBox(
+      width: logoWidth,
+      height: logoHeight,
+      child: Image.asset(
+        AssetPaths.battleCowsLogo,
+        fit: BoxFit.contain,
+      ),
+    );
+  }
+
+  /// Wooden rope-framed player profile plaque (top-left).
+  Widget _buildProfilePlaque({required double height}) {
+    final p = _progressService?.progress;
+    final coins = p?.coins ?? 0;
+    final stars = p?.totalCampaignStars ?? 0;
+    final l10n = AppLocalizations.of(context);
+    final width = height * (526.0 / 204.0);
+
+    return SizedBox(
+      width: width,
+      height: height,
+      child: Stack(
+        children: [
+          // Plaque background sprite
+          Positioned.fill(
+            child: Image.asset(
+              AssetPaths.menuPlayerProfilePlaque,
+              fit: BoxFit.fill,
+            ),
+          ),
+          // Left avatar circle frame
+          Positioned(
+            left: width * (28.0 / 526.0),
+            top: height * (42.0 / 204.0),
+            width: height * (116.0 / 204.0),
+            height: height * (116.0 / 204.0),
+            child: ClipOval(
+              child: Image.asset(
+                AssetPaths.playerCowAvatar,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => const Center(
+                  child: Text('🐮', style: TextStyle(fontSize: 22)),
+                ),
+              ),
+            ),
+          ),
+          // Plaque Text Info (Player Name, Coins, Stars)
+          Positioned(
+            left: width * (162.0 / 526.0),
+            right: width * (24.0 / 526.0),
+            top: height * (26.0 / 204.0),
+            bottom: height * (26.0 / 204.0),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Positioned(top: 12, left: -30, child: RopeStrap(alignment: Alignment.topLeft, width: 190)),
-                  Positioned(bottom: 70, right: -36, child: RopeStrap(alignment: Alignment.bottomRight, width: 210)),
+                  Text(
+                    l10n.defaultPlayerName(1).toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppFonts.bangers(
+                      fontSize: (height * 0.25).clamp(13.0, 18.0),
+                      color: const Color(0xFFFFFDE7),
+                      letterSpacing: 0.8,
+                      shadows: const [
+                        Shadow(
+                          color: Color(0xFF1E1008),
+                          offset: Offset(1.5, 1.5),
+                          blurRadius: 2,
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: height * 0.02),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text('💰', style: TextStyle(fontSize: 13)),
+                      const SizedBox(width: 3),
+                      Text(
+                        '$coins',
+                        style: AppFonts.bangers(
+                          fontSize: (height * 0.22).clamp(12.0, 16.0),
+                          color: const Color(0xFFFFD54F),
+                          letterSpacing: 0.6,
+                          shadows: const [
+                            Shadow(
+                              color: Color(0xFF1E1008),
+                              offset: Offset(1, 1),
+                              blurRadius: 2,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text('⭐', style: TextStyle(fontSize: 13)),
+                      const SizedBox(width: 3),
+                      Text(
+                        '$stars',
+                        style: AppFonts.bangers(
+                          fontSize: (height * 0.22).clamp(12.0, 16.0),
+                          color: const Color(0xFFFFD700),
+                          letterSpacing: 0.6,
+                          shadows: const [
+                            Shadow(
+                              color: Color(0xFF1E1008),
+                              offset: Offset(1, 1),
+                              blurRadius: 2,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -753,78 +1069,574 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildTopHeader() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+  /// Top-right row of 3 tool buttons: Shop, No Ads, Settings.
+  Widget _buildTopToolButtons({required double height}) {
+    final l10n = AppLocalizations.of(context);
+    final btnSize = (height * 0.90).clamp(44.0, 58.0);
+    final spacing = (height * 0.09).clamp(4.0, 7.0);
+
+    Widget buildToolBtn({
+      required String asset,
+      required String label,
+      required VoidCallback onTap,
+    }) {
+      return BouncyPressable(
+        scaleDown: 0.92,
+        onTap: onTap,
+        child: SizedBox(
+          width: btnSize,
+          height: btnSize,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Positioned.fill(
+                child: Image.asset(
+                  asset,
+                  fit: BoxFit.contain,
+                ),
+              ),
+              Positioned(
+                bottom: btnSize * 0.07,
+                child: Text(
+                  label.toUpperCase(),
+                  style: AppFonts.bangers(
+                    fontSize: (btnSize * 0.17).clamp(8.0, 10.0),
+                    color: const Color(0xFFFFF3C4),
+                    letterSpacing: 0.5,
+                    shadows: const [
+                      Shadow(
+                        color: Color(0xFF1E1008),
+                        offset: Offset(0, 1.2),
+                        blurRadius: 2,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // Shop Button
+        buildToolBtn(
+          asset: AssetPaths.menuBtnShop,
+          label: l10n.shopBtn,
+          onTap: () {
+            AudioManager().playSelect();
+            _showShopDialog();
+          },
+        ),
+        SizedBox(width: spacing),
+        // No Ads Button
+        buildToolBtn(
+          asset: AssetPaths.menuBtnNoAds,
+          label: l10n.noAdsBtn,
+          onTap: () {
+            AudioManager().playSelect();
+            PremiumDialog.show(context);
+          },
+        ),
+        SizedBox(width: spacing),
+        // Settings Button
+        buildToolBtn(
+          asset: AssetPaths.uiBtnSettingsGear,
+          label: l10n.settingsBtn,
+          onTap: () {
+            AudioManager().playSelect();
+            Navigator.pushNamed(context, AppRouter.settings);
+          },
+        ),
+      ],
+    );
+  }
+
+  /// Main action buttons block: Campaign, Modes, Challenges, How to Play.
+  Widget _buildMenuButtons({required double contentWidth}) {
+    final l10n = AppLocalizations.of(context);
+    final rowSpacing = (contentWidth * 0.024).clamp(8.0, 11.0);
+    final cardWidth = (contentWidth - rowSpacing) / 2.0;
+
+    // Derived from natural sprite aspect ratios to prevent any stretching
+    // Hero campaign: 543 / 165
+    final campaignHeight = (contentWidth * (165.0 / 543.0)).clamp(85.0, 118.0);
+    // Mode cards: 354 / 165
+    final modeCardHeight = (cardWidth * (165.0 / 354.0)).clamp(72.0, 92.0);
+    // Secondary buttons: 337 / 122
+    final secondaryHeight = (cardWidth * (122.0 / 337.0)).clamp(56.0, 72.0);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // 1. Hero Barnyard Campaign Button
+        BouncyPressable(
+          scaleDown: 0.96,
+          onTap: () {
+            AudioManager().playSelect();
+            Navigator.pushNamed(context, AppRouter.campaign).then((_) {
+              if (mounted) setState(() {});
+            });
+          },
+          child: SizedBox(
+            width: contentWidth,
+            height: campaignHeight,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Positioned.fill(
+                  child: Image.asset(
+                    AssetPaths.menuBtnHeroCampaign,
+                    fit: BoxFit.fill,
+                  ),
+                ),
+                Positioned(
+                  left: contentWidth * 0.28,
+                  right: contentWidth * 0.08,
+                  top: 0,
+                  bottom: 0,
+                  child: Center(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        l10n.barnyardCampaign.toUpperCase(),
+                        maxLines: 1,
+                        style: AppFonts.bangers(
+                          fontSize: (campaignHeight * 0.38).clamp(20.0, 27.0),
+                          color: const Color(0xFFFFF9C4),
+                          letterSpacing: 0.8,
+                          shadows: const [
+                            Shadow(
+                              color: Color(0xFF0F2604),
+                              offset: Offset(2, 2),
+                              blurRadius: 2,
+                            ),
+                            Shadow(
+                              color: Color(0xFF0F2604),
+                              offset: Offset(-1, -1),
+                              blurRadius: 1,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        SizedBox(height: rowSpacing),
+        // 2. Play vs AI & Local Multiplayer Side-by-Side
+        SizedBox(
+          height: modeCardHeight,
+          child: Row(
+            children: [
+              // Play vs AI
+              Expanded(
+                child: BouncyPressable(
+                  scaleDown: 0.94,
+                  onTap: () {
+                    AudioManager().playSelect();
+                    _showGameSetupDialog(title: l10n.playVsAi, isMultiplayer: false);
+                  },
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Positioned.fill(
+                        child: Image.asset(
+                          AssetPaths.menuCardModeBlue,
+                          fit: BoxFit.fill,
+                        ),
+                      ),
+                      Positioned(
+                        left: cardWidth * 0.08,
+                        right: cardWidth * 0.08,
+                        top: modeCardHeight * 0.06,
+                        bottom: modeCardHeight * 0.20,
+                        child: Center(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  width: modeCardHeight * 0.38,
+                                  height: modeCardHeight * 0.38,
+                                  decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Color(0xFF0B2134),
+                                        offset: Offset(1, 1),
+                                        blurRadius: 2,
+                                      ),
+                                    ],
+                                  ),
+                                  child: ClipOval(
+                                    child: Image.asset(
+                                      AssetPaths.playerCowAvatar,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  l10n.playVsAi.toUpperCase(),
+                                  maxLines: 1,
+                                  style: AppFonts.bangers(
+                                    fontSize: (modeCardHeight * 0.36).clamp(16.0, 22.0),
+                                    color: const Color(0xFFFFF9C4),
+                                    letterSpacing: 0.8,
+                                    shadows: const [
+                                      Shadow(
+                                        color: Color(0xFF0B2134),
+                                        offset: Offset(2, 2),
+                                        blurRadius: 2,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              SizedBox(width: rowSpacing),
+              // Local Multiplayer
+              Expanded(
+                child: BouncyPressable(
+                  scaleDown: 0.94,
+                  onTap: () {
+                    AudioManager().playSelect();
+                    _showGameSetupDialog(title: l10n.localMultiplayer, isMultiplayer: true);
+                  },
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Positioned.fill(
+                        child: Image.asset(
+                          AssetPaths.menuCardModeRed,
+                          fit: BoxFit.fill,
+                        ),
+                      ),
+                      Positioned(
+                        left: cardWidth * 0.10,
+                        right: cardWidth * 0.10,
+                        top: modeCardHeight * 0.06,
+                        bottom: modeCardHeight * 0.20,
+                        child: Center(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              'LOCAL\nMULTIPLAYER',
+                              textAlign: TextAlign.center,
+                              style: AppFonts.bangers(
+                                fontSize: (modeCardHeight * 0.29).clamp(14.0, 19.0),
+                                color: const Color(0xFFFFF9C4),
+                                height: 0.95,
+                                letterSpacing: 0.8,
+                                shadows: const [
+                                  Shadow(
+                                    color: Color(0xFF350808),
+                                    offset: Offset(2, 2),
+                                    blurRadius: 2,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: rowSpacing),
+        // 3. Challenges & How to Play Side-by-Side
+        SizedBox(
+          height: secondaryHeight,
+          child: Row(
+            children: [
+              // Challenges
+              Expanded(
+                child: BouncyPressable(
+                  scaleDown: 0.94,
+                  onTap: () {
+                    AudioManager().playSelect();
+                    _showChallengePicker();
+                  },
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Positioned.fill(
+                        child: Image.asset(
+                          AssetPaths.menuBtnSecondaryShield,
+                          fit: BoxFit.fill,
+                        ),
+                      ),
+                      Positioned(
+                        left: cardWidth * 0.28,
+                        right: cardWidth * 0.06,
+                        top: 0,
+                        bottom: 0,
+                        child: Center(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              l10n.challenges.toUpperCase(),
+                              maxLines: 1,
+                              style: AppFonts.bangers(
+                                fontSize: (secondaryHeight * 0.40).clamp(15.0, 21.0),
+                                color: const Color(0xFFFFF9C4),
+                                letterSpacing: 0.8,
+                                shadows: const [
+                                  Shadow(
+                                    color: Color(0xFF261309),
+                                    offset: Offset(1.5, 1.5),
+                                    blurRadius: 2,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              SizedBox(width: rowSpacing),
+              // How to Play
+              Expanded(
+                child: BouncyPressable(
+                  scaleDown: 0.94,
+                  onTap: () {
+                    AudioManager().playSelect();
+                    Navigator.pushNamed(context, AppRouter.tutorial);
+                  },
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Positioned.fill(
+                        child: Image.asset(
+                          AssetPaths.menuBtnSecondaryBlank,
+                          fit: BoxFit.fill,
+                        ),
+                      ),
+                      Positioned(
+                        left: cardWidth * 0.08,
+                        right: cardWidth * 0.06,
+                        top: 0,
+                        bottom: 0,
+                        child: Center(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.menu_book_rounded,
+                                  color: const Color(0xFFFFF3C4),
+                                  size: (secondaryHeight * 0.40).clamp(17.0, 23.0),
+                                  shadows: const [
+                                    Shadow(
+                                      color: Color(0xFF261309),
+                                      offset: Offset(1.5, 1.5),
+                                      blurRadius: 2,
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  l10n.howToPlay.toUpperCase(),
+                                  maxLines: 1,
+                                  style: AppFonts.bangers(
+                                    fontSize: (secondaryHeight * 0.40).clamp(15.0, 21.0),
+                                    color: const Color(0xFFFFF3C4),
+                                    letterSpacing: 0.8,
+                                    shadows: const [
+                                      Shadow(
+                                        color: Color(0xFF261309),
+                                        offset: Offset(1.5, 1.5),
+                                        blurRadius: 2,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Bottom bar with Daily Quests banner and Exit door button.
+  Widget _buildBottomBar({required double contentWidth}) {
+    final p = _progressService?.progress;
+    final readyQuests = p?.dailyQuests.where((q) => q.isComplete && !q.claimed).length ?? 0;
+    final spacing = (contentWidth * 0.024).clamp(8.0, 11.0);
+    // Aspect ratio 560 / 138 = 4.058
+    final bottomBarHeight = (contentWidth * 0.170).clamp(58.0, 74.0);
+    final exitBtnWidth = bottomBarHeight * (169.0 / 161.0);
+    final questsWidth = contentWidth - spacing - exitBtnWidth;
+
+    return SizedBox(
+      height: bottomBarHeight,
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildProfilePlaque(),
-          _buildSideToolButtons(),
+          // Daily Quests Banner
+          Expanded(
+            child: BouncyPressable(
+              scaleDown: 0.96,
+              onTap: () {
+                AudioManager().playSelect();
+                if (_progressService == null) return;
+                DailyQuestsDialog.show(
+                  context: context,
+                  progress: _progressService!,
+                ).then((_) => setState(() {}));
+              },
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: Image.asset(
+                      AssetPaths.menuBannerDailyQuests,
+                      fit: BoxFit.fill,
+                    ),
+                  ),
+                  Positioned(
+                    left: questsWidth * 0.28,
+                    right: questsWidth * 0.06,
+                    top: 0,
+                    bottom: 0,
+                    child: Center(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          AppLocalizations.of(context).dailyQuests.toUpperCase(),
+                          maxLines: 1,
+                          style: AppFonts.bangers(
+                            fontSize: (bottomBarHeight * 0.40).clamp(18.0, 25.0),
+                            color: const Color(0xFFFFF9C4),
+                            letterSpacing: 0.8,
+                            shadows: const [
+                              Shadow(
+                                color: Color(0xFF261309),
+                                offset: Offset(2, 2),
+                                blurRadius: 2,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (readyQuests > 0)
+                    Positioned(
+                      top: -3,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE53935),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.white, width: 1.5),
+                          boxShadow: const [
+                            BoxShadow(color: Colors.black45, offset: Offset(0, 2), blurRadius: 3),
+                          ],
+                        ),
+                        child: Text(
+                          '$readyQuests',
+                          style: AppFonts.bangers(fontSize: 11, color: Colors.white, letterSpacing: 0.5),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(width: spacing),
+          // Exit Button
+          BouncyPressable(
+            scaleDown: 0.92,
+            onTap: () {
+              AudioManager().playSelect();
+              _showExitDialog();
+            },
+            child: SizedBox(
+              width: exitBtnWidth,
+              height: bottomBarHeight,
+              child: Image.asset(
+                AssetPaths.menuBtnExit,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildProfilePlaque() {
-    final p = _progressService?.progress;
-    final coins = p?.coins ?? 0;
+  /// Cartoon dialog confirmation for exiting the game.
+  void _showExitDialog() {
     final l10n = AppLocalizations.of(context);
-
-    return RusticPlank(
-      color: const Color(0xFF4E342E),
-      seed: 17,
-      padding: const EdgeInsets.all(8),
-      child: Row(
+    CartoonDialog.show(
+      context: context,
+      title: l10n.exitGameTitle,
+      child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: const Color(0xFF5D4037),
-              border: Border.all(color: const Color(0xFFFFD54F), width: 2),
-            ),
-            child: const Center(
-              child: Text('🐮', style: TextStyle(fontSize: 26)),
-            ),
+          Text(
+            l10n.exitGameConfirm,
+            style: AppFonts.bangers(fontSize: 16, color: Colors.white70),
+            textAlign: TextAlign.center,
           ),
-          const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
+          const SizedBox(height: 16),
+          Row(
             children: [
-              Row(
-                children: [
-                  Text(
-                    l10n.defaultPlayerName(1),
-                    style: AppFonts.bangers(
-                      fontSize: 16,
-                      color: Colors.white,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Text('💰', style: TextStyle(fontSize: 12)),
-                  Text(
-                    ' $coins',
-                    style: AppFonts.bangers(
-                      fontSize: 14,
-                      color: const Color(0xFFFFD54F),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Text('⭐', style: TextStyle(fontSize: 12)),
-                  Text(
-                    ' ${p?.totalCampaignStars ?? 0}',
-                    style: AppFonts.bangers(
-                      fontSize: 14,
-                      color: const Color(0xFFFFD700),
-                    ),
-                  ),
-                ],
+              Expanded(
+                child: KenneyButton(
+                  label: l10n.cancel,
+                  isWide: true,
+                  style: KenneyBtnStyle.neutral,
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: KenneyButton(
+                  label: l10n.exit,
+                  isWide: true,
+                  style: KenneyBtnStyle.danger,
+                  onPressed: () {
+                    Navigator.pop(context);
+                    SystemNavigator.pop();
+                  },
+                ),
               ),
             ],
           ),
@@ -832,329 +1644,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       ),
     );
   }
-
-  Widget _buildSideToolButtons() {
-    final l10n = AppLocalizations.of(context);
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildWoodToolButton(icon: Icons.school_rounded, label: l10n.tutorialBtn, onTap: _launchTutorial),
-            const SizedBox(width: 6),
-            _buildWoodToolButton(icon: Icons.settings, label: l10n.settingsBtn, onTap: () => Navigator.pushNamed(context, AppRouter.settings)),
-          ],
-        ),
-        const SizedBox(height: 6),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildWoodToolButton(icon: Icons.shopping_cart, label: l10n.shopBtn, onTap: _showShopDialog),
-            const SizedBox(width: 6),
-            _buildPremiumPromo(),
-          ],
-        ),
-      ],
-    );
-  }
-
-  /// Gold "remove ads" promo, hidden once premium is owned.
-  Widget _buildPremiumPromo() {
-    final l10n = AppLocalizations.of(context);
-    return ListenableBuilder(
-      listenable: PremiumService.instance,
-      builder: (context, _) {
-        if (PremiumService.instance.isPremium) return const SizedBox.shrink();
-        return BouncyPressable(
-          key: const ValueKey('home-premium-promo'),
-          scaleDown: 0.90,
-          onTap: () => PremiumDialog.show(context),
-          child: Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFFFD54F), Color(0xFFFFA000)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFFFF3C4), width: 2),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.4),
-                  offset: const Offset(0, 2),
-                  blurRadius: 4,
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.block_rounded, color: Color(0xFF3E2723), size: 18),
-                Text(
-                  l10n.noAdsBtn,
-                  textAlign: TextAlign.center,
-                  style: AppFonts.bangers(
-                    fontSize: 8,
-                    color: const Color(0xFF3E2723),
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildWoodToolButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return BouncyPressable(
-      scaleDown: 0.90,
-      onTap: onTap,
-      child: Container(
-        width: 50,
-        height: 50,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF5D4037), Color(0xFF3E2723)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF8D6E63), width: 2),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.4),
-              offset: const Offset(0, 2),
-              blurRadius: 4,
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: Colors.white, size: 18),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: AppFonts.bangers(
-                fontSize: 8,
-                color: Colors.white70,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeroLogo() {
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 270, maxHeight: 150),
-      child: Image.asset(
-        'assets/images/Background/Logo.png',
-        fit: BoxFit.contain,
-        errorBuilder: (context, error, stack) => Column(
-          children: [
-            const Text('🐮', style: TextStyle(fontSize: 50)),
-            Text(
-              'BATTLE COWS',
-              style: AppFonts.bangers(
-                fontSize: 42,
-                color: const Color(0xFFFFD54F),
-                letterSpacing: 4,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMenuButtons() {
-    final l10n = AppLocalizations.of(context);
-    final screenWidth = MediaQuery.of(context).size.width;
-    final btnWidth = (screenWidth * 0.75).clamp(240.0, 340.0);
-    return Column(
-      children: [
-        WoodButton(
-          label: l10n.barnyardCampaign,
-          icon: Icons.map_rounded,
-          width: btnWidth,
-          height: 56,
-          fontSize: 23,
-          baseColor: const Color(0xFFE65100),
-          borderColor: const Color(0xFFFFB74D),
-          onPressed: () => Navigator.pushNamed(context, AppRouter.campaign).then((_) {
-            if (mounted) setState(() {});
-          }),
-        ),
-        const SizedBox(height: 10),
-        WoodButton.gold(
-          label: l10n.playVsAi,
-          icon: Icons.play_arrow_rounded,
-          width: btnWidth,
-          height: 56,
-          fontSize: 24,
-          onPressed: () => _showGameSetupDialog(title: l10n.playVsAi, isMultiplayer: false),
-        ),
-        const SizedBox(height: 10),
-        WoodButton(
-          label: l10n.localMultiplayer,
-          icon: Icons.people_rounded,
-          width: btnWidth,
-          height: 52,
-          fontSize: 22,
-          baseColor: const Color(0xFF1565C0),
-          borderColor: const Color(0xFF42A5F5),
-          onPressed: () => _showGameSetupDialog(title: l10n.localMultiplayer, isMultiplayer: true),
-        ),
-        const SizedBox(height: 10),
-        WoodButton.purple(
-          label: l10n.howToPlay,
-          icon: Icons.menu_book_rounded,
-          width: btnWidth,
-          height: 48,
-          fontSize: 20,
-          onPressed: () => Navigator.pushNamed(context, AppRouter.tutorial),
-        ),
-        const SizedBox(height: 10),
-        WoodButton(
-          label: l10n.challenges,
-          icon: Icons.shield_rounded,
-          width: btnWidth,
-          height: 48,
-          fontSize: 20,
-          baseColor: const Color(0xFF5D4037),
-          borderColor: const Color(0xFFD7CCC8),
-          onPressed: _showChallengePicker,
-        ),
-        const SizedBox(height: 10),
-        WoodButton.red(
-          label: l10n.exit,
-          icon: Icons.exit_to_app_rounded,
-          width: btnWidth,
-          height: 54,
-          fontSize: 22,
-          onPressed: () {
-            CartoonDialog.show(
-              context: context,
-              title: l10n.exitGameTitle,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    l10n.exitGameConfirm,
-                    style: AppFonts.bangers(fontSize: 16, color: Colors.white70),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: KenneyButton(
-                          label: l10n.cancel,
-                          isWide: true,
-                          style: KenneyBtnStyle.neutral,
-                          onPressed: () => Navigator.pop(context),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: KenneyButton(
-                          label: l10n.exit,
-                          isWide: true,
-                          style: KenneyBtnStyle.danger,
-                          onPressed: () {
-                            Navigator.pop(context);
-                            SystemNavigator.pop();
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBottomRusticBar() {
-    final p = _progressService?.progress;
-    final readyQuests = p?.dailyQuests.where((q) => q.isComplete && !q.claimed).length ?? 0;
-    final l10n = AppLocalizations.of(context);
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: RusticPlank(
-        color: const Color(0xFF3E2723),
-        seed: 29,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        child: GestureDetector(
-          onTap: () {
-            if (_progressService == null) return;
-            DailyQuestsDialog.show(
-              context: context,
-              progress: _progressService!,
-            ).then((_) => setState(() {}));
-          },
-          child: _buildBottomItem(
-            iconText: '📅',
-            title: l10n.dailyQuests,
-            subtitle: readyQuests > 0 ? l10n.questsReady(readyQuests) : l10n.playMore,
-            color: readyQuests > 0 ? const Color(0xFF81C784) : Colors.white54,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBottomItem({
-    required String iconText,
-    required String title,
-    required String subtitle,
-    required Color color,
-  }) {
-    return Row(
-      children: [
-        Text(iconText, style: const TextStyle(fontSize: 20)),
-        const SizedBox(width: 6),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              title,
-              style: AppFonts.bangers(
-                fontSize: 11,
-                color: Colors.white70,
-                letterSpacing: 1,
-              ),
-            ),
-            Text(
-              subtitle,
-              style: AppFonts.bangers(
-                fontSize: 12,
-                color: color,
-                letterSpacing: 1,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
 }
+
 

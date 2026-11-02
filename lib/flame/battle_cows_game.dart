@@ -25,6 +25,7 @@ import 'components/board_border_component.dart';
 import 'components/move_animation_component.dart';
 import 'components/placement_preview_component.dart';
 import 'components/floating_pop_component.dart';
+import 'components/landing_burst_component.dart';
 import 'audio_manager.dart';
 
 class BattleCowsGame extends FlameGame with DragCallbacks {
@@ -55,6 +56,10 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
   Vector2 userCameraOffset = Vector2.zero(); // tracks user pan independently of shake
 
   PlayerColor? winner;
+  List<PlayerColor> winningPlayers = [];
+  bool get isDraw => winningPlayers.length > 1;
+  bool get isFullDraw => winningPlayers.length == players.length;
+  bool get isSharedVictory => winningPlayers.length > 1 && winningPlayers.length < players.length;
   Map<PlayerColor, int> territoryCounts = {};
   Map<PlayerColor, int> cowCounts = {};
   bool isGameOver = false;
@@ -331,6 +336,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
     _gameInitialized = true;
     isGameOver = false;
     winner = null;
+    winningPlayers = [];
     selectedPosition = null;
     validMoves = [];
     _isAnimating = false;
@@ -517,6 +523,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
     if (_currentTile == null) return;
     _currentTile = _currentTile!.rotate(1);
     _updatePreview();
+    centerCameraOnBoard();
     notifyStateChanged();
   }
 
@@ -697,11 +704,10 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
   /// visible hexes: placed tiles during placement phase, board cells otherwise.
   Vector2 calculateBoardCenter() {
     final hexes = _isPlacementPhase
-        ? (_boardBuilder.placedHexes.isNotEmpty
-            ? _boardBuilder.placedHexes.toList()
-            : (_currentTile != null
-                ? _currentTile!.translate(_tileOffset).hexes
-                : const <HexPosition>[]))
+        ? <HexPosition>{
+            ..._boardBuilder.placedHexes,
+            if (_currentTile != null) ..._currentTile!.translate(_tileOffset).hexes,
+          }.toList()
         : (_engine.board?.cells.keys.toList() ?? const <HexPosition>[]);
 
     if (hexes.isEmpty) return Vector2(0, -12);
@@ -738,9 +744,10 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
 
     // Auto-zoom: fit the board inside the available playable window.
     final hexes = _isPlacementPhase
-        ? (_boardBuilder.placedHexes.isNotEmpty
-            ? _boardBuilder.placedHexes.toList()
-            : (_currentTile?.translate(_tileOffset).hexes ?? const <HexPosition>[]))
+        ? <HexPosition>{
+            ..._boardBuilder.placedHexes,
+            if (_currentTile != null) ..._currentTile!.translate(_tileOffset).hexes,
+          }.toList()
         : (_engine.board?.cells.keys.toList() ?? const <HexPosition>[]);
 
     if (hexes.isNotEmpty) {
@@ -755,12 +762,12 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
         if (py < minY) minY = py;
         if (py > maxY) maxY = py;
       }
-      final boardW = (maxX - minX) + hs * 2.2;
-      final boardH = (maxY - minY) + hs * 2.2;
+      final boardW = (maxX - minX) + hs * 2.8;
+      final boardH = (maxY - minY) + hs * 2.8;
       final availW = (size.x - 32.0).clamp(120.0, 5000.0);
       final availH = (size.y - topHud - botHud).clamp(120.0, 5000.0);
       final fitZoom = min(availW / boardW, availH / boardH);
-      camera.viewfinder.zoom = fitZoom.clamp(0.50, 1.30);
+      camera.viewfinder.zoom = fitZoom.clamp(0.70, 1.40);
     }
 
     camera.viewfinder.anchor = Anchor.center;
@@ -800,8 +807,9 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
 
     final pixelPos = _boardComponent?.hexToPixel(position, _hexSize);
     if (pixelPos != null) {
-      add(LandingImpactComponent(position: pixelPos));
-      add(FloatingPopComponent(
+      world.add(LandingBurstComponent(position: pixelPos, radius: _hexSize * 0.95));
+      world.add(LandingImpactComponent(position: pixelPos));
+      world.add(FloatingPopComponent(
         text: '🐮 MOO!',
         color: AppColors.getPlayerPrimary(player.color),
         position: Vector2(pixelPos.x, pixelPos.y - 20),
@@ -827,7 +835,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
     if (!_isHerdPlacementPhase || _herdPlacementPlayerIndex >= players.length) return;
     if (!players[_herdPlacementPlayerIndex].isAi || _validHerdPositions.isEmpty) return;
     final session = _sessionId;
-    Future.delayed(const Duration(milliseconds: 450), () {
+    Future.delayed(const Duration(milliseconds: 750), () {
       if (session != _sessionId || !_callbacksEnabled || !_isHerdPlacementPhase || _validHerdPositions.isEmpty) return;
       placeHerdAt(_validHerdPositions[Random().nextInt(_validHerdPositions.length)]);
     });
@@ -847,6 +855,13 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
     _startTimer();
     AudioManager().startMusic();
 
+    final current = _engine.currentPlayer;
+    onTurnChanged?.call(
+      current.name,
+      AppColors.getPlayerPrimary(current.color),
+      current.isAi,
+    );
+
     onPlacementComplete?.call();
     notifyStateChanged();
   }
@@ -855,6 +870,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
     if (_currentPlacementPlayer.isAi || _allTilesPlaced || _currentTile == null) return;
     _tileOffset = position;
     _updatePreview();
+    centerCameraOnBoard();
     notifyStateChanged();
   }
 
@@ -898,6 +914,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
     isPlacementDragActive = true;
     _tileOffset = _screenToHex(event.canvasPosition);
     _updatePreview();
+    centerCameraOnBoard();
     notifyStateChanged();
     super.onDragStart(event);
   }
@@ -910,6 +927,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
     }
     _tileOffset = _screenToHex(event.canvasEndPosition);
     _updatePreview();
+    centerCameraOnBoard();
     notifyStateChanged();
     super.onDragUpdate(event);
   }
@@ -922,8 +940,37 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
     }
     _isDragging = false;
     isPlacementDragActive = false;
-    placeCurrentTile();
+    // Do NOT automatically place the tile here; user presses the PLACE button to place.
+    centerCameraOnBoard();
+    notifyStateChanged();
     super.onDragEnd(event);
+  }
+
+  void onPanStartFromScreen(DragStartDetails details) {
+    if (!_isPlacementPhase || _currentPlacementPlayer.isAi || _allTilesPlaced || _currentTile == null) return;
+    _isDragging = true;
+    isPlacementDragActive = true;
+    _tileOffset = _screenToHex(Vector2(details.localPosition.dx, details.localPosition.dy));
+    _updatePreview();
+    centerCameraOnBoard();
+    notifyStateChanged();
+  }
+
+  void onPanUpdateFromScreen(DragUpdateDetails details) {
+    if (!_isDragging || !_isPlacementPhase || _currentTile == null) return;
+    _tileOffset = _screenToHex(Vector2(details.localPosition.dx, details.localPosition.dy));
+    _updatePreview();
+    centerCameraOnBoard();
+    notifyStateChanged();
+  }
+
+  void onPanEndFromScreen(DragEndDetails details) {
+    if (!_isDragging || !_isPlacementPhase || _currentTile == null) return;
+    _isDragging = false;
+    isPlacementDragActive = false;
+    // Do NOT automatically place the tile here; user presses the PLACE button to place.
+    centerCameraOnBoard();
+    notifyStateChanged();
   }
 
   void onTapDownFromScreen(TapUpDetails details) {
@@ -945,6 +992,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
 
     _tileOffset = hexPos;
     _updatePreview();
+    centerCameraOnBoard();
     notifyStateChanged();
   }
 
@@ -1057,7 +1105,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
 
   void _performAiMove() {
     final session = _sessionId;
-    Future.delayed(const Duration(milliseconds: 500), () {
+    Future.delayed(const Duration(milliseconds: 1150), () {
       if (session != _sessionId || !_callbacksEnabled || isGameOver) return;
 
       // Smart Fence Challenge AI logic
@@ -1202,6 +1250,17 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
       return;
     }
 
+    // Visually update the origin herd immediately so split cows leave
+    final remainingCount = herd.size - move.splitCount;
+    final originCell = _boardComponent?.cells[fromPos];
+    if (originCell != null) {
+      originCell.herd = Herd(
+        position: fromPos,
+        owner: herd.owner,
+        size: remainingCount,
+      );
+    }
+
     final hexSize = _hexSize;
     final fromPixel = _boardComponent!.hexToPixel(fromPos, hexSize);
     final toPixel = _boardComponent!.hexToPixel(toPos, hexSize);
@@ -1209,6 +1268,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
     final animComponent = MoveAnimationComponent(
       from: fromPixel,
       to: toPixel,
+      radius: hexSize * 0.95,
       count: move.splitCount,
       color: AppColors.getPlayerPrimary(herd.owner),
       playerColor: herd.owner,
@@ -1218,7 +1278,7 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
         executeMove(move);
       },
     );
-    add(animComponent);
+    world.add(animComponent);
   }
 
   void executeMove(Move move) {
@@ -1235,12 +1295,13 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
 
     final hexSize = _hexSize;
     final toPixel = _boardComponent!.hexToPixel(move.to, hexSize);
-    add(LandingImpactComponent(position: toPixel));
+    world.add(LandingBurstComponent(position: toPixel, radius: hexSize * 0.95));
+    world.add(LandingImpactComponent(position: toPixel));
 
     AudioManager().playMove();
     if (ateBonus) {
       AudioManager().playHay();
-      add(FloatingPopComponent(
+      world.add(FloatingPopComponent(
         text: prevCell?.specialType == SpecialTileType.goldenPasture ? '🌟 GOLDEN PASTURE!' : '🌾 HAY BONUS!',
         color: const Color(0xFFFFD54F),
         position: Vector2(toPixel.x, toPixel.y - 20),
@@ -1258,14 +1319,14 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
       shakeCamera(strength: min(8.0, 2.5 + captureCount));
       capturesPerPlayer[move.player] = (capturesPerPlayer[move.player] ?? 0) + captureCount;
       onCapture?.call(captureCount, move.player);
-      add(FloatingPopComponent(
+      world.add(FloatingPopComponent(
         text: captureCount > 3 ? '⚔️ STAMPEDE! +$captureCount' : '⚔️ +$captureCount CLAIMED!',
         color: AppColors.getPlayerPrimary(move.player),
         position: Vector2(toPixel.x, toPixel.y - 24),
         fontSize: 16.0,
       ));
     } else if (!ateBonus) {
-      add(FloatingPopComponent(
+      world.add(FloatingPopComponent(
         text: '+${move.splitCount}',
         color: AppColors.getPlayerPrimary(move.player),
         position: Vector2(toPixel.x, toPixel.y - 14),
@@ -1303,7 +1364,8 @@ class BattleCowsGame extends FlameGame with DragCallbacks {
 
   void _handleGameOver() {
     isGameOver = true;
-    winner = _engine.determineWinner();
+    winningPlayers = _engine.getWinningPlayers();
+    winner = winningPlayers.length == 1 ? winningPlayers.first : null;
     _updateCounts();
     AudioManager().stopMusic();
     AudioManager().playGameOver();

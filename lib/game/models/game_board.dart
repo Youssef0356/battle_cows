@@ -91,23 +91,29 @@ class GameBoard {
   int getContiguousGroupSize(HexPosition start) {
     if (!hasHerdAt(start)) return 0;
 
+    final startHerd = getHerdAt(start);
+    if (startHerd == null) return 0;
+    final owner = startHerd.owner;
+
     final visited = <HexPosition>{};
     final queue = [start];
-    final herd = getHerdAt(start);
-    if (herd == null) return 0;
 
     while (queue.isNotEmpty) {
       final current = queue.removeLast();
       if (visited.contains(current)) continue;
-      visited.add(current);
 
       final currentHerd = getHerdAt(current);
-      if (currentHerd == null || currentHerd.owner != herd.owner) continue;
+      if (currentHerd == null || currentHerd.owner != owner) continue;
+
+      visited.add(current);
 
       for (final dir in HexPosition.directions) {
         final neighbor = current + dir;
         if (!visited.contains(neighbor) && isValidPosition(neighbor)) {
-          queue.add(neighbor);
+          final neighborHerd = getHerdAt(neighbor);
+          if (neighborHerd != null && neighborHerd.owner == owner) {
+            queue.add(neighbor);
+          }
         }
       }
     }

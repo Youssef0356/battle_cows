@@ -1,4 +1,4 @@
-import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 class AdManager {
@@ -12,10 +12,19 @@ class AdManager {
   bool _bannerLoaded = false;
   bool _adsEnabled = true;
 
-  // Production IDs
-  static const String _rewardedAdUnitId = 'ca-app-pub-6774620515484669/6141831508';
-  static const String _interstitialAdUnitId = 'ca-app-pub-6774620515484669/8062629287';
-  static const String _bannerAdUnitId = 'ca-app-pub-6774620515484669/1564457516';
+  // Uses Google's official sample test unit IDs in debug mode to guarantee 100% fill
+  // and prevent account suspension for invalid traffic. In release mode, serves live production ads.
+  static String get _bannerAdUnitId => kDebugMode
+      ? 'ca-app-pub-3940256099942544/6300978111'
+      : 'ca-app-pub-6774620515484669/1564457516';
+
+  static String get _interstitialAdUnitId => kDebugMode
+      ? 'ca-app-pub-3940256099942544/1033173712'
+      : 'ca-app-pub-6774620515484669/8062629287';
+
+  static String get _rewardedAdUnitId => kDebugMode
+      ? 'ca-app-pub-3940256099942544/5224354917'
+      : 'ca-app-pub-6774620515484669/6141831508';
 
   bool get bannerLoaded => _bannerLoaded;
   BannerAd? get bannerAd => _bannerAd;

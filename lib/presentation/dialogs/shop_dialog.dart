@@ -31,13 +31,14 @@ class ShopDialog extends StatefulWidget {
 }
 
 class _ShopDialogState extends State<ShopDialog> {
-  ShopCategory _selectedCategory = ShopCategory.skins;
+  ShopCategory _selectedCategory = ShopCategory.boards;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final coins = widget.progress.progress.coins;
     final owned = widget.progress.progress.ownedItems;
+    final isBoards = _selectedCategory == ShopCategory.boards;
     final filtered = shopItems.where((i) => i.category == _selectedCategory).toList();
 
     return SizedBox(
@@ -70,29 +71,72 @@ class _ShopDialogState extends State<ShopDialog> {
           _buildPremiumBanner(l10n),
           _buildCategoryTabs(),
           const SizedBox(height: 10),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            padding: EdgeInsets.zero,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
-            ),
-            itemCount: filtered.length,
-            itemBuilder: (context, index) {
-              final item = filtered[index];
-              final isOwned = owned.contains(item.id);
-              final canBuy = coins >= item.price && !isOwned;
-              return _buildShopTile(item, isOwned, canBuy, l10n);
-            },
-          ),
-          const SizedBox(height: 8),
+          if (isBoards)
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: EdgeInsets.zero,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+              ),
+              itemCount: filtered.length,
+              itemBuilder: (context, index) {
+                final item = filtered[index];
+                final isOwned = owned.contains(item.id);
+                final canBuy = coins >= item.price && !isOwned;
+                return _buildShopTile(item, isOwned, canBuy, l10n);
+              },
+            )
+          else
+            _buildComingSoonCard(),
+          const SizedBox(height: 12),
           KenneyButton(
             label: l10n.close,
             isWide: true,
             style: KenneyBtnStyle.neutral,
             onPressed: () => Navigator.pop(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildComingSoonCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 28),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFFFFD54F).withValues(alpha: 0.35),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text('🚧', style: TextStyle(fontSize: 34)),
+          const SizedBox(height: 8),
+          Text(
+            'COMING SOON!',
+            style: AppFonts.bangers(
+              fontSize: 20,
+              color: const Color(0xFFFFD54F),
+              letterSpacing: 1.5,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'New custom outfits, skins & cosmetics are in the barn!\nStay tuned for upcoming updates! 🐮',
+            textAlign: TextAlign.center,
+            style: AppFonts.bangers(
+              fontSize: 12,
+              color: Colors.white70,
+              letterSpacing: 0.5,
+            ),
           ),
         ],
       ),
@@ -153,39 +197,56 @@ class _ShopDialogState extends State<ShopDialog> {
   }
 
   Widget _buildCategoryTabs() {
+    const orderedCategories = [
+      ShopCategory.boards,
+      ShopCategory.skins,
+      ShopCategory.hats,
+      ShopCategory.themes,
+      ShopCategory.emojis,
+    ];
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: ShopCategory.values.map((cat) {
+        children: orderedCategories.map((cat) {
           final isSelected = _selectedCategory == cat;
           final labels = {
-            ShopCategory.skins: '🐄',
-            ShopCategory.hats: '🤠',
-            ShopCategory.themes: '🎨',
-            ShopCategory.emojis: '💬',
-            ShopCategory.boards: '🪵',
+            ShopCategory.boards: '🪵 BOARDS',
+            ShopCategory.skins: '🐄 SOON',
+            ShopCategory.hats: '🤠 SOON',
+            ShopCategory.themes: '🎨 SOON',
+            ShopCategory.emojis: '💬 SOON',
           };
           return GestureDetector(
             key: ValueKey('shop-tab-${cat.name}'),
             onTap: () => setState(() => _selectedCategory = cat),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFFFFD54F).withValues(alpha: 0.2) : Colors.transparent,
-                borderRadius: BorderRadius.circular(8),
+                color: isSelected ? const Color(0xFFFFD54F).withValues(alpha: 0.22) : Colors.black26,
+                borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                   color: isSelected ? const Color(0xFFFFD54F) : Colors.white24,
+                  width: isSelected ? 1.8 : 1.0,
                 ),
               ),
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
-                  Text(labels[cat]!, style: const TextStyle(fontSize: 20)),
-                  if (widget.progress.equippedForCategory(cat).isNotEmpty)
+                  Text(
+                    labels[cat]!,
+                    style: AppFonts.bangers(
+                      fontSize: 13,
+                      color: isSelected ? const Color(0xFFFFD54F) : Colors.white70,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                  if (cat == ShopCategory.boards && widget.progress.equippedForCategory(cat).isNotEmpty)
                     const Positioned(
-                      right: -5,
-                      top: -5,
+                      right: -6,
+                      top: -6,
                       child: Icon(
                         Icons.check_circle,
                         size: 13,

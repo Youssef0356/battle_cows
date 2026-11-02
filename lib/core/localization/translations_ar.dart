@@ -15,6 +15,10 @@ class AppLocalizationsAr implements AppLocalizations {
   @override String get rematch => 'مباراة جديدة';
   @override String get draw => 'تعادل!';
   @override String playerWins(String name) => 'فاز $name!';
+  @override String sharedVictory(String names) => 'فوز مشترك!\n$names';
+  @override String get allPlayersTied => 'تعادل للجميع!';
+  @override String get numberOfPlayers => 'عدد اللاعبين';
+  @override String playersCount(int count) => '$count لاعبين';
   @override String get shareMessage =>
       'جرّب لعبة معركة الأبقار! 🐮 اجمع قطيعك واجتاح المراعي! https://play.google.com/store/apps/details?id=com.battlecows.game';
 
@@ -342,7 +346,7 @@ class AppLocalizationsAr implements AppLocalizations {
     switch (id) {
       case 1: return 'معبر الوادي';
       case 2: return 'جدول الطين';
-      case 3: return 'نزال المرعى الذهبي';
+      case 3: return 'مواجهة المرعى';
       case 4: return 'جنون الأسوار';
       case 5: return 'وادي الاجتياح';
       case 6: return 'مواجهة المزرعة الكبرى';
@@ -354,7 +358,7 @@ class AppLocalizationsAr implements AppLocalizations {
     switch (id) {
       case 1: return 'أساسيات المزرعة';
       case 2: return 'خوض الوحل';
-      case 3: return 'تاج المرعى';
+      case 3: return 'تحدي رعاة البقر';
       case 4: return 'دفاع الأخشاب';
       case 5: return 'بأقصى طاقة';
       case 6: return 'المرعى الأسطوري';
@@ -378,7 +382,7 @@ class AppLocalizationsAr implements AppLocalizations {
     switch (id) {
       case 1: return 'المزارع بوب يستيقظ من قيلولته. انشر قطيعك واستحوذ على المراعي الشاسعة!';
       case 2: return 'الطين يعيق حركة أبقارك! خطط لتقسيم قطيعك بعناية لتجاوز المستنقع.';
-      case 3: return 'تكس يسعى للسيطرة على المرعى الذهبي المركزي. سيطر على القلب ودافع عنه!';
+      case 3: return 'تكس راعي بقر خبير. انشر قطيعك بسرعة واستحوذ على أفضل المراعي!';
       case 4: return 'وودي وضع أسواراً في كل مكان! استغل أسوارك لحصاره في الزاوية الضيقة.';
       case 5: return 'نمط الاجتياح الكاسح! كوّن مجموعات من 4+ أبقار لإطلاق سرعة فائقة تكتسح الميدان!';
       case 6: return 'العمدة أنغوس هو البطل المتوج. استخدم كل خبراتك التكتيكية لهزيمته واعتلاء العرش!';
@@ -390,7 +394,7 @@ class AppLocalizationsAr implements AppLocalizations {
     switch (id) {
       case 1: return 'سيطر على مساحة أكبر من المزارع بوب لكسب حتى 3 نجوم.';
       case 2: return 'تجاوز بقع الطين واستولِ على المساحات الخضراء النضرة.';
-      case 3: return 'استحوذ على المرعى الذهبي المركزي لكسب أبقار إضافية ونقاط مضاعفة 3 مرات.';
+      case 3: return 'تفوق على راعي البقر تكس واستحوذ على مساحة أكبر.';
       case 4: return 'استخدم الأسوار بذكاء لمناورة الثور وودي ومحاصرته بالكامل.';
       case 5: return 'أطلق هجمات الاجتياح الكاسح للتغلب على بيسي الشجاعة.';
       case 6: return 'تغلب على العمدة أنغوس بدهائك في مرعى ملحمي كبير.';

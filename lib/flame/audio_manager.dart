@@ -70,6 +70,7 @@ class AudioManager {
   void _playSfx(String filename, {double volume = 0.5}) {
     if (!_sfxEnabled || !_assetsAvailable) return;
     try {
+      // ignore: body_might_complete_normally_catch_error
       FlameAudio.play(filename, volume: volume).catchError((_) {});
     } catch (_) {}
   }

@@ -74,5 +74,83 @@ void main() {
       expect(game.challengeMode, ChallengeMode.fenceChallenge);
       expect(game.getRemainingFences(PlayerColor.blue), 3);
     });
+
+    test('3-player local multiplayer builds pasture and places herds', () async {
+      const threePlayers = [
+        Player(id: 0, name: 'Player 1', color: PlayerColor.blue),
+        Player(id: 1, name: 'Player 2', color: PlayerColor.red),
+        Player(id: 2, name: 'Player 3', color: PlayerColor.yellow),
+      ];
+
+      final game = BattleCowsGame(players: threePlayers, tilesPerPlayer: 1);
+      game.onGameResize(Vector2(800, 600));
+      await game.onLoad();
+
+      expect(game.players.length, 3);
+      expect(game.isPlacementPhase, isTrue);
+
+      var guard = 0;
+      while (game.isPlacementPhase && guard < 10) {
+        expect(game.placeCurrentTile(), isTrue);
+        guard++;
+      }
+      expect(game.isPlacementPhase, isFalse);
+      expect(game.isHerdPlacementPhase, isTrue);
+
+      guard = 0;
+      while (game.isHerdPlacementPhase && guard < 10) {
+        expect(game.validHerdPositions, isNotEmpty);
+        game.placeHerdAt(game.validHerdPositions.first);
+        guard++;
+      }
+      expect(game.isHerdPlacementPhase, isFalse);
+      expect(game.engine.players.length, 3);
+      expect(game.engine.board!.herds.length, 3);
+      expect(game.engine.board!.herds.map((h) => h.owner).toSet(), {
+        PlayerColor.blue,
+        PlayerColor.red,
+        PlayerColor.yellow,
+      });
+    });
+
+    test('4-player local multiplayer builds pasture and places herds for all 4 players', () async {
+      const fourPlayers = [
+        Player(id: 0, name: 'Player 1', color: PlayerColor.blue),
+        Player(id: 1, name: 'Player 2', color: PlayerColor.red),
+        Player(id: 2, name: 'Player 3', color: PlayerColor.yellow),
+        Player(id: 3, name: 'Player 4', color: PlayerColor.purple),
+      ];
+
+      final game = BattleCowsGame(players: fourPlayers, tilesPerPlayer: 1);
+      game.onGameResize(Vector2(800, 600));
+      await game.onLoad();
+
+      expect(game.players.length, 4);
+      expect(game.isPlacementPhase, isTrue);
+
+      var guard = 0;
+      while (game.isPlacementPhase && guard < 10) {
+        expect(game.placeCurrentTile(), isTrue);
+        guard++;
+      }
+      expect(game.isPlacementPhase, isFalse);
+      expect(game.isHerdPlacementPhase, isTrue);
+
+      guard = 0;
+      while (game.isHerdPlacementPhase && guard < 10) {
+        expect(game.validHerdPositions, isNotEmpty);
+        game.placeHerdAt(game.validHerdPositions.first);
+        guard++;
+      }
+      expect(game.isHerdPlacementPhase, isFalse);
+      expect(game.engine.players.length, 4);
+      expect(game.engine.board!.herds.length, 4);
+      expect(game.engine.board!.herds.map((h) => h.owner).toSet(), {
+        PlayerColor.blue,
+        PlayerColor.red,
+        PlayerColor.yellow,
+        PlayerColor.purple,
+      });
+    });
   });
 }

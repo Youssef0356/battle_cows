@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../assets/asset_paths.dart';
 import '../../core/localization/app_fonts.dart';
 import '../../core/localization/app_localizations.dart';
 
@@ -33,20 +34,20 @@ class _TurnBannerState extends State<TurnBanner>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1800),
+      duration: const Duration(milliseconds: 1600),
     );
 
     _slideAnim = Tween<double>(begin: -1.0, end: 0.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.0, 0.3, curve: Curves.easeOutBack),
+        curve: const Interval(0.0, 0.25, curve: Curves.easeOutBack),
       ),
     );
 
     _fadeAnim = Tween<double>(begin: 1.0, end: 0.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.7, 1.0, curve: Curves.easeIn),
+        curve: const Interval(0.75, 1.0, curve: Curves.easeIn),
       ),
     );
 
@@ -67,41 +68,39 @@ class _TurnBannerState extends State<TurnBanner>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return Opacity(
-          opacity: _fadeAnim.value,
-          child: Transform.translate(
-            offset: Offset(0, _slideAnim.value * -60),
-            child: Center(
+    final bannerBg = _getBannerGradient(widget.playerColor);
+
+    return IgnorePointer(
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return Opacity(
+            opacity: _fadeAnim.value.clamp(0.0, 1.0),
+            child: Transform.translate(
+              offset: Offset(0, _slideAnim.value * -35),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 7),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [
-                      widget.playerColor.withValues(alpha: 0.9),
-                      widget.playerColor,
-                      _darken(widget.playerColor, 0.2),
-                    ],
+                    colors: bannerBg,
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                   ),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(22),
                   border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.6),
-                    width: 3,
+                    color: const Color(0xFFFFD54F),
+                    width: 2.2,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: widget.playerColor.withValues(alpha: 0.5),
-                      blurRadius: 20,
-                      spreadRadius: 4,
+                      color: widget.playerColor.withValues(alpha: 0.45),
+                      blurRadius: 14,
+                      spreadRadius: 2,
                     ),
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.4),
-                      offset: const Offset(0, 4),
-                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                      blurRadius: 6,
                     ),
                   ],
                 ),
@@ -110,33 +109,34 @@ class _TurnBannerState extends State<TurnBanner>
                   children: [
                     Image.asset(
                       widget.cowAsset ?? _getCowAsset(widget.playerColor),
-                      width: 38,
-                      height: 38,
+                      width: 32,
+                      height: 32,
                       fit: BoxFit.contain,
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     Column(
                       mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           widget.isAi ? l10n.cpuTurn.toUpperCase() : l10n.playerTurn.toUpperCase(),
                           style: AppFonts.bangers(
-                            fontSize: 14,
-                            color: Colors.white.withValues(alpha: 0.85),
-                            letterSpacing: 2,
+                            fontSize: 10.5,
+                            color: const Color(0xFFFFD54F),
+                            letterSpacing: 1.2,
                           ),
                         ),
                         Text(
                           widget.playerName.toUpperCase(),
                           style: AppFonts.bangers(
-                            fontSize: 24,
+                            fontSize: 17,
                             color: Colors.white,
-                            letterSpacing: 2,
-                            shadows: [
+                            letterSpacing: 1.2,
+                            shadows: const [
                               Shadow(
-                                color: Colors.black.withValues(alpha: 0.5),
-                                offset: const Offset(1, 2),
-                                blurRadius: 3,
+                                color: Colors.black54,
+                                offset: Offset(1, 1),
+                                blurRadius: 2,
                               ),
                             ],
                           ),
@@ -147,10 +147,24 @@ class _TurnBannerState extends State<TurnBanner>
                 ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
+  }
+
+  List<Color> _getBannerGradient(Color color) {
+    final hex = color.toARGB32() & 0x00FFFFFF;
+    if (hex == 0x2E86DE || hex == 0x1E88E5 || hex == 0x2196F3) {
+      return const [Color(0xFF2E86DE), Color(0xFF1B4F72), Color(0xFF0E3048)];
+    } else if (hex == 0xE74C3C || hex == 0xE53935 || hex == 0xF44336) {
+      return const [Color(0xFFE74C3C), Color(0xFFC0392B), Color(0xFF78281F)];
+    } else if (hex == 0xF5B400 || hex == 0xFDD835 || hex == 0xFFFFEB3B || hex == 0xFFB300) {
+      return const [Color(0xFFF5B400), Color(0xFFD68910), Color(0xFF7E5109)];
+    } else if (hex == 0x8E44AD || hex == 0x8E24AA || hex == 0x9C27B0) {
+      return const [Color(0xFF8E44AD), Color(0xFF6C3483), Color(0xFF4A235A)];
+    }
+    return [color, _darken(color, 0.2), _darken(color, 0.4)];
   }
 
   Color _darken(Color c, double amount) {
@@ -160,15 +174,15 @@ class _TurnBannerState extends State<TurnBanner>
 
   String _getCowAsset(Color color) {
     final hex = color.toARGB32() & 0x00FFFFFF;
-    if (hex == 0x1E88E5 || hex == 0x2196F3) {
-      return 'assets/images/Cows/cow_viking.png';
-    } else if (hex == 0xE53935 || hex == 0xF44336) {
-      return 'assets/images/Cows/cow_cowboy.png';
-    } else if (hex == 0xFDD835 || hex == 0xFFFFEB3B || hex == 0xFFB300) {
+    if (hex == 0x2E86DE || hex == 0x1E88E5 || hex == 0x2196F3) {
+      return AssetPaths.cowP1HolsteinIdle;
+    } else if (hex == 0xE74C3C || hex == 0xE53935 || hex == 0xF44336) {
+      return AssetPaths.cowP2HighlandIdle;
+    } else if (hex == 0xF5B400 || hex == 0xFDD835 || hex == 0xFFFFEB3B || hex == 0xFFB300) {
       return 'assets/images/Cows/cow_farmer.png';
-    } else if (hex == 0x8E24AA || hex == 0x9C27B0) {
+    } else if (hex == 0x8E44AD || hex == 0x8E24AA || hex == 0x9C27B0) {
       return 'assets/images/Cows/cow_disco.png';
     }
-    return 'assets/images/Cows/cow_viking.png';
+    return AssetPaths.cowP1HolsteinIdle;
   }
 }

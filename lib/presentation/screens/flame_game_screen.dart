@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flame/game.dart';
@@ -22,7 +23,6 @@ import '../../game/campaign/campaign_data.dart';
 import '../widgets/capture_toast.dart';
 import '../widgets/banner_ad_widget.dart';
 import '../widgets/parallax_dust_layer.dart';
-import '../widgets/pan_indicators.dart';
 
 class FlameGameScreen extends StatefulWidget {
   final List<Player> players;
@@ -53,6 +53,7 @@ class FlameGameScreen extends StatefulWidget {
 class _FlameGameScreenState extends State<FlameGameScreen> {
   late BattleCowsGame _game;
   OverlayEntry? _turnBannerEntry;
+  Timer? _turnBannerTimer;
   OverlayEntry? _captureToastEntry;
   ProgressService? _progressService;
 
@@ -62,23 +63,6 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
   bool get _showTutorialOverlay => widget.isTutorial && _tutorialStep >= 0;
 
   int _lastMatchCoins = 0;
-
-  static const double _minZoom = 0.5;
-  static const double _maxZoom = 3.0;
-  double _baseZoom = 1.0;
-  Offset _lastFocalPoint = Offset.zero;
-
-  /// Set on the first board drag so the edge pan hints can settle from a
-  /// bright pulse into a faint static marker.
-  bool _hasPanned = false;
-
-  /// Whether the fence action bar currently sits above the move-cows bar
-  /// (used to keep the bottom pan hint clear of it).
-  bool get _showFenceBar {
-    if (_game.challengeMode != ChallengeMode.fenceChallenge) return false;
-    if (_game.engine.players.isEmpty) return false;
-    return !_game.engine.currentPlayer.isAi && !_game.isGameOver;
-  }
 
   /// Height of the loaded ad banner (0 when absent), used to push the
   /// top-bar overlays below the banner instead of underneath it.
@@ -244,31 +228,51 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
   void dispose() {
     _game.disableCallbacks();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    _turnBannerTimer?.cancel();
     _turnBannerEntry?.remove();
     _captureToastEntry?.remove();
     super.dispose();
   }
 
   void _showTurnBanner(String playerName, Color playerColor, bool isAi) {
+    _turnBannerTimer?.cancel();
     _turnBannerEntry?.remove();
-    _turnBannerEntry = OverlayEntry(
-      builder: (context) => Positioned.fill(
-        child: TurnBanner(
-          playerName: playerName,
-          playerColor: playerColor,
-          isAi: isAi,
-          cowAsset: CowSkins.assetFor(
-            _playerColorFromUi(playerColor),
-            skinId: _equippedSkinFor(playerName),
+    _turnBannerEntry = null;
+
+    // Delay slightly (550ms) so placement / move animations, landing dust burst,
+    // and points floating popups settle, giving players a clean view of their cows
+    // before the next turn notification slides in.
+    _turnBannerTimer = Timer(const Duration(milliseconds: 550), () {
+      if (!mounted) return;
+      final media = MediaQuery.of(context);
+      final isLandscape = media.orientation == Orientation.landscape;
+      final topOffset = media.padding.top + (isLandscape ? 48.0 : 78.0);
+
+      _turnBannerEntry = OverlayEntry(
+        builder: (context) => Positioned(
+          top: topOffset,
+          left: 0,
+          right: 0,
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: TurnBanner(
+              playerName: playerName,
+              playerColor: playerColor,
+              isAi: isAi,
+              cowAsset: CowSkins.assetFor(
+                _playerColorFromUi(playerColor),
+                skinId: _equippedSkinFor(playerName),
+              ),
+              onComplete: () {
+                _turnBannerEntry?.remove();
+                _turnBannerEntry = null;
+              },
+            ),
           ),
-          onComplete: () {
-            _turnBannerEntry?.remove();
-            _turnBannerEntry = null;
-          },
         ),
-      ),
-    );
-    Overlay.of(context).insert(_turnBannerEntry!);
+      );
+      Overlay.of(context).insert(_turnBannerEntry!);
+    });
   }
 
   void _showCaptureToast(int count, PlayerColor playerColor) {
@@ -394,14 +398,16 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
     Navigator.of(context).pop();
   }
 
-  void _onScaleStart(ScaleStartDetails details) {}
+  void _onPanStart(DragStartDetails details) {
+    _game.onPanStartFromScreen(details);
+  }
 
-  void _onScaleUpdate(ScaleUpdateDetails details) {}
+  void _onPanUpdate(DragUpdateDetails details) {
+    _game.onPanUpdateFromScreen(details);
+  }
 
-  void _onScaleEnd(ScaleEndDetails details) {}
-
-  void _clampCameraPosition() {
-    _game.userCameraOffset = Vector2(0, -18);
+  void _onPanEnd(DragEndDetails details) {
+    _game.onPanEndFromScreen(details);
   }
 
   @override
@@ -429,9 +435,9 @@ class _FlameGameScreenState extends State<FlameGameScreen> {
               onTapUp: (details) {
                 _game.onTapDownFromScreen(details);
               },
-              onScaleStart: _onScaleStart,
-              onScaleUpdate: _onScaleUpdate,
-              onScaleEnd: _onScaleEnd,
+              onPanStart: _onPanStart,
+              onPanUpdate: _onPanUpdate,
+              onPanEnd: _onPanEnd,
               child: GameWidget(
                 game: _game,
                 backgroundBuilder: (context) => const SizedBox.expand(),

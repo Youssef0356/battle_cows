@@ -45,7 +45,12 @@ class ResultScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      winner == 'Draw' ? l10n.draw : l10n.playerWins(winner),
+                      winner == 'Draw'
+                          ? l10n.draw
+                          : (winner.contains('&')
+                              ? l10n.sharedVictory(winner)
+                              : l10n.playerWins(winner)),
+                      textAlign: TextAlign.center,
                       style: AppFonts.bangers(
                         fontSize: 44,
                         color: Colors.white,

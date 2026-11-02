@@ -183,20 +183,6 @@ class GuideContent {
       ],
     ),
     GuideMode(
-      startPath: 'HOME  >  CHALLENGES  >  GOLDEN PASTURE   (or LOCAL MULTIPLAYER > GAME MODE)',
-      rules: [
-        'A glowing Golden Clover sits right in the center of the pasture.',
-        'Landing on the Golden Clover nourishes your herd with +1 bonus cow.',
-        'Holding the Golden Clover hex counts as 3 territory points at game end.',
-        'Dominating the center clover is the fastest path to victory.',
-      ],
-      tips: [
-        'Rush toward the center on your opening moves.',
-        'Leave a stout herd on the golden tile so you cannot be easily displaced.',
-        'Defend your approach corridors against enemy cut-offs.',
-      ],
-    ),
-    GuideMode(
       startPath: 'HOME  >  CHALLENGES  >  PASTURE FRENZY   (or LOCAL MULTIPLAYER > GAME MODE)',
       rules: [
         'Fresh bonus tiles sprout across open pastures after every player turn!',

@@ -122,8 +122,6 @@ class _GameOverOverlayState extends State<GameOverOverlay>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final winner = widget.game.winner;
-    final territoryCounts = widget.game.territoryCounts;
 
     if (widget.players.isEmpty) return const SizedBox.shrink();
 
@@ -172,11 +170,10 @@ class _GameOverOverlayState extends State<GameOverOverlay>
                      ),
                     const SizedBox(height: 12),
                     Text(
-                      winner != null
-                          ? l10n.playerWins(_getPlayerName(winner))
-                          : l10n.draw,
+                      _buildVictoryTitle(l10n),
+                      textAlign: TextAlign.center,
                       style: AppFonts.bangers(
-                        fontSize: 32,
+                        fontSize: 28,
                         color: Colors.white,
                         letterSpacing: 2,
                       ),
@@ -202,14 +199,30 @@ class _GameOverOverlayState extends State<GameOverOverlay>
                             ),
                           ),
                           const SizedBox(height: 12),
-                          ...territoryCounts.entries.map((entry) {
-                            final color = entry.key;
-                            final count = entry.value;
+                          ...widget.game.engine.getStandings().map((standing) {
+                            final color = standing.color;
+                            final count = standing.score;
+                            final isWinner = widget.game.winningPlayers.contains(color);
                             return Padding(
                               padding: const EdgeInsets.symmetric(vertical: 4),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                    decoration: BoxDecoration(
+                                      color: isWinner ? const Color(0xFFFFD54F) : Colors.white12,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      '#${standing.rank}',
+                                      style: AppFonts.bangers(
+                                        fontSize: 12,
+                                        color: isWinner ? const Color(0xFF3E2723) : Colors.white70,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
                                   Image.asset(
                                     _getCowAsset(color),
                                     width: 26,
@@ -293,6 +306,22 @@ class _GameOverOverlayState extends State<GameOverOverlay>
         );
       },
     );
+  }
+
+  String _buildVictoryTitle(AppLocalizations l10n) {
+    final winner = widget.game.winner;
+    final winningPlayers = widget.game.winningPlayers;
+    if (winner != null) {
+      return l10n.playerWins(_getPlayerName(winner));
+    }
+    if (winningPlayers.length > 1) {
+      if (winningPlayers.length == widget.players.length) {
+        return l10n.allPlayersTied;
+      }
+      final names = winningPlayers.map((c) => _getPlayerName(c)).join(' & ');
+      return l10n.sharedVictory(names);
+    }
+    return l10n.draw;
   }
 
   String _getPlayerName(PlayerColor color) {
